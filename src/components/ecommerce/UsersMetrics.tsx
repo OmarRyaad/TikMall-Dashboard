@@ -1,15 +1,20 @@
 import Badge from "../ui/badge/Badge";
 
-// لو الآيقونات من Heroicons أو أي أيقونات تانية
-// ممكن تعمل Dynamic import هنا لو محتاج lazy load
-// مثال: const UserGroupIcon = dynamic(() => import('@heroicons/react/24/outline').then(mod => mod.UserGroupIcon));
+type BadgeColor =
+  | "primary"
+  | "success"
+  | "error"
+  | "warning"
+  | "info"
+  | "light"
+  | "dark";
 
 interface UsersMetricsProps {
   UsersMetricsIcon: React.ReactNode;
   UsersMetricsName: string;
   UsersMetricsTotallyNum: string | number;
   UsersMetricsBadge: {
-    color: "success" | "error" | "warning" | "info";
+    color: BadgeColor;
     value: string;
     icon: React.ReactNode;
   };
@@ -37,8 +42,12 @@ export default function UsersMetrics({
           </h4>
         </div>
 
-        <Badge color={UsersMetricsBadge.color}>
-          {UsersMetricsBadge.icon}
+        <Badge
+          color={UsersMetricsBadge.color}
+          size="sm"
+          variant="light"
+          startIcon={UsersMetricsBadge.icon}
+        >
           {UsersMetricsBadge.value}
         </Badge>
       </div>
