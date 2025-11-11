@@ -36,7 +36,7 @@ export default function Home() {
 
           {/* Text with shimmer */}
           <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-            Loading <span className="text-blue-500">statistics</span>...
+            Loading <span className="text-blue-500">Statistics</span>...
           </p>
         </div>
       </div>
