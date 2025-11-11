@@ -49,8 +49,14 @@ export default function SignInForm() {
 
       if (!res.ok) throw new Error(data.message || "Login failed");
 
-      localStorage.setItem("token", data.token);
-      navigate("/dashboard");
+      if (data.accessToken) {
+        localStorage.setItem("accessToken", data.accessToken);
+        localStorage.setItem("refreshToken", data.refreshToken);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        navigate("/");
+      } else {
+        setError("Invalid login response");
+      }
     } catch (err: unknown) {
       if (err instanceof Error) setError(err.message);
       else setError("An unexpected error occurred");

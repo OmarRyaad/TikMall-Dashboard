@@ -120,14 +120,28 @@ export function useStatisticsData(): StatisticsData {
 
   useEffect(() => {
     async function fetchData() {
+      const token = localStorage.getItem("accessToken");
+
+      if (!token) {
+        console.error("No access token found");
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
 
+        const headers = { Authorization: `Bearer ${token}` };
+
         const [usersRes, mediaRes, streamsRes] = await Promise.all([
-          fetch(`${BASE_URL}/admin/api/stats/users`),
-          fetch(`${BASE_URL}/admin/api/stats/media`),
-          fetch(`${BASE_URL}/admin/api/stats/streams`),
+          fetch(`${BASE_URL}/admin/api/stats/users`, { headers }),
+          fetch(`${BASE_URL}/admin/api/stats/media`, { headers }),
+          fetch(`${BASE_URL}/admin/api/stats/streams`, { headers }),
         ]);
+
+        if (!usersRes.ok || !mediaRes.ok || !streamsRes.ok) {
+          throw new Error("Failed to fetch data");
+        }
 
         const usersData = await usersRes.json();
         const mediaData: MediaApiResponse = await mediaRes.json();
