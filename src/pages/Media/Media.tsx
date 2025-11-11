@@ -10,6 +10,11 @@ interface UploadedBy {
   storeName: string;
 }
 
+interface StoreDepartment {
+  _id: string;
+  name: { en: string; ar: string };
+}
+
 interface MediaItem {
   _id: string;
   title: string;
@@ -17,22 +22,38 @@ interface MediaItem {
   thumbnailUrl: string;
   likesCount: number;
   uploadedBy: UploadedBy;
+  storeDepartment: StoreDepartment;
 }
-
+interface Department {
+  _id: string;
+  name: { en: string; ar: string };
+}
 const Media = () => {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [mediaToDelete, setMediaToDelete] = useState<string | null>(null);
+
+  const [filterType, setFilterType] = useState("image");
+  const [filterDepartment, setFilterDepartment] = useState("");
+
+  const [departments, setDepartments] = useState<
+    { _id: string; name: string }[]
+  >([]);
+
   const token = localStorage.getItem("accessToken");
 
+  // Fetch media
   useEffect(() => {
     const fetchMedia = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(
-          "https://api.tik-mall.com/admin/api/list/media?type=image&storeDepartment=68ade2e263295f8f0891ecb5&skip=0&limit=10",
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        let url = `https://api.tik-mall.com/admin/api/list/media?type=${filterType}&skip=0&limit=10`;
+        if (filterDepartment) url += `&storeDepartment=${filterDepartment}`;
+
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const data = await res.json();
         setMedia(data.items || []);
       } catch (error) {
@@ -41,8 +62,31 @@ const Media = () => {
         setLoading(false);
       }
     };
-
     fetchMedia();
+  }, [filterType, filterDepartment, token]);
+
+  // Extract unique departments from media for filter
+  // Fetch all departments from API
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const res = await fetch(
+          "https://api.tik-mall.com/admin/api/list/media",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const data = await res.json();
+        const formatted = data.items.map((d: Department) => ({
+          _id: d._id,
+          name: d.name.ar,
+        }));
+        setDepartments(formatted);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchDepartments();
   }, [token]);
 
   const handleDelete = (id: string) => {
@@ -56,10 +100,7 @@ const Media = () => {
     try {
       const res = await fetch(
         `https://api.tik-mall.com/admin/api/media/${mediaToDelete}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
       if (res.ok) {
@@ -107,6 +148,31 @@ const Media = () => {
       >
         Media
       </h2>
+
+      {/* FILTERS */}
+      <div className="flex gap-4 mb-6">
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          className="rounded-md border px-3 py-2 dark:bg-gray-800 dark:text-white"
+        >
+          <option value="image">Image</option>
+          <option value="video">Video</option>
+        </select>
+
+        <select
+          value={filterDepartment}
+          onChange={(e) => setFilterDepartment(e.target.value)}
+          className="rounded-md border px-3 py-2 dark:bg-gray-800 dark:text-white"
+        >
+          <option value="">All Departments</option>
+          {departments.map((dept) => (
+            <option key={dept._id} value={dept._id}>
+              {dept.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {media.map((item) => (
