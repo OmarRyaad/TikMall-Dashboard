@@ -17,7 +17,5 @@ export default defineConfig({
   ],
   server: {
     port: 3000, // desired port
-    open: true, // auto-open browser
-    strictPort: true, // fail if port is taken
   },
 });
