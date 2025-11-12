@@ -1,143 +1,466 @@
-import { useState, ChangeEvent } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import RecentOrders from "../../components/ecommerce/RecentOrders";
+"use client";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Modal } from "../../components/ui/modal";
+import { toast, ToastContainer } from "react-toastify";
 
-interface FormData {
-  nameAr: string;
-  nameEn: string;
-  descAr: string;
-  descEn: string;
-  icon: File | null;
+interface Department {
+  _id: string;
+  name: { en: string; ar: string };
+  description: { en: string; ar: string };
+  icon: string;
 }
 
-const Sections: React.FC = () => {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [formData, setFormData] = useState<FormData>({
+const Sections = () => {
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false); // Track Add vs Edit
+  const [formData, setFormData] = useState({
+    id: "",
     nameAr: "",
     nameEn: "",
     descAr: "",
     descEn: "",
-    icon: null,
+    icon: "",
   });
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("accessToken") : "";
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value, files } = e.target as HTMLInputElement;
-    if (files && files.length > 0) {
-      setFormData((prev) => ({ ...prev, [name]: files[0] }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+  // Fetch departments
+  useEffect(() => {
+    if (!token) return;
+    fetch("https://api.tik-mall.com/admin/api/all/departments", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch departments");
+        return res.json();
+      })
+      .then((data) => {
+        if (data?.departments?.length) setDepartments(data.departments);
+        else setError("No departments found.");
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  // Open edit modal
+  const handleEdit = (dept: Department) => {
+    setIsEditMode(true);
+    setFormData({
+      id: dept._id,
+      nameAr: dept.name.ar,
+      nameEn: dept.name.en,
+      descAr: dept.description.ar,
+      descEn: dept.description.en,
+      icon: typeof dept.icon === "string" ? dept.icon : "",
+    });
+    setIsOpen(true);
+  };
+
+  // Open add modal
+  const handleAdd = () => {
+    setIsEditMode(false);
+    setFormData({
+      id: "",
+      nameAr: "",
+      nameEn: "",
+      descAr: "",
+      descEn: "",
+      icon: "",
+    });
+    setIsOpen(true);
+  };
+
+  // Delete
+  const handleDeleteClick = (id: string) => {
+    setDeleteId(id);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      const res = await fetch(
+        `https://api.tikimall.com/admin/api/department/${deleteId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to delete department");
+        return;
+      }
+      setDepartments((prev) => prev.filter((d) => d._id !== deleteId));
+      setDeleteModalOpen(false);
+      setDeleteId(null);
+      toast.success("Department deleted successfully");
+    } catch {
+      toast.error("Something went wrong");
     }
   };
 
-  const handleSave = () => {
-    console.log("Saved data:", formData);
-    setIsOpen(false);
+  // Handle input change
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // Handle icon upload
+  const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) {
+      setFormData((prev) => ({ ...prev, icon: "" }));
+      return;
+    }
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData((prev) => ({
+        ...prev,
+        icon: reader.result?.toString() || "",
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleCancel = () => setIsOpen(false);
 
+  const handleSave = async () => {
+    if (!formData.nameEn || !formData.nameAr) {
+      toast.error("Name in both languages is required");
+      return;
+    }
+
+    try {
+      if (isEditMode) {
+        // === EDIT MODE (PATCH) ===
+        const res = await fetch(
+          `https://api.tik-mall.com/admin/api/department/${formData.id}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              name: { en: formData.nameEn, ar: formData.nameAr },
+              description: { en: formData.descEn, ar: formData.descAr },
+              icon: formData.icon,
+            }),
+          }
+        );
+        const updated = await res.json();
+        if (!res.ok) {
+          toast.error(updated.error || "Failed to update department");
+          return;
+        }
+        setDepartments((prev) =>
+          prev.map((d) => (d._id === formData.id ? updated.department : d))
+        );
+        toast.success("Department updated successfully");
+      } else {
+        // === ADD MODE (POST) ===
+        const res = await fetch(
+          "https://api.tik-mall.com/admin/api/create/department",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              name: { en: formData.nameEn, ar: formData.nameAr },
+              description: { en: formData.descEn, ar: formData.descAr },
+              icon: formData.icon,
+            }),
+          }
+        );
+        const result = await res.json();
+        if (!res.ok) {
+          toast.error(result.error || "Failed to create department");
+          return;
+        }
+        setDepartments((prev) => [...prev, result.department]);
+        toast.success("Department created successfully");
+      }
+
+      setIsOpen(false);
+    } catch {
+      toast.error("Something went wrong");
+    }
+  };
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-[80vh] bg-transparent">
+        <div className="relative flex flex-col items-center">
+          <div className="relative w-20 h-20">
+            <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-blue-500 animate-spin" />
+            <div className="absolute inset-2 rounded-full border-4 border-t-transparent border-cyan-400 animate-[spin_1.5s_linear_infinite]" />
+          </div>
+          <div className="flex gap-2 mt-6">
+            <span className="w-3 h-3 rounded-full bg-blue-500 animate-bounce" />
+            <span className="w-3 h-3 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.15s]" />
+            <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
+          </div>
+          <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
+            Loading <span className="text-blue-500">Sections</span>...
+          </p>
+        </div>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="flex flex-col justify-center items-center h-64 text-gray-500">
+        <p>{error}</p>
+        <img
+          src="/no-data.svg"
+          alt="No Data"
+          className="w-40 h-40 mt-4 opacity-50"
+        />
+      </div>
+    );
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6" style={{ color: "#456FFF" }}>
-        Sections
-      </h1>
-
-      <button
-        onClick={() => setIsOpen(true)}
-        className="mb-4 px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300"
+    <>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        toastClassName="!z-[9999]"
+      />
+      <h2
+        className="text-2xl md:text-3xl font-bold mb-4"
+        style={{ color: "#456FFF" }}
       >
-        + Add Section
-      </button>
+        Sections
+      </h2>
+      {/* Add Button */}
+      <div className="mb-4 flex justify-end">
+        <button
+          onClick={handleAdd}
+          className="mb-4 px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300"
+        >
+          + Add Section
+        </button>
+      </div>
 
-      <RecentOrders />
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/3 sm:px-6">
+        <div className="max-w-full overflow-x-auto">
+          <table className="min-w-full border-collapse">
+            <thead className="border-y border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30">
+              <tr>
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                  #
+                </th>
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Icon
+                </th>
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Name (AR/EN)
+                </th>
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Description
+                </th>
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+              {departments.length ? (
+                departments.map((dept, idx) => (
+                  <tr
+                    key={dept._id}
+                    className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                  >
+                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                      {idx + 1}
+                    </td>
+                    <td className="py-3 px-4">
+                      <img
+                        src={dept.icon || "/placeholder.jpg"}
+                        alt={dept.name.en}
+                        className="h-12 w-12 rounded-md object-cover"
+                      />
+                    </td>
+                    <td className="py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90">
+                      {dept.name.ar} / {dept.name.en}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+                      {dept.description.ar || dept.description.en}
+                    </td>
+                    <td className="py-3 px-4 flex gap-2">
+                      <button
+                        onClick={() => handleEdit(dept)}
+                        className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(dept._id)}
+                        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    className="py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400"
+                    colSpan={5}
+                  >
+                    No departments available
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
-      {/* Modal */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Background overlay */}
-            <motion.div
-              className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-40"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={handleCancel}
-            />
+        {/* Edit / Add Modal */}
+        <AnimatePresence>
+          {isOpen && (
+            <>
+              <motion.div
+                className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-40"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={handleCancel}
+              />
+              <motion.div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+              >
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-6">
+                  <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                    {isEditMode ? "Edit Section" : "Add New Section"}
+                  </h2>
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      name="nameAr"
+                      placeholder="Name (Arabic)"
+                      value={formData.nameAr}
+                      onChange={handleChange}
+                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded"
+                    />
+                    <input
+                      type="text"
+                      name="nameEn"
+                      placeholder="Name (English)"
+                      value={formData.nameEn}
+                      onChange={handleChange}
+                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded"
+                    />
+                    <textarea
+                      name="descAr"
+                      placeholder="Description (Arabic)"
+                      value={formData.descAr}
+                      onChange={handleChange}
+                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20"
+                    />
+                    <textarea
+                      name="descEn"
+                      placeholder="Description (English)"
+                      value={formData.descEn}
+                      onChange={handleChange}
+                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20"
+                    />
+                    <div className="flex flex-col items-start">
+                      <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                        Icon
+                      </label>
+                      <div className="flex items-center space-x-4">
+                        <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                          Choose File
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleIconChange}
+                            className="hidden"
+                          />
+                        </label>
+                        {formData.icon ? (
+                          <img
+                            src={formData.icon}
+                            alt="Icon preview"
+                            className="h-16 w-16 rounded-md object-cover border border-gray-300 dark:border-gray-700"
+                          />
+                        ) : (
+                          <div className="h-16 w-16 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-100 flex items-center justify-center text-gray-400">
+                            No Icon
+                          </div>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Only images are allowed. Max size 2MB.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-6 flex justify-end gap-3">
+                    <button
+                      onClick={handleCancel}
+                      className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-all"
+                    >
+                      {isEditMode ? "Save" : "Create"}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
-            {/* Popup Modal */}
-            <motion.div
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
+        {/* DELETE MODAL */}
+        <Modal
+          isOpen={deleteModalOpen}
+          onClose={() => setDeleteModalOpen(false)}
+          className={`max-w-md p-6 transform transition-all duration-300
+        ${deleteModalOpen ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
+        >
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+            Delete Media
+          </h3>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+            Are you sure you want to delete this media?
+          </p>
+          <div className="mt-4 flex justify-end gap-3">
+            <button
+              onClick={() => setDeleteModalOpen(false)}
+              className="rounded-md px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
             >
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-6">
-                <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-                  Add Section
-                </h2>
-
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    name="nameAr"
-                    placeholder="الاسم (عربي)"
-                    value={formData.nameAr}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded"
-                  />
-                  <input
-                    type="text"
-                    name="nameEn"
-                    placeholder="Name (English)"
-                    value={formData.nameEn}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded"
-                  />
-                  <textarea
-                    name="descAr"
-                    placeholder="الوصف (عربي)"
-                    value={formData.descAr}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20"
-                  />
-                  <textarea
-                    name="descEn"
-                    placeholder="Description (English)"
-                    value={formData.descEn}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20"
-                  />
-                  <input
-                    type="file"
-                    name="icon"
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded"
-                  />
-                </div>
-
-                <div className="mt-6 flex justify-end gap-3">
-                  <button
-                    onClick={handleCancel}
-                    className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-all"
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmDelete}
+              className="rounded-md px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700"
+            >
+              Delete
+            </button>
+          </div>
+        </Modal>
+      </div>
+    </>
   );
 };
 

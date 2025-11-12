@@ -1,134 +1,364 @@
-import { useState, ChangeEvent } from "react";
+"use client";
+import { useEffect, useState } from "react";
+import { toast, ToastContainer } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
-import RecentOrders from "../../components/ecommerce/RecentOrders";
 
-interface FormData {
-  nameAr: string;
-  nameEn: string;
-  descAr: string;
-  descEn: string;
-  icon: File | null;
+interface FAQ {
+  _id: string;
+  question: { en: string; ar: string };
+  answer: { en: string; ar: string };
 }
 
-const AskedQuestions: React.FC = () => {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [formData, setFormData] = useState<FormData>({
-    nameAr: "",
-    nameEn: "",
-    descAr: "",
-    descEn: "",
-    icon: null,
+const AskedQuestions = () => {
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [faqToDelete, setFaqToDelete] = useState<string | null>(null);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const [formData, setFormData] = useState({
+    question_en: "",
+    question_ar: "",
+    answer_en: "",
+    answer_ar: "",
   });
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value, files } = e.target as HTMLInputElement;
-    if (files && files.length > 0) {
-      setFormData((prev) => ({ ...prev, [name]: files[0] }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+  const [editingFaqId, setEditingFaqId] = useState<string | null>(null);
+
+  const token = localStorage.getItem("accessToken");
+
+  // Fetch FAQs
+  const fetchFaqs = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("https://api.tik-mall.com/admin/api/all/faqs", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFaqs(data?.faqs || []);
+      } else {
+        toast.error(data?.message || "Failed to load FAQs");
+      }
+    } catch {
+      toast.error("Error fetching FAQs");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSave = () => {
-    console.log("Saved data:", formData);
-    setIsOpen(false);
+  // Create or Edit FAQ
+  const handleSubmit = async () => {
+    if (
+      !formData.question_en ||
+      !formData.question_ar ||
+      !formData.answer_en ||
+      !formData.answer_ar
+    ) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    try {
+      setCreateLoading(true);
+      const url = editingFaqId
+        ? `https://api.tik-mall.com/admin/api/faqs/${editingFaqId}`
+        : "https://api.tik-mall.com/admin/api/faqs";
+      const method = editingFaqId ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          question: { en: formData.question_en, ar: formData.question_ar },
+          answer: { en: formData.answer_en, ar: formData.answer_ar },
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success(
+          editingFaqId ? "FAQ updated successfully" : "FAQ added successfully"
+        );
+        setModalOpen(false);
+        setEditingFaqId(null);
+        setFormData({
+          question_en: "",
+          question_ar: "",
+          answer_en: "",
+          answer_ar: "",
+        });
+        fetchFaqs();
+      } else {
+        toast.error(data?.message || "Failed to save FAQ");
+      }
+    } catch {
+      toast.error("Error saving FAQ");
+    } finally {
+      setCreateLoading(false);
+    }
   };
 
-  const handleCancel = () => setIsOpen(false);
+  // Delete FAQ
+  const handleDelete = async (id: string) => {
+    try {
+      setDeleteLoading(true);
+      const res = await fetch(`https://api.tik-mall.com/admin/api/faqs/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("FAQ deleted successfully");
+        fetchFaqs();
+      } else {
+        toast.error(data?.message || "Failed to delete FAQ");
+      }
+    } catch {
+      toast.error("Error deleting FAQ");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteModalOpen(false);
+      setFaqToDelete(null);
+    }
+  };
+
+  // Open Edit Modal
+  const handleEdit = (faq: FAQ) => {
+    setFormData({
+      question_en: faq.question.en,
+      question_ar: faq.question.ar,
+      answer_en: faq.answer.en,
+      answer_ar: faq.answer.ar,
+    });
+    setEditingFaqId(faq._id);
+    setModalOpen(true);
+  };
+
+  useEffect(() => {
+    fetchFaqs();
+  }, []);
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-[80vh]">
+        <div className="relative flex flex-col items-center">
+          <div className="relative w-20 h-20">
+            <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-blue-500 animate-spin" />
+            <div className="absolute inset-2 rounded-full border-4 border-t-transparent border-cyan-400 animate-[spin_1.5s_linear_infinite]" />
+          </div>
+          <div className="flex gap-2 mt-6">
+            <span className="w-3 h-3 rounded-full bg-blue-500 animate-bounce" />
+            <span className="w-3 h-3 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.15s]" />
+            <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
+          </div>
+          <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
+            Loading <span className="text-blue-500">Asked Questions</span>...
+          </p>
+        </div>
+      </div>
+    );
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6" style={{ color: "#456FFF" }}>
-        Asked Questions
-      </h1>
-
-      <button
-        onClick={() => setIsOpen(true)}
-        className="mb-4 px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300"
+    <div className="p-6">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        toastClassName="!z-[9999]"
+      />
+      <h2
+        className="text-2xl md:text-3xl font-bold mb-4"
+        style={{ color: "#456FFF" }}
       >
-        + Add Question
-      </button>
+        Asked Questions
+      </h2>
+      {/* Add Button */}
+      <div className="mb-4 flex justify-end">
+        <button
+          onClick={() => {
+            setEditingFaqId(null);
+            setFormData({
+              question_en: "",
+              question_ar: "",
+              answer_en: "",
+              answer_ar: "",
+            });
+            setModalOpen(true);
+          }}
+          className="mb-4 px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300"
+        >
+          + Add Question
+        </button>
+      </div>
 
-      <RecentOrders />
-
-      {/* Modal */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Background overlay */}
-            <motion.div
-              className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-40"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={handleCancel}
-            />
-
-            {/* Popup Modal */}
-            <motion.div
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
+      {/* Cards Grid */}
+      <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        {faqs.length === 0 ? (
+          <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+            <p>No Asked Questions Found!</p>
+          </div>
+        ) : (
+          faqs.map((faq) => (
+            <div
+              key={faq._id}
+              className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md p-4"
             >
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-6">
-                <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-                  Add Section
-                </h2>
-
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    name="nameAr"
-                    placeholder="السؤال (عربي)"
-                    value={formData.nameAr}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded"
-                  />
-                  <input
-                    type="text"
-                    name="nameEn"
-                    placeholder="Question (English)"
-                    value={formData.nameEn}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded"
-                  />
-                  <textarea
-                    name="descAr"
-                    placeholder="الإجابة (عربي)"
-                    value={formData.descAr}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20"
-                  />
-                  <textarea
-                    name="descEn"
-                    placeholder="Answer (English)"
-                    value={formData.descEn}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20"
-                  />
-                </div>
-
-                <div className="mt-6 flex justify-end gap-3">
-                  <button
-                    onClick={handleCancel}
-                    className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-all"
-                  >
-                    Save
-                  </button>
-                </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white line-clamp-2">
+                  {faq.question.en}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-3">
+                  {faq.answer.en}
+                </p>
               </div>
-            </motion.div>
-          </>
+              <div className="mt-4 flex justify-between items-center text-sm">
+                <button
+                  onClick={() => handleEdit(faq)}
+                  className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => {
+                    setFaqToDelete(faq._id);
+                    setDeleteModalOpen(true);
+                  }}
+                  className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Create/Edit Modal */}
+      <AnimatePresence>
+        {modalOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          >
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg dark:bg-gray-900">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                {editingFaqId ? "Edit FAQ" : "Add New FAQ"}
+              </h3>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Question (English)"
+                  value={formData.question_en}
+                  onChange={(e) =>
+                    setFormData({ ...formData, question_en: e.target.value })
+                  }
+                  className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                />
+                <input
+                  type="text"
+                  placeholder="Question (Arabic)"
+                  value={formData.question_ar}
+                  onChange={(e) =>
+                    setFormData({ ...formData, question_ar: e.target.value })
+                  }
+                  className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                />
+                <textarea
+                  placeholder="Answer (English)"
+                  value={formData.answer_en}
+                  onChange={(e) =>
+                    setFormData({ ...formData, answer_en: e.target.value })
+                  }
+                  className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                />
+                <textarea
+                  placeholder="Answer (Arabic)"
+                  value={formData.answer_ar}
+                  onChange={(e) =>
+                    setFormData({ ...formData, answer_ar: e.target.value })
+                  }
+                  className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                />
+              </div>
+              <div className="mt-5 flex justify-end gap-3">
+                <button
+                  onClick={() => setModalOpen(false)}
+                  className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={createLoading}
+                  className={`rounded-md px-4 py-2 text-sm text-white ${
+                    createLoading
+                      ? "bg-blue-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }`}
+                >
+                  {createLoading
+                    ? editingFaqId
+                      ? "Updating..."
+                      : "Creating..."
+                    : editingFaqId
+                    ? "Update"
+                    : "Create"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Modal */}
+      <AnimatePresence>
+        {deleteModalOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          >
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg dark:bg-gray-900">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                Confirm Delete
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Are you sure you want to delete this FAQ? This action cannot be
+                undone.
+              </p>
+              <div className="mt-5 flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setDeleteModalOpen(false);
+                    setFaqToDelete(null);
+                  }}
+                  className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => faqToDelete && handleDelete(faqToDelete)}
+                  disabled={deleteLoading}
+                  className={`rounded-md px-4 py-2 text-sm text-white ${
+                    deleteLoading
+                      ? "bg-red-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700"
+                  }`}
+                >
+                  {deleteLoading ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

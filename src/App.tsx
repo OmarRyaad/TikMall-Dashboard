@@ -27,7 +27,7 @@ import AskedQuestions from "./pages/AskedQuestions/AskedQuestions";
 import PolicyAndPrivacy from "./pages/PolicyAndPrivacy/PolicyAndPrivacy";
 import Complaints from "./pages/Complaints/Complaints";
 import Notifications from "./pages/Notifications/Notifications";
-import LiveBroadCasts from "./pages/LiveBroadCasts/LiveBroadCasts";
+import LiveBroadcasts from "./pages/LiveBroadCasts/LiveBroadasts";
 
 export default function App() {
   return (
@@ -45,7 +45,7 @@ export default function App() {
             <Route
               index
               path="/live-broad-casts"
-              element={<LiveBroadCasts />}
+              element={<LiveBroadcasts />}
             />
             <Route index path="/sections" element={<Sections />} />
             <Route index path="/asked-questions" element={<AskedQuestions />} />
