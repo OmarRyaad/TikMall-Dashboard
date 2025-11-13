@@ -2,7 +2,9 @@
 import { useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactQuill from "react-quill-new";
 import "react-toastify/dist/ReactToastify.css";
+import "react-quill-new/dist/quill.snow.css";
 
 interface Policy {
   _id: string;
@@ -11,31 +13,23 @@ interface Policy {
     en: string;
     ar: string;
   };
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 const PolicyAndPrivacy = () => {
   const [policies, setPolicies] = useState<Policy[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [modalOpen, setModalOpen] = useState<boolean>(false);
-  const [viewModalOpen, setViewModalOpen] = useState<boolean>(false);
-  const [editingPolicyName, setEditingPolicyName] = useState<string | null>(
-    null
-  );
-  const [createLoading, setCreateLoading] = useState<boolean>(false);
-  const [fetchSingleLoading, setFetchSingleLoading] = useState<boolean>(false);
-
-  const [formData, setFormData] = useState({
-    name: "",
-    en: "",
-    ar: "",
-  });
+  const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
+  const [formData, setFormData] = useState({ name: "", en: "", ar: "" });
+  const [createLoading, setCreateLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(false);
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
-  const fetchPolicies = async (): Promise<void> => {
+  // Fetch all policies
+  const fetchPolicies = async () => {
     try {
       setLoading(true);
       const res = await fetch(
@@ -44,166 +38,104 @@ const PolicyAndPrivacy = () => {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         }
       );
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        data = {};
-      }
-
-      if (res.ok) {
-        setPolicies(data || []);
-      } else {
-        toast.error(data?.message || "Failed to load policies");
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Error fetching policies");
+      const data = await res.json();
+      if (res.ok) setPolicies(data || []);
+      else toast.error(data?.message || "Failed to load policies");
+    } catch {
+      toast.error("Network error while fetching policies");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchSinglePolicy = async (name: string): Promise<Policy | null> => {
+  // Fetch single policy
+  const fetchSinglePolicy = async (name: string) => {
     try {
-      setFetchSingleLoading(true);
+      setFetchLoading(true);
       const res = await fetch(
         `https://api.tik-mall.com/admin/api/get/policy/${encodeURIComponent(
           name
         )}`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        }
       );
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        data = {};
-      }
-
-      if (res.ok) {
-        return data;
-      } else {
-        toast.error(data?.message || "Failed to load policy");
-        return null;
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Error fetching policy");
+      const data = await res.json();
+      if (!res.ok) toast.error(data?.message || "Failed to load policy");
+      return res.ok ? data : null;
+    } catch {
+      toast.error("Network error while fetching policy");
       return null;
     } finally {
-      setFetchSingleLoading(false);
+      setFetchLoading(false);
     }
   };
 
+  // Open modals
   const openCreateModal = () => {
-    setEditingPolicyName(null);
+    setEditingPolicy(null);
     setFormData({ name: "", en: "", ar: "" });
     setModalOpen(true);
   };
 
   const openEditModal = async (name: string) => {
-    setEditingPolicyName(name);
     const p = await fetchSinglePolicy(name);
-    if (p) {
-      setFormData({
-        name: p.name,
-        en: p.policy?.en || "",
-        ar: p.policy?.ar || "",
-      });
-      setModalOpen(true);
-    }
+    if (!p) return;
+    setEditingPolicy(p);
+    setFormData({ name: p.name, en: p.policy.en, ar: p.policy.ar });
+    setModalOpen(true);
   };
 
   const openViewModal = async (name: string) => {
-    setViewModalOpen(true);
-    setFetchSingleLoading(true);
     const p = await fetchSinglePolicy(name);
-    setFetchSingleLoading(false);
-    if (p) {
-      setFormData({
-        name: p.name,
-        en: p.policy?.en || "",
-        ar: p.policy?.ar || "",
-      });
-    } else {
-      setTimeout(() => setViewModalOpen(false), 800);
-    }
+    if (!p) return;
+    setFormData({ name: p.name, en: p.policy.en, ar: p.policy.ar });
+    setViewModalOpen(true);
   };
 
-  const handleSubmit = async (): Promise<void> => {
-    if (!formData.name.trim() || !formData.en.trim() || !formData.ar.trim()) {
-      toast.error("Please fill in all fields");
+  const handleSubmit = async () => {
+    const enContent = formData.en?.trim() || "<p></p>";
+    const arContent = formData.ar?.trim() || "<p></p>";
+
+    if (!formData.name.trim()) {
+      toast.error("Please provide a name for the policy");
       return;
     }
 
     setCreateLoading(true);
+
+    const body = {
+      policyName: formData.name.trim(),
+      policyData: { en: enContent, ar: arContent },
+    };
+
     try {
-      if (editingPolicyName) {
-        const res = await fetch(
-          `https://api.tik-mall.com/admin/api/policy/${encodeURIComponent(
-            editingPolicyName
-          )}`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify({
-              _id: policies.find((p) => p.name === editingPolicyName)?._id,
-              name: formData.name.trim(),
-              policy: {
-                en: formData.en.trim() || "",
-                ar: formData.ar.trim() || "",
-              },
-            }),
-          }
-        );
-        let data;
-        try {
-          data = await res.json();
-        } catch {
-          data = {};
+      const res = await fetch(
+        editingPolicy
+          ? `https://api.tik-mall.com/admin/api/policy/${encodeURIComponent(
+              editingPolicy._id
+            )}`
+          : "https://api.tik-mall.com/admin/api/new/policy",
+        {
+          method: editingPolicy ? "PATCH" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(body),
         }
+      );
+      const data = await res.json();
 
-        if (res.ok) {
-          toast.success("Policy updated successfully");
-          setModalOpen(false);
-          setEditingPolicyName(null);
-          setTimeout(() => void fetchPolicies(), 300);
-        } else {
-          toast.error(data?.message || "Failed to update policy");
-        }
+      if (res.ok) {
+        toast.success(editingPolicy ? "Policy updated!" : "Policy created!");
+        setModalOpen(false);
+        setFormData({ name: "", en: "", ar: "" });
+        setEditingPolicy(null);
+        fetchPolicies();
       } else {
-        const res = await fetch(
-          "https://api.tik-mall.com/admin/api/new/policy",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify({
-              name: formData.name,
-              policy: { en: formData.en, ar: formData.ar },
-            }),
-          }
-        );
-        let data;
-        try {
-          data = await res.json();
-        } catch {
-          data = {};
-        }
-
-        if (res.ok) {
-          toast.success("Policy added successfully");
-          setModalOpen(false);
-          setFormData({ name: "", en: "", ar: "" });
-          setTimeout(() => void fetchPolicies(), 300);
-        } else {
-          toast.error(data?.message || "Failed to add policy");
-        }
+        console.log("API Error:", data);
+        toast.error(data?.message || "Failed to save policy");
       }
     } catch (err) {
       console.error(err);
@@ -214,7 +146,7 @@ const PolicyAndPrivacy = () => {
   };
 
   useEffect(() => {
-    void fetchPolicies();
+    fetchPolicies();
   }, []);
 
   if (loading)
@@ -238,197 +170,128 @@ const PolicyAndPrivacy = () => {
     );
 
   return (
-    <div className="p-6 relative">
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        toastClassName="!z-[10000]"
-      />
-
-      {/* Header + Add */}
+    <div className="p-6">
+      <ToastContainer position="top-right" autoClose={5000} />
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2
-          className="text-2xl md:text-3xl font-bold mb-4"
-          style={{ color: "#456FFF" }}
-        >
-          Policies & Privacy
-        </h2>
-        <div className="flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-blue-600">Policies & Privacy</h1>
+        <div className="flex gap-2">
           <button
-            onClick={() => void fetchPolicies()}
-            className="rounded-xl border px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            onClick={fetchPolicies}
+            className="mb-4 px-5 py-2 bg-gray-200 text-gray-700 rounded-lg shadow hover:bg-gray-300 transition-all duration-300"
           >
             Refresh
           </button>
           <button
             onClick={openCreateModal}
-            className="rounded-xl bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+            className="mb-4 px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300"
           >
             + Add Policy
           </button>
         </div>
       </div>
 
-      {/* Policies Grid or Empty UI */}
+      {/* Policies Grid */}
       {policies.length === 0 ? (
-        <div className="col-span-full flex flex-col items-center justify-center py-20 text-center space-y-6">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
-            className="w-24 h-24 flex items-center justify-center bg-blue-100 rounded-full"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-12 h-12 text-blue-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13 16h-1v-4h-1m4-4h-6v6h6V8zM4 20h16M4 4h16"
-              />
-            </svg>
-          </motion.div>
-          <motion.h2
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-            className="text-2xl font-bold text-gray-800 dark:text-gray-100"
-          >
-            No Policies Found!
-          </motion.h2>
-          <motion.p
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-            className="text-gray-500 dark:text-gray-300 max-w-xs"
-          >
-            You haven't added any policies yet. Click the button above to create
-            your first policy.
-          </motion.p>
-          <motion.button
-            onClick={openCreateModal}
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{
-              delay: 0.4,
-              duration: 0.4,
-              type: "spring",
-              stiffness: 120,
-            }}
-            className="mt-3 rounded-xl bg-blue-600 px-6 py-2 text-white font-medium hover:bg-blue-700 transition"
-          >
-            + Add Policy
-          </motion.button>
+        <div className="text-center text-gray-500 py-20">
+          No policies yet. Click “Add Policy” to create your first policy.
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {policies.map((policy) => (
+          {policies.map((p) => (
             <div
-              key={policy._id}
-              className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md p-4"
+              key={p._id}
+              className="border rounded-xl p-4 shadow hover:shadow-lg transition"
             >
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 line-clamp-2">
-                  {policy.name}
-                </h3>
-                <p className="text-sm text-gray-600 mt-2 line-clamp-3">
-                  {policy.policy?.en
-                    ? policy.policy.en.replace(/<[^>]*>?/gm, "").slice(0, 140) +
-                      (policy.policy.en.length > 140 ? "..." : "")
-                    : policy.policy?.ar.replace(/<[^>]*>?/gm, "").slice(0, 140)}
-                </p>
-              </div>
-              <div className="mt-4 flex justify-between items-center text-sm">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => void openViewModal(policy.name)}
-                    className="px-2 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100"
-                  >
-                    View
-                  </button>
-                  <button
-                    onClick={() => void openEditModal(policy.name)}
-                    className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-                  >
-                    Edit
-                  </button>
-                </div>
+              <h2 className="text-lg font-semibold text-gray-800 line-clamp-2">
+                {p.name}
+              </h2>
+              <p className="text-sm text-gray-600 mt-2 line-clamp-3">
+                {p.policy.en.replace(/<[^>]*>?/gm, "").slice(0, 140)}...
+              </p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => openViewModal(p.name)}
+                  className="px-2 py-1 border rounded text-sm hover:bg-gray-100"
+                >
+                  View
+                </button>
+                <button
+                  onClick={() => openEditModal(p.name)}
+                  className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                >
+                  Edit
+                </button>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Modals: Create/Edit & View */}
+      {/* Modal */}
       <AnimatePresence>
         {modalOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           >
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg">
-              <h3 className="text-lg font-semibold mb-4 text-gray-800">
-                {editingPolicyName ? "Edit Policy" : "Add New Policy"}
-              </h3>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Policy Name (unique identifier)"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full rounded-md border border-gray-300 p-2 text-sm"
-                />
-                <textarea
-                  placeholder="Policy Content (English) — HTML allowed"
-                  value={formData.en}
-                  onChange={(e) =>
-                    setFormData({ ...formData, en: e.target.value })
-                  }
-                  className="w-full min-h-[100px] rounded-md border border-gray-300 p-2 text-sm"
-                />
-                <textarea
-                  placeholder="Policy Content (Arabic)"
-                  value={formData.ar}
-                  onChange={(e) =>
-                    setFormData({ ...formData, ar: e.target.value })
-                  }
-                  dir="rtl"
-                  className="w-full min-h-[80px] rounded-md border border-gray-300 p-2 text-sm text-right"
-                />
-              </div>
-              <div className="mt-5 flex justify-end gap-3">
+            <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-lg">
+              <h2 className="text-xl font-semibold mb-4">
+                {editingPolicy ? "Edit Policy" : "Add New Policy"}
+              </h2>
+              <input
+                type="text"
+                placeholder="Policy Name"
+                className="w-full border rounded p-2 mb-3"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+              />
+              <label className="block text-sm font-medium mb-1">
+                English Content
+              </label>
+              <ReactQuill
+                theme="snow"
+                value={formData.en}
+                onChange={(value: string) =>
+                  setFormData({ ...formData, en: value })
+                }
+                className="mb-3 bg-white border rounded"
+              />
+
+              <ReactQuill
+                theme="snow"
+                value={formData.ar}
+                onChange={(value: string) =>
+                  setFormData({ ...formData, ar: value })
+                }
+                className="mb-3 bg-white border rounded"
+              />
+
+              <div className="flex justify-end gap-2 mt-4">
                 <button
-                  onClick={() => {
-                    setModalOpen(false);
-                    setEditingPolicyName(null);
-                  }}
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 border rounded hover:bg-gray-100"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => void handleSubmit()}
+                  onClick={handleSubmit}
                   disabled={createLoading}
-                  className={`rounded-md px-4 py-2 text-sm text-white ${
+                  className={`px-4 py-2 rounded text-white ${
                     createLoading
                       ? "bg-blue-400 cursor-not-allowed"
                       : "bg-blue-600 hover:bg-blue-700"
                   }`}
                 >
                   {createLoading
-                    ? editingPolicyName
+                    ? editingPolicy
                       ? "Updating..."
                       : "Creating..."
-                    : editingPolicyName
+                    : editingPolicy
                     ? "Update"
                     : "Create"}
                 </button>
@@ -436,48 +299,41 @@ const PolicyAndPrivacy = () => {
             </div>
           </motion.div>
         )}
+
         {viewModalOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           >
-            <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-lg">
-              <div className="flex justify-between items-start gap-4">
-                <h3 className="text-lg font-semibold mb-2 text-gray-800">
-                  {formData.name}
-                </h3>
-              </div>
-              {fetchSingleLoading ? (
-                <div className="py-8 text-center text-gray-600">Loading...</div>
+            <div className="bg-white rounded-xl max-w-2xl w-full p-6 shadow-lg">
+              <h2 className="text-xl font-semibold mb-4">{formData.name}</h2>
+              {fetchLoading ? (
+                <p className="text-center text-gray-500 py-10">Loading...</p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      English Content
-                    </h4>
-                    <div className="prose max-w-none bg-gray-50 border rounded p-3 min-h-[120px] text-sm">
+                    <h3 className="text-sm font-medium mb-1">English</h3>
+                    <div className="bg-gray-50 border rounded p-3 min-h-[120px] prose max-w-none">
                       <div dangerouslySetInnerHTML={{ __html: formData.en }} />
                     </div>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Arabic Content
-                    </h4>
+                    <h3 className="text-sm font-medium mb-1">Arabic</h3>
                     <div
-                      className="bg-gray-50 border rounded p-3 min-h-[120px] text-sm"
+                      className="bg-gray-50 border rounded p-3 min-h-[120px]"
                       dir="rtl"
                     >
-                      {formData.ar}
+                      <div dangerouslySetInnerHTML={{ __html: formData.ar }} />
                     </div>
                   </div>
                 </div>
               )}
-              <div className="mt-5 flex justify-end">
+              <div className="flex justify-end mt-4">
                 <button
                   onClick={() => setViewModalOpen(false)}
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+                  className="px-4 py-2 border rounded hover:bg-gray-100"
                 >
                   Close
                 </button>
