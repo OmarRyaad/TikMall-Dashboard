@@ -143,7 +143,11 @@ const Media = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 dark:bg-[#0a0a0a]">
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        toastClassName="!z-[9999]"
+      />
       <h2
         className="text-2xl md:text-3xl font-bold mb-4"
         style={{ color: "#456FFF" }}

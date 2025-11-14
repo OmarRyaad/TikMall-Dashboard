@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { ToastContainer } from "react-toastify";
 
 interface Broadcast {
   _id: string;
@@ -107,6 +108,11 @@ const LiveBroadcasts = () => {
 
   return (
     <div className="p-6">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        toastClassName="!z-[9999]"
+      />
       <ul className="space-y-3">
         {broadcasts.map((broadcast) => (
           <li

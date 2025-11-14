@@ -13,6 +13,7 @@ import {
   PlayCircleIcon,
 } from "@heroicons/react/24/outline";
 import { ArrowUpIcon, UserCircleIcon, UserIcon } from "../../icons";
+import { ToastContainer } from "react-toastify";
 
 export default function Home() {
   const { users, media, streams, loading } = useStatisticsData();
@@ -44,6 +45,11 @@ export default function Home() {
 
   return (
     <>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        toastClassName="!z-[9999]"
+      />
       <PageMeta
         title="TikMall Admin Dashboard"
         description="TikMall statistics overview"
