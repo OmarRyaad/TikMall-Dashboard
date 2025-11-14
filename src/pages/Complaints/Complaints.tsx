@@ -1,5 +1,6 @@
 "use client";
 
+import { FunnelIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 
 interface User {
@@ -123,22 +124,48 @@ const Complaints = () => {
       </h2>
 
       {/* Status Filter */}
-      <div className="mb-6 flex items-center justify-end gap-3">
-        <label className="font-medium text-gray-700">Filter by status:</label>
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setPage(1); // Reset page when changing filter
-          }}
-          className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      <div className="mb-6 flex items-center justify-end">
+        <div
+          className="
+            flex items-center gap-3
+            bg-white dark:bg-gray-900
+            border border-gray-200 dark:border-gray-700
+            rounded-xl px-4 py-2
+            shadow-sm
+          "
         >
-          <option value="all">All</option>
-          <option value="pending">Pending</option>
-          <option value="reviewed">Reviewed</option>
-          <option value="resolved">Resolved</option>
-          <option value="rejected">Rejected</option>
-        </select>
+          {/* Icon */}
+          <FunnelIcon className="w-5 h-5 text-gray-500" />
+
+          {/* Label */}
+          <label className="font-medium text-gray-700 dark:text-gray-300">
+            Filter by status:
+          </label>
+
+          {/* Select */}
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            className="
+              bg-transparent
+              px-2 py-1
+              text-gray-800 dark:text-gray-200
+              focus:outline-none
+              rounded-md
+              focus:ring-2 focus:ring-blue-500
+              border border-gray-300 dark:border-gray-600
+            "
+          >
+            <option value="all">All</option>
+            <option value="pending">Pending</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="resolved">Resolved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
       </div>
 
       {complaints.length === 0 ? (

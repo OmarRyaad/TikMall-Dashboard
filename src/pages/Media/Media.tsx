@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { HeartIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  BuildingOffice2Icon,
+  FilmIcon,
+  HeartIcon,
+  PhotoIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import { Modal } from "../../components/ui/modal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -65,8 +71,6 @@ const Media = () => {
     fetchMedia();
   }, [filterType, filterDepartment, token]);
 
-  // Extract unique departments from media for filter
-  // Fetch all departments from API
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
@@ -148,28 +152,72 @@ const Media = () => {
         Media
       </h2>
       {/* FILTERS */}
-      <div className="flex justify-end gap-4 mb-6">
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-          className="rounded-md border px-3 py-2 dark:bg-gray-800 dark:text-white"
+      <div className="flex justify-end mb-6">
+        <div
+          className="
+            flex items-center gap-4
+            bg-white dark:bg-gray-900
+            border border-gray-200 dark:border-gray-700
+            rounded-xl px-5 py-3
+            shadow-sm
+          "
         >
-          <option value="image">Image</option>
-          <option value="video">Video</option>
-        </select>
+          {/* Type Filter */}
+          <div className="flex items-center gap-2">
+            {filterType === "image" ? (
+              <>
+                <PhotoIcon className="w-5 h-5 text-blue-500" />
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  Filter by type:
+                </span>
+              </>
+            ) : (
+              <>
+                <FilmIcon className="w-5 h-5 text-blue-500" />
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  Filter by department:
+                </span>
+              </>
+            )}
 
-        <select
-          value={filterDepartment}
-          onChange={(e) => setFilterDepartment(e.target.value)}
-          className="rounded-md border px-3 py-2 dark:bg-gray-800 dark:text-white"
-        >
-          <option value="">All Departments</option>
-          {departments.map((dept) => (
-            <option key={dept._id} value={dept._id}>
-              {dept.name}
-            </option>
-          ))}
-        </select>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="
+                bg-transparent border border-gray-300 dark:border-gray-600
+                rounded-md px-3 py-2
+                text-gray-800 dark:text-white
+                focus:outline-none focus:ring-2 focus:ring-blue-500
+              "
+            >
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+            </select>
+          </div>
+
+          {/* Department Filter */}
+          <div className="flex items-center gap-2">
+            <BuildingOffice2Icon className="w-5 h-5 text-purple-500" />
+
+            <select
+              value={filterDepartment}
+              onChange={(e) => setFilterDepartment(e.target.value)}
+              className="
+                bg-transparent border border-gray-300 dark:border-gray-600
+                rounded-md px-3 py-2
+                text-gray-800 dark:text-white
+                focus:outline-none focus:ring-2 focus:ring-blue-500
+              "
+            >
+              <option value="">All Departments</option>
+              {departments.map((dept) => (
+                <option key={dept._id} value={dept._id}>
+                  {dept.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">

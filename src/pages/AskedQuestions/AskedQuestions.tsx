@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
+import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
 
 interface FAQ {
   _id: string;
@@ -201,37 +202,61 @@ const AskedQuestions = () => {
       <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {faqs.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
-            <p>No Asked Questions Found!</p>
+            <p className="text-gray-500 text-lg">
+              لا يوجد أسئلة مضافة حتى الآن
+            </p>
           </div>
         ) : (
           faqs.map((faq) => (
             <div
               key={faq._id}
-              className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md p-4"
+              className="
+          relative flex flex-col justify-between
+          rounded-2xl border border-gray-200
+          bg-white dark:bg-gray-900
+          shadow-sm hover:shadow-lg transition-shadow
+          p-5 cursor-pointer
+        "
             >
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white line-clamp-2">
+              {/* Icon + Title */}
+              <div className="flex items-start gap-3">
+                <QuestionMarkCircleIcon className="w-7 h-7 text-blue-500 flex-shrink-0" />
+
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 leading-tight">
                   {faq.question.en}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-3">
-                  {faq.answer.en}
-                </p>
               </div>
-              <div className="mt-4 flex justify-between items-center text-sm">
+
+              {/* Answer */}
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 line-clamp-3">
+                {faq.answer.en}
+              </p>
+
+              {/* Actions */}
+              <div className="mt-5 flex justify-between items-center">
                 <button
                   onClick={() => handleEdit(faq)}
-                  className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                  className="
+              px-3 py-1.5 rounded-md text-xs font-medium
+              bg-blue-600 text-white hover:bg-blue-700
+              transition-colors
+            "
                 >
-                  Edit
+                  تعديل
                 </button>
+
                 <button
                   onClick={() => {
                     setFaqToDelete(faq._id);
                     setDeleteModalOpen(true);
                   }}
-                  className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+                  className="
+              px-3 py-1.5 rounded-md text-xs font-medium
+              bg-red-600 text-white hover:bg-red-700
+              transition-colors
+            "
                 >
-                  Delete
+                  حذف
                 </button>
               </div>
             </div>

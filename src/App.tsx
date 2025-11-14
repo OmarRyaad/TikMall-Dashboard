@@ -28,6 +28,7 @@ import PolicyAndPrivacy from "./pages/PolicyAndPrivacy/PolicyAndPrivacy";
 import Complaints from "./pages/Complaints/Complaints";
 import Notifications from "./pages/Notifications/Notifications";
 import LiveBroadcasts from "./pages/LiveBroadCasts/LiveBroadasts";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 export default function App() {
   return (
@@ -36,7 +37,14 @@ export default function App() {
         <ScrollToTop />
         <Routes>
           {/* Dashboard Layout */}
-          <Route element={<AppLayout />}>
+          {/* Protected Routes (requires login) */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index path="/" element={<Home />} />
             <Route index path="/users/moderators" element={<Moderators />} />
             <Route index path="/users/store-owners" element={<StoreOwners />} />

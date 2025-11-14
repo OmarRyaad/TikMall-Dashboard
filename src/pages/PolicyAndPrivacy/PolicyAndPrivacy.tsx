@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactQuill from "react-quill-new";
 import "react-toastify/dist/ReactToastify.css";
 import "react-quill-new/dist/quill.snow.css";
+import { DocumentTextIcon } from "@heroicons/react/24/outline";
 
 interface Policy {
   _id: string;
@@ -201,24 +202,49 @@ const PolicyAndPrivacy = () => {
           {policies.map((p) => (
             <div
               key={p._id}
-              className="border rounded-xl p-4 shadow hover:shadow-lg transition"
+              className="
+                relative flex flex-col justify-between
+                rounded-2xl border border-gray-200
+                bg-white dark:bg-gray-900
+                shadow-sm hover:shadow-lg transition-shadow
+                p-5
+              "
             >
-              <h2 className="text-lg font-semibold text-gray-800 line-clamp-2">
-                {p.name}
-              </h2>
-              <p className="text-sm text-gray-600 mt-2 line-clamp-3">
+              {/* Icon + Title */}
+              <div className="flex items-start gap-3">
+                <DocumentTextIcon className="w-7 h-7 text-purple-600 flex-shrink-0" />
+
+                <h2 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 leading-tight">
+                  {p.name}
+                </h2>
+              </div>
+
+              {/* Policy text */}
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 line-clamp-3">
                 {p.policy.en.replace(/<[^>]*>?/gm, "").slice(0, 140)}...
               </p>
-              <div className="flex gap-2 mt-3">
+
+              {/* Actions */}
+              <div className="mt-5 flex justify-between items-center">
                 <button
                   onClick={() => openViewModal(p.name)}
-                  className="px-2 py-1 border rounded text-sm hover:bg-gray-100"
+                  className="
+            px-3 py-1.5 rounded-md text-xs font-medium
+            border border-gray-300 text-gray-700 dark:text-gray-300
+            hover:bg-gray-100 dark:hover:bg-gray-800
+            transition-colors
+          "
                 >
                   View
                 </button>
+
                 <button
                   onClick={() => openEditModal(p.name)}
-                  className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                  className="
+            px-3 py-1.5 rounded-md text-xs font-medium
+            bg-blue-600 text-white hover:bg-blue-700
+            transition-colors
+          "
                 >
                   Edit
                 </button>
