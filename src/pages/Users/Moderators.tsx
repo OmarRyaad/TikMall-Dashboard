@@ -27,11 +27,13 @@ const Moderators = () => {
   const [moderators, setModerators] = useState<Moderator[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<Partial<Moderator>>({});
 
   // Fetch moderators from admin API
   const fetchModerators = async () => {
     try {
+      setLoading(true);
       const res = await fetch(
         "https://api.tik-mall.com/admin/api/admin?page=1&limit=10"
       );
@@ -39,6 +41,8 @@ const Moderators = () => {
       setModerators(data?.admins || []);
     } catch {
       toast.error("Failed to fetch moderators!");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -120,6 +124,25 @@ const Moderators = () => {
     }
   };
 
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-[80vh]">
+        <div className="relative flex flex-col items-center">
+          <div className="relative w-20 h-20">
+            <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-blue-500 animate-spin" />
+            <div className="absolute inset-2 rounded-full border-4 border-t-transparent border-cyan-400 animate-[spin_1.5s_linear_infinite]" />
+          </div>
+          <div className="flex gap-2 mt-6">
+            <span className="w-3 h-3 rounded-full bg-blue-500 animate-bounce" />
+            <span className="w-3 h-3 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.15s]" />
+            <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
+          </div>
+          <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
+            Loading <span className="text-blue-500">Moderators</span>...
+          </p>
+        </div>
+      </div>
+    );
   return (
     <div>
       <ToastContainer
