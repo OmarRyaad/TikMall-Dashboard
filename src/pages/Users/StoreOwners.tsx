@@ -25,7 +25,7 @@ const StoreOwners = () => {
       const data = await res.json();
       setStoreOwners(data.data.results || []);
     } catch {
-      toast.error("Something went wrong!");
+      toast.error("Failed to fetch store owners!");
     } finally {
       setLoading(false);
     }

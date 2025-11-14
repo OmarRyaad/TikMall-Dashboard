@@ -21,14 +21,14 @@ const Customers = () => {
       const res = await fetch(
         "https://api.tik-mall.com/admin/api/customer?page=1&limit=10"
       );
-      if (!res.ok) throw new Error("Failed to fetch customers");
+      if (!res.ok) throw new Error("Failed to fetch customers!");
       const data = await res.json();
       setCustomers(data.data.results || []);
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
-        toast.error("Something went wrong!");
+        toast.error("Failed to fetch customers!");
       }
     } finally {
       setLoading(false);

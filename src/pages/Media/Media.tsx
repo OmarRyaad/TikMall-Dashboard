@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   BuildingOffice2Icon,
-  FilmIcon,
   HeartIcon,
   PhotoIcon,
   TrashIcon,
@@ -162,60 +161,46 @@ const Media = () => {
             shadow-sm
           "
         >
-          {/* Type Filter */}
-          <div className="flex items-center gap-2">
-            {filterType === "image" ? (
-              <>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 space-y-2 sm:space-y-0">
+            {/* Type Filter */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 w-full sm:w-auto">
+              <div className="flex items-center gap-2 mb-2 sm:mb-0">
                 <PhotoIcon className="w-5 h-5 text-blue-500" />
                 <span className="font-medium text-gray-700 dark:text-gray-300">
                   Filter by type:
                 </span>
-              </>
-            ) : (
-              <>
-                <FilmIcon className="w-5 h-5 text-blue-500" />
+              </div>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="bg-transparent border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
+              >
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+              </select>
+            </div>
+
+            {/* Department Filter */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 w-full sm:w-auto">
+              <div className="flex items-center gap-2 mb-2 sm:mb-0">
+                <BuildingOffice2Icon className="w-5 h-5 text-purple-500" />
                 <span className="font-medium text-gray-700 dark:text-gray-300">
                   Filter by department:
                 </span>
-              </>
-            )}
-
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="
-                bg-transparent border border-gray-300 dark:border-gray-600
-                rounded-md px-3 py-2
-                text-gray-800 dark:text-white
-                focus:outline-none focus:ring-2 focus:ring-blue-500
-              "
-            >
-              <option value="image">Image</option>
-              <option value="video">Video</option>
-            </select>
-          </div>
-
-          {/* Department Filter */}
-          <div className="flex items-center gap-2">
-            <BuildingOffice2Icon className="w-5 h-5 text-purple-500" />
-
-            <select
-              value={filterDepartment}
-              onChange={(e) => setFilterDepartment(e.target.value)}
-              className="
-                bg-transparent border border-gray-300 dark:border-gray-600
-                rounded-md px-3 py-2
-                text-gray-800 dark:text-white
-                focus:outline-none focus:ring-2 focus:ring-blue-500
-              "
-            >
-              <option value="">All Departments</option>
-              {departments.map((dept) => (
-                <option key={dept._id} value={dept._id}>
-                  {dept.name}
-                </option>
-              ))}
-            </select>
+              </div>
+              <select
+                value={filterDepartment}
+                onChange={(e) => setFilterDepartment(e.target.value)}
+                className="bg-transparent border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
+              >
+                <option value="">All Departments</option>
+                {departments.map((dept) => (
+                  <option key={dept._id} value={dept._id}>
+                    {dept.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>

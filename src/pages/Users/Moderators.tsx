@@ -38,7 +38,7 @@ const Moderators = () => {
       const data = await res.json();
       setModerators(data?.admins || []);
     } catch {
-      toast.error("Failed to fetch moderators");
+      toast.error("Failed to fetch moderators!");
     }
   };
 
