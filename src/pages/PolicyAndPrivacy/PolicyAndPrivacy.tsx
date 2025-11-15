@@ -280,6 +280,19 @@ const PolicyAndPrivacy = () => {
                   setFormData({ ...formData, name: e.target.value })
                 }
               />
+
+              <label className="block text-sm font-medium mb-1">
+                Arabic Content
+              </label>
+              <ReactQuill
+                theme="snow"
+                value={formData.ar}
+                onChange={(value: string) =>
+                  setFormData({ ...formData, ar: value })
+                }
+                className="mb-3 bg-white border rounded"
+              />
+
               <label className="block text-sm font-medium mb-1">
                 English Content
               </label>
@@ -288,15 +301,6 @@ const PolicyAndPrivacy = () => {
                 value={formData.en}
                 onChange={(value: string) =>
                   setFormData({ ...formData, en: value })
-                }
-                className="mb-3 bg-white border rounded"
-              />
-
-              <ReactQuill
-                theme="snow"
-                value={formData.ar}
-                onChange={(value: string) =>
-                  setFormData({ ...formData, ar: value })
                 }
                 className="mb-3 bg-white border rounded"
               />
