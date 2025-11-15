@@ -203,7 +203,7 @@ const AskedQuestions = () => {
         {faqs.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
             <p className="text-gray-500 text-lg">
-              لا يوجد أسئلة مضافة حتى الآن
+              No questions have been added yet.
             </p>
           </div>
         ) : (
@@ -242,7 +242,7 @@ const AskedQuestions = () => {
               transition-colors
             "
                 >
-                  تعديل
+                  Edit
                 </button>
 
                 <button
@@ -256,7 +256,7 @@ const AskedQuestions = () => {
               transition-colors
             "
                 >
-                  حذف
+                  Delete
                 </button>
               </div>
             </div>
