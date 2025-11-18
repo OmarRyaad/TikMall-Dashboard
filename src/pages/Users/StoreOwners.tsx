@@ -3,31 +3,102 @@
 import { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { AnimatePresence, motion } from "framer-motion";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 interface StoreOwner {
   _id: string;
   name: string;
-  phone: string;
-  active: boolean;
+  phone: { number: string };
+  isActive: boolean;
 }
 
 const StoreOwners = () => {
   const [storeOwners, setStoreOwners] = useState<StoreOwner[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+
+  /* DELETE MODAL */
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [ownerToDelete, setOwnerToDelete] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
   const fetchStoreOwners = async () => {
     try {
       setLoading(true);
       const res = await fetch(
-        "https://api.tik-mall.com/admin/api/store_owner?page=1&limit=10"
+        "https://api.tik-mall.com/admin/api/users/store_owner/all",
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
       );
+
       if (!res.ok) throw new Error("Failed to fetch store owners");
+
       const data = await res.json();
-      setStoreOwners(data.data.results || []);
+      setStoreOwners(data.users || data.data?.results || []);
     } catch {
       toast.error("Failed to fetch store owners!");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const searchStoreOwner = async () => {
+    if (!searchValue.trim()) {
+      fetchStoreOwners();
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const res = await fetch(
+        `https://api.tik-mall.com/admin/api/users/store_owner/${searchValue}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+
+      if (!res.ok) throw new Error("Store owner not found");
+
+      const data = await res.json();
+      setStoreOwners(data.users || []);
+    } catch {
+      toast.error("Failed to search!");
+      setStoreOwners([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeleteLoading(true);
+
+    try {
+      const res = await fetch(
+        `https://api.tik-mall.com/admin/api/users/delete/${id}`,
+        {
+          method: "DELETE",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to delete store owner");
+
+      toast.success("Store owner deleted successfully!");
+
+      setDeleteModalOpen(false);
+      setOwnerToDelete(null);
+
+      fetchStoreOwners();
+    } catch {
+      toast.error("Error deleting store owner");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -43,108 +114,161 @@ const StoreOwners = () => {
             <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-blue-500 animate-spin" />
             <div className="absolute inset-2 rounded-full border-4 border-t-transparent border-cyan-400 animate-[spin_1.5s_linear_infinite]" />
           </div>
-          <div className="flex gap-2 mt-6">
-            <span className="w-3 h-3 rounded-full bg-blue-500 animate-bounce" />
-            <span className="w-3 h-3 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.15s]" />
-            <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
-          </div>
-          <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
+
+          <p className="mt-6 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
             Loading <span className="text-blue-500">Store Owners</span>...
           </p>
         </div>
       </div>
     );
+
   return (
-    <div>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        toastClassName="!z-[9999]"
-      />
+    <div className="p-4 md:p-6">
+      <ToastContainer position="top-right" autoClose={3000} />
 
-      <h1 className="text-2xl font-bold mb-6" style={{ color: "#456FFF" }}>
-        Store Owners
-      </h1>
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-[#456FFF]">
+          Store Owners
+        </h2>
 
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/3 sm:px-6">
-        <div className="max-w-full overflow-x-auto">
-          {loading ? (
-            <p className="text-center py-10 text-gray-500 dark:text-gray-400">
-              Loading...
-            </p>
-          ) : storeOwners.length ? (
-            <table className="min-w-full border-collapse">
-              <thead className="border-y border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30">
+        {/* 🔍 Search */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <input
+            className="px-4 py-2 border rounded-lg dark:bg-gray-800 w-full sm:w-auto"
+            placeholder="Search for a store owner..."
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+          />
+
+          <button
+            onClick={searchStoreOwner}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 w-full sm:w-auto"
+          >
+            <MagnifyingGlassIcon className="w-5 h-5" />
+            Search
+          </button>
+        </div>
+      </div>
+
+      {/* TABLE */}
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow overflow-hidden w-full">
+        {storeOwners.length > 0 ? (
+          <div className="overflow-x-auto w-full max-w-full">
+            <table className="w-full min-w-[600px] md:min-w-full">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <th className="px-4 md:px-6 py-3 text-left text-xs text-gray-500 uppercase">
                     #
                   </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <th className="px-4 md:px-6 py-3 text-left text-xs text-gray-500 uppercase">
                     Name
                   </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <th className="px-4 md:px-6 py-3 text-left text-xs text-gray-500 uppercase">
                     Phone
                   </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
-                    Active
+                  <th className="px-4 md:px-6 py-3 text-left text-xs text-gray-500 uppercase">
+                    Status
+                  </th>
+                  <th className="px-4 md:px-6 py-3 text-left text-xs text-gray-500 uppercase">
+                    Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {storeOwners.map((mod, idx) => (
+
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {storeOwners.map((owner, idx) => (
                   <tr
-                    key={mod._id}
-                    className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                    key={owner._id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
-                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                      {idx + 1}
+                    <td className="px-4 md:px-6 py-3 text-sm">{idx + 1}</td>
+                    <td className="px-4 md:px-6 py-3 font-medium">
+                      {owner.name}
                     </td>
-                    <td className="py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90">
-                      {mod.name}
+                    <td className="px-4 md:px-6 py-3 text-sm text-gray-600">
+                      {owner.phone?.number}
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
-                      {mod.phone}
+                    <td className="px-4 md:px-6 py-3">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          owner.isActive
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {owner.isActive ? "Active" : "Inactive"}
+                      </span>
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
-                      {mod.active ? "Yes" : "No"}
+
+                    <td className="px-4 md:px-6 py-3 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => {
+                          setOwnerToDelete(owner._id);
+                          setDeleteModalOpen(true);
+                        }}
+                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 space-y-4 text-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-24 w-24 text-gray-300 dark:text-gray-500"
-                fill="none"
-                viewBox="0 0 64 64"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="30"
-                  stroke="currentColor"
-                  opacity="0.1"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M32 32c6 0 10-4 10-10s-4-10-10-10-10 4-10 10 4 10 10 10zM16 52c0-8.837 7.163-16 16-16s16 7.163 16 16"
-                />
-              </svg>
-              <h3 className="text-xl font-bold text-gray-600 dark:text-gray-300">
-                No Store Owners Yet
-              </h3>
-              <p className="text-sm text-gray-400 dark:text-gray-500 max-w-xs">
-                You haven’t added any store owners yet.
-              </p>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="text-center py-20 text-gray-500">
+            No store owners found.
+          </div>
+        )}
       </div>
+
+      {/* DELETE MODAL */}
+      <AnimatePresence>
+        {deleteModalOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          >
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg dark:bg-gray-900">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                Confirm Delete
+              </h3>
+
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Are you sure you want to delete this store owner?
+              </p>
+
+              <div className="mt-5 flex flex-col sm:flex-row justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setDeleteModalOpen(false);
+                    setOwnerToDelete(null);
+                  }}
+                  className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={() => ownerToDelete && handleDelete(ownerToDelete)}
+                  disabled={deleteLoading}
+                  className={`rounded-md px-4 py-2 text-sm text-white ${
+                    deleteLoading
+                      ? "bg-red-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700"
+                  }`}
+                >
+                  {deleteLoading ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

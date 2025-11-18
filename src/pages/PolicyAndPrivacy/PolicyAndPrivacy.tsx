@@ -6,7 +6,7 @@ import ReactQuill from "react-quill-new";
 import "react-toastify/dist/ReactToastify.css";
 import "react-quill-new/dist/quill.snow.css";
 import { DocumentTextIcon } from "@heroicons/react/24/outline";
-
+import { useNavigate } from "react-router-dom";
 interface Policy {
   _id: string;
   name: string;
@@ -17,14 +17,13 @@ interface Policy {
 }
 
 const PolicyAndPrivacy = () => {
+  const navigate = useNavigate();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
   const [formData, setFormData] = useState({ name: "", en: "", ar: "" });
   const [createLoading, setCreateLoading] = useState(false);
-  const [fetchLoading, setFetchLoading] = useState(false);
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
@@ -49,49 +48,10 @@ const PolicyAndPrivacy = () => {
     }
   };
 
-  // Fetch single policy
-  const fetchSinglePolicy = async (name: string) => {
-    try {
-      setFetchLoading(true);
-      const res = await fetch(
-        `https://api.tik-mall.com/admin/api/get/policy/${encodeURIComponent(
-          name
-        )}`,
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        }
-      );
-      const data = await res.json();
-      if (!res.ok) toast.error(data?.message || "Failed to load policy");
-      return res.ok ? data : null;
-    } catch {
-      toast.error("Network error while fetching policy");
-      return null;
-    } finally {
-      setFetchLoading(false);
-    }
-  };
-
-  // Open modals
-  const openCreateModal = () => {
-    setEditingPolicy(null);
-    setFormData({ name: "", en: "", ar: "" });
-    setModalOpen(true);
-  };
-
-  const openEditModal = async (name: string) => {
-    const p = await fetchSinglePolicy(name);
-    if (!p) return;
-    setEditingPolicy(p);
-    setFormData({ name: p.name, en: p.policy.en, ar: p.policy.ar });
-    setModalOpen(true);
-  };
-
-  const openViewModal = async (name: string) => {
-    const p = await fetchSinglePolicy(name);
-    if (!p) return;
-    setFormData({ name: p.name, en: p.policy.en, ar: p.policy.ar });
-    setViewModalOpen(true);
+  const openViewPage = (name: string) => {
+    navigate(
+      `/policy-and-Privacy/policy-view?name=${encodeURIComponent(name)}`
+    );
   };
 
   const handleSubmit = async () => {
@@ -187,12 +147,6 @@ const PolicyAndPrivacy = () => {
           >
             Refresh
           </button>
-          <button
-            onClick={openCreateModal}
-            className="mb-4 px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300"
-          >
-            + Add Policy
-          </button>
         </div>
       </div>
 
@@ -206,18 +160,11 @@ const PolicyAndPrivacy = () => {
           {policies.map((p) => (
             <div
               key={p._id}
-              className="
-                relative flex flex-col justify-between
-                rounded-2xl border border-gray-200
-                bg-white dark:bg-gray-900
-                shadow-sm hover:shadow-lg transition-shadow
-                p-5
-              "
+              className="relative flex flex-col justify-between rounded-2xl border border-gray-200 bg-white dark:bg-gray-900 shadow-sm hover:shadow-lg transition-shadow p-5"
             >
               {/* Icon + Title */}
               <div className="flex items-start gap-3">
                 <DocumentTextIcon className="w-7 h-7 text-purple-600 flex-shrink-0" />
-
                 <h2 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 leading-tight">
                   {p.name}
                 </h2>
@@ -231,24 +178,21 @@ const PolicyAndPrivacy = () => {
               {/* Actions */}
               <div className="mt-5 flex justify-between items-center">
                 <button
-                  onClick={() => openViewModal(p.name)}
-                  className="
-            px-3 py-1.5 rounded-md text-xs font-medium
-            border border-gray-300 text-gray-700 dark:text-gray-300
-            hover:bg-gray-100 dark:hover:bg-gray-800
-            transition-colors
-          "
+                  onClick={() => openViewPage(p.name)}
+                  className="px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors"
                 >
                   View
                 </button>
 
                 <button
-                  onClick={() => openEditModal(p.name)}
-                  className="
-            px-3 py-1.5 rounded-md text-xs font-medium
-            bg-blue-600 text-white hover:bg-blue-700
-            transition-colors
-          "
+                  onClick={() =>
+                    navigate(
+                      `/policy-and-Privacy/edit?name=${encodeURIComponent(
+                        p.name
+                      )}`
+                    )
+                  }
+                  className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                 >
                   Edit
                 </button>
@@ -328,48 +272,6 @@ const PolicyAndPrivacy = () => {
                     : editingPolicy
                     ? "Update"
                     : "Create"}
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {viewModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          >
-            <div className="bg-white rounded-xl max-w-2xl w-full p-6 shadow-lg">
-              <h2 className="text-xl font-semibold mb-4">{formData.name}</h2>
-              {fetchLoading ? (
-                <p className="text-center text-gray-500 py-10">Loading...</p>
-              ) : (
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium mb-1">English</h3>
-                    <div className="bg-gray-50 border rounded p-3 min-h-[120px] prose max-w-none">
-                      <div dangerouslySetInnerHTML={{ __html: formData.en }} />
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium mb-1">Arabic</h3>
-                    <div
-                      className="bg-gray-50 border rounded p-3 min-h-[120px]"
-                      dir="rtl"
-                    >
-                      <div dangerouslySetInnerHTML={{ __html: formData.ar }} />
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div className="flex justify-end mt-4">
-                <button
-                  onClick={() => setViewModalOpen(false)}
-                  className="px-4 py-2 border rounded hover:bg-gray-100"
-                >
-                  Close
                 </button>
               </div>
             </div>

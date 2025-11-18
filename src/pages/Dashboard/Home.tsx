@@ -336,12 +336,13 @@ export default function Home() {
               UsersMetricsTotallyNum={streams?.totalViewers?.toString() ?? "-"}
               UsersMetricsBadge={{
                 color: "success",
-                value: `${
+                value: `${(
                   (streams?.totalViewers ?? 0) / (streams?.totalStreams ?? 1)
-                } Avg per Stream`,
+                ).toFixed(2)} Avg per Stream`,
                 icon: <ArrowUpIcon />,
               }}
             />
+
             <UsersMetrics
               UsersMetricsIcon={<CalculatorIcon />}
               UsersMetricsName="Top Stream"

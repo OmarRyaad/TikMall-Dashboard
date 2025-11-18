@@ -26,6 +26,8 @@ import Complaints from "./pages/Complaints/Complaints";
 import Notifications from "./pages/Notifications/Notifications";
 import LiveBroadcasts from "./pages/LiveBroadCasts/LiveBroadasts";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import PolicyView from "./pages/PolicyAndPrivacy/PolicyView";
+import PolicyEdit from "./pages/PolicyAndPrivacy/PolicyEdit";
 
 export default function App() {
   return (
@@ -59,6 +61,12 @@ export default function App() {
               path="/policy-and-Privacy"
               element={<PolicyAndPrivacy />}
             />
+            <Route
+              path="/policy-and-Privacy/policy-view"
+              element={<PolicyView />}
+            />
+            <Route path="/policy-and-Privacy/edit" element={<PolicyEdit />} />
+
             <Route index path="/complaints" element={<Complaints />} />
             <Route index path="/notifications" element={<Notifications />} />
 
