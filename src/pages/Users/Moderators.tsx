@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ToastContainer, toast } from "react-toastify";
@@ -11,11 +12,43 @@ import {
   LockClosedIcon,
 } from "@heroicons/react/24/outline";
 
+// ────────────────────────────────────────────────────────────────
+// Proper types instead of `any`
+// ────────────────────────────────────────────────────────────────
+interface Permissions {
+  manageAdmins?: boolean;
+  manageStoreOwners?: boolean;
+  manageMediaAndStreams?: boolean;
+  manageDepartmentsAndFaqs?: boolean;
+  manageCustomers?: boolean;
+  manageComplains?: boolean;
+  manageSendNotifications?: boolean;
+  manageStatistics?: boolean;
+}
+
+interface Phone {
+  number: string;
+  isVerified?: boolean;
+}
+
+interface ApiModerator {
+  _id: string;
+  name: string;
+  phone: Phone;
+  password?: string;
+  isActive: boolean;
+  permissions: Permissions;
+  isSuperAdmin: boolean;
+  role: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 interface Moderator {
   _id?: string;
   name: string;
   phone: string;
-  password: string;
+  password?: string;
   active: boolean;
   userManagement?: boolean;
   storeManagement?: boolean;
@@ -28,19 +61,47 @@ const Moderators = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<Partial<Moderator>>({});
+  const [formData, setFormData] = useState<Partial<Moderator>>({
+    active: true,
+  });
 
-  // Fetch moderators from admin API
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+
+  // ────────────────────────────────────────────────────────────────
+  // Fetch moderators (typed response)
+  // ────────────────────────────────────────────────────────────────
   const fetchModerators = async () => {
     try {
       setLoading(true);
       const res = await fetch(
-        "https://api.tik-mall.com/admin/api/admin?page=1&limit=10"
+        "https://api.tik-mall.com/admin/api/users/admin/all",
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
       );
-      const data = await res.json();
-      setModerators(data?.admins || []);
-    } catch {
-      toast.error("Failed to fetch moderators!");
+
+      if (!res.ok) throw new Error("Failed to fetch moderators");
+
+      const data = (await res.json()) as { users: ApiModerator[] };
+
+      const formatted: Moderator[] = data.users
+        .filter((u) => !u.isSuperAdmin) // exclude super admin
+        .map((u) => ({
+          _id: u._id,
+          name: u.name,
+          phone: u.phone.number,
+          active: u.isActive,
+          userManagement: u.permissions.manageAdmins ?? false,
+          storeManagement: u.permissions.manageStoreOwners ?? false,
+          liveBroadcast: u.permissions.manageMediaAndStreams ?? false,
+          contentManagement: u.permissions.manageDepartmentsAndFaqs ?? false,
+        }));
+
+      setModerators(formatted);
+    } catch (err) {
+      toast.error("Failed to load moderators");
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -50,11 +111,11 @@ const Moderators = () => {
     fetchModerators();
   }, []);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const target = e.target as HTMLInputElement;
-    const { name, value, type, checked } = target;
+  // ────────────────────────────────────────────────────────────────
+  // Form handlers (fully typed)
+  // ────────────────────────────────────────────────────────────────
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -62,61 +123,111 @@ const Moderators = () => {
   };
 
   const handleEdit = (moderator: Moderator) => {
-    setFormData(moderator);
+    setFormData({ ...moderator, password: "" });
     setIsEditMode(true);
     setIsOpen(true);
   };
 
   const handleAdd = () => {
-    setFormData({});
+    setFormData({
+      name: "",
+      phone: "",
+      password: "",
+      active: true,
+      userManagement: false,
+      storeManagement: false,
+      liveBroadcast: false,
+      contentManagement: false,
+    });
     setIsEditMode(false);
     setIsOpen(true);
   };
 
-  const handleCancel = () => setIsOpen(false);
+  const handleCancel = () => {
+    setIsOpen(false);
+    setFormData({ active: true });
+  };
 
   const handleSave = async () => {
+    if (
+      !formData.name ||
+      !formData.phone ||
+      (!isEditMode && !formData.password)
+    ) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
     try {
+      setLoading(true);
+
       const payload = {
-        phone: { number: formData.phone },
         name: formData.name,
-        password: formData.password,
-        isActive: formData.active,
+        phone: { number: formData.phone },
+        ...(formData.password && { password: formData.password }),
+        isActive: formData.active ?? true,
         permissions: {
-          manageUsers: !!formData.userManagement,
+          manageAdmins: !!formData.userManagement,
           manageStoreOwners: !!formData.storeManagement,
-          manageStreams: !!formData.liveBroadcast,
-          manageDepartments: !!formData.contentManagement,
+          manageMediaAndStreams: !!formData.liveBroadcast,
+          manageDepartmentsAndFaqs: !!formData.contentManagement,
+          manageCustomers: false,
+          manageComplains: false,
+          manageSendNotifications: false,
+          manageStatistics: false,
         },
       };
 
-      const res = await fetch("https://api.tik-mall.com/admin/api/child", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const url = isEditMode
+        ? `https://api.tik-mall.com/admin/api/child/${formData._id}`
+        : "https://api.tik-mall.com/admin/api/child";
+
+      const res = await fetch(url, {
+        method: isEditMode ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       });
 
+      const result = await res.json();
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to create moderator");
+        throw new Error(
+          (result as { message?: string }).message || "Operation failed"
+        );
       }
 
-      toast.success("Moderator created successfully!");
+      toast.success(isEditMode ? "Moderator updated!" : "Moderator created!");
       fetchModerators();
       setIsOpen(false);
     } catch (error) {
-      toast.error((error as Error).message);
+      toast.error((error as Error).message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDeleteClick = async (id: string) => {
     if (!confirm("Are you sure you want to delete this moderator?")) return;
+
     try {
       const res = await fetch(
         `https://api.tik-mall.com/admin/api/child/${id}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
-      if (!res.ok) throw new Error("Failed to delete moderator");
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(
+          (err as { message?: string }).message || "Delete failed"
+        );
+      }
+
       toast.success("Moderator deleted");
       fetchModerators();
     } catch (error) {
@@ -124,36 +235,31 @@ const Moderators = () => {
     }
   };
 
-  if (loading)
+  // ────────────────────────────────────────────────────────────────
+  // Render
+  // ────────────────────────────────────────────────────────────────
+  if (loading && moderators.length === 0) {
     return (
       <div className="flex items-center justify-center h-[80vh]">
-        <div className="relative flex flex-col items-center">
-          <div className="relative w-20 h-20">
+        <div className="text-center">
+          <div className="w-20 h-20 mx-auto relative">
             <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-blue-500 animate-spin" />
             <div className="absolute inset-2 rounded-full border-4 border-t-transparent border-cyan-400 animate-[spin_1.5s_linear_infinite]" />
           </div>
-          <div className="flex gap-2 mt-6">
-            <span className="w-3 h-3 rounded-full bg-blue-500 animate-bounce" />
-            <span className="w-3 h-3 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.15s]" />
-            <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
-          </div>
-          <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
+          <p className="mt-6 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
             Loading <span className="text-blue-500">Moderators</span>...
           </p>
         </div>
       </div>
     );
+  }
+
   return (
-    <div>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        toastClassName="!z-[9999]"
-      />
+    <div className="p-6">
+      <ToastContainer position="top-right" autoClose={4000} />
 
-      <h2 className="text-2xl font-bold mb-6 text-[#456FFF]">Moderators</h2>
-
-      <div className="mb-4 flex justify-end">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-3xl font-bold text-[#456FFF]">Moderators</h2>
         <button
           onClick={handleAdd}
           className="mb-4 px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300"
@@ -163,57 +269,69 @@ const Moderators = () => {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/3 sm:px-6">
-        <div className="max-w-full overflow-x-auto">
-          {moderators.length ? (
-            <table className="min-w-full border-collapse">
-              <thead className="border-y border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow overflow-hidden">
+        {moderators.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">
                     #
                   </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">
                     Name
                   </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">
                     Phone
                   </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
-                    Active
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">
+                    Status
                   </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {moderators.map((mod, idx) => (
                   <tr
                     key={mod._id}
-                    className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
-                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                      {idx + 1}
-                    </td>
-                    <td className="py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90">
-                      {mod.name}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-6 py-4 text-sm">{idx + 1}</td>
+                    <td className="px-6 py-4 font-medium">{mod.name}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
                       {mod.phone}
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
-                      {mod.active ? "Yes" : "No"}
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          mod.active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {mod.active ? "Active" : "Inactive"}
+                      </span>
                     </td>
-                    <td className="py-3 px-4 flex gap-2">
+                    <td className="px-6 py-4 space-x-4">
                       <button
                         onClick={() => handleEdit(mod)}
-                        className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                        className="
+                          px-3 py-1.5 rounded-md text-xs font-medium
+                          bg-blue-600 text-white hover:bg-blue-700
+                          transition-colors
+                        "
                       >
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDeleteClick(mod._id!)}
-                        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                        onClick={() => mod._id && handleDeleteClick(mod._id)}
+                        className="
+                          px-3 py-1.5 rounded-md text-xs font-medium
+                          bg-red-600 text-white hover:bg-red-700
+                          transition-colors
+                        "
                       >
                         Delete
                       </button>
@@ -222,221 +340,139 @@ const Moderators = () => {
                 ))}
               </tbody>
             </table>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 space-y-4 text-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-24 w-24 text-gray-300 dark:text-gray-500"
-                fill="none"
-                viewBox="0 0 64 64"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="30"
-                  stroke="currentColor"
-                  opacity="0.1"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M32 32c6 0 10-4 10-10s-4-10-10-10-10 4-10 10 4 10 10 10zM16 52c0-8.837 7.163-16 16-16s16 7.163 16 16"
-                />
-              </svg>
-              <h3 className="text-xl font-bold text-gray-600 dark:text-gray-300">
-                No Moderators Yet
-              </h3>
-              <p className="text-sm text-gray-400 dark:text-gray-500 max-w-xs">
-                You haven’t added any moderators yet.
-              </p>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="text-center py-20 text-gray-500">
+            No moderators found.
+          </div>
+        )}
       </div>
 
-      {/* Add/Edit Modal with AnimatePresence */}
+      {/* Modal */}
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Overlay */}
             <motion.div
-              className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-40"
+              className="fixed inset-0 bg-black/50 z-40"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             />
-
-            {/* Modal Container */}
             <motion.div
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-auto"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
             >
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-3xl p-6">
-                {/* Title */}
-                <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full p-8">
+                <h3 className="text-2xl font-bold mb-6">
                   {isEditMode ? "Edit Moderator" : "Add New Moderator"}
-                </h2>
+                </h3>
 
-                {/* Inputs */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-5">
                   <input
                     type="text"
                     name="name"
-                    placeholder="Enter moderator name"
+                    placeholder="Full Name"
                     value={formData.name || ""}
                     onChange={handleChange}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded"
+                    className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
                   />
                   <input
                     type="text"
                     name="phone"
-                    placeholder="Enter moderator phone"
+                    placeholder="Phone Number (e.g. +20123456789)"
                     value={formData.phone || ""}
                     onChange={handleChange}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded"
+                    className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
                   />
-                  <input
-                    type="password"
-                    name="password"
-                    placeholder="Enter moderator password"
-                    value={formData.password || ""}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded"
-                  />
-                  <div className="flex items-center space-x-2">
+                  {!isEditMode && (
+                    <input
+                      type="password"
+                      name="password"
+                      placeholder="Password"
+                      value={formData.password || ""}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
+                    />
+                  )}
+                  <label className="flex items-center gap-3">
                     <input
                       type="checkbox"
-                      id="active"
                       name="active"
-                      checked={formData.active || false}
+                      checked={formData.active ?? true}
                       onChange={handleChange}
-                      className="w-4 h-4"
+                      className="w-5 h-5"
                     />
-                    <label
-                      htmlFor="active"
-                      className="text-gray-700 dark:text-gray-300"
-                    >
-                      Active?
-                    </label>
-                  </div>
+                    <span className="font-medium">Active Account</span>
+                  </label>
                 </div>
 
-                {/* Permissions */}
-                <div className="mt-6">
-                  <div className="flex justify-center mb-4">
-                    <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 px-6 py-3 rounded-lg">
-                      <LockClosedIcon className="w-5 h-5 text-yellow-500" />
-                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Moderator Permissions
+                <div className="mt-8">
+                  <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <LockClosedIcon className="w-6 h-6 text-yellow-500" />
+                    Permissions
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      {
+                        key: "userManagement" as const,
+                        label: "User Management",
+                        Icon: UserIcon,
+                        color: "blue",
+                      },
+                      {
+                        key: "liveBroadcast" as const,
+                        label: "Live Broadcast",
+                        Icon: VideoCameraIcon,
+                        color: "purple",
+                      },
+                      {
+                        key: "storeManagement" as const,
+                        label: "Store Management",
+                        Icon: ShoppingBagIcon,
+                        color: "green",
+                      },
+                      {
+                        key: "contentManagement" as const,
+                        label: "Content Management",
+                        Icon: DocumentTextIcon,
+                        color: "yellow",
+                      },
+                    ].map(({ key, label, Icon, color }) => (
+                      <label
+                        key={key}
+                        className="flex items-center justify-between p-4 border rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className={`w-6 h-6 text-${color}-500`} />
+                          <span className="font-medium">{label}</span>
+                        </div>
+                        <input
+                          type="checkbox"
+                          name={key}
+                          checked={!!formData[key]}
+                          onChange={handleChange}
+                          className="w-5 h-5"
+                        />
                       </label>
-                    </div>
-                  </div>
-
-                  <p className="mb-4 text-gray-700 dark:text-gray-300">
-                    Select the features this moderator can manage!
-                  </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* User Management */}
-                    <label className="flex flex-row-reverse items-center justify-between p-3 border rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <input
-                        type="checkbox"
-                        name="userManagement"
-                        checked={formData.userManagement || false}
-                        onChange={handleChange}
-                        className="w-5 h-5 ml-3"
-                      />
-                      <div className="flex flex-col flex-1 mr-3">
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                          User Management
-                        </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          Create, edit, and deactivate users
-                        </span>
-                      </div>
-                      <UserIcon className="w-5 h-5 text-blue-500 mr-4" />
-                    </label>
-
-                    {/* Live Broadcast */}
-                    <label className="flex flex-row-reverse items-center justify-between p-3 border rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <input
-                        type="checkbox"
-                        name="liveBroadcast"
-                        checked={formData.liveBroadcast || false}
-                        onChange={handleChange}
-                        className="w-5 h-5 ml-3"
-                      />
-                      <div className="flex flex-col flex-1 mr-3">
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                          Live Broadcast Management
-                        </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          Controlling live streaming and media
-                        </span>
-                      </div>
-                      <VideoCameraIcon className="w-5 h-5 text-purple-500 mr-4" />
-                    </label>
-
-                    {/* Store Management */}
-                    <label className="flex flex-row-reverse items-center justify-between p-3 border rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <input
-                        type="checkbox"
-                        name="storeManagement"
-                        checked={formData.storeManagement || false}
-                        onChange={handleChange}
-                        className="w-5 h-5 ml-3"
-                      />
-                      <div className="flex flex-col flex-1 mr-3">
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                          Store Management
-                        </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          Approval of store owners and their management
-                        </span>
-                      </div>
-                      <ShoppingBagIcon className="w-5 h-5 text-green-500 mr-4" />
-                    </label>
-
-                    {/* Content Management */}
-                    <label className="flex flex-row-reverse items-center justify-between p-3 border rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <input
-                        type="checkbox"
-                        name="contentManagement"
-                        checked={formData.contentManagement || false}
-                        onChange={handleChange}
-                        className="w-5 h-5 ml-3"
-                      />
-                      <div className="flex flex-col flex-1 mr-3">
-                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                          Content Management
-                        </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          Department and category management
-                        </span>
-                      </div>
-                      <DocumentTextIcon className="w-5 h-5 text-yellow-500 mr-4" />
-                    </label>
+                    ))}
                   </div>
                 </div>
 
-                {/* Buttons */}
-                <div className="mt-6 flex justify-end gap-3">
+                <div className="mt-8 flex justify-end gap-4">
                   <button
                     onClick={handleCancel}
-                    className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white transition-all"
+                    className="px-6 py-3 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
-                    className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-all"
+                    disabled={loading}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-70"
                   >
-                    {isEditMode ? "Save" : "Create"}
+                    {loading ? "Saving..." : isEditMode ? "Update" : "Create"}
                   </button>
                 </div>
               </div>

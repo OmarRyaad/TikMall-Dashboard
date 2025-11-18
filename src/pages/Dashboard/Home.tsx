@@ -109,22 +109,22 @@ export default function Home() {
                 {/* ===== HEADER ===== */}
                 <thead className="border-y border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30">
                   <tr>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       <div className="flex items-center gap-1">
                         <HashtagIcon className="h-4 w-4" /> #
                       </div>
                     </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       <div className="flex items-center gap-1">
                         <UserIcon className="h-4 w-4" /> Name
                       </div>
                     </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       <div className="flex items-center gap-1">
                         <BuildingStorefrontIcon className="h-4 w-4" /> Store
                       </div>
                     </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       <div className="flex items-center gap-1">
                         <UserGroupIcon className="h-4 w-4" /> Followers
                       </div>

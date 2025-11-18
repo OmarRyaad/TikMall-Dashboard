@@ -257,19 +257,19 @@ const Sections = () => {
           <table className="min-w-full border-collapse">
             <thead className="border-y border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30">
               <tr>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   #
                 </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Icon
                 </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Name (AR/EN)
                 </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Description
                 </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                   Actions
                 </th>
               </tr>

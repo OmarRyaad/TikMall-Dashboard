@@ -237,10 +237,10 @@ const AskedQuestions = () => {
                 <button
                   onClick={() => handleEdit(faq)}
                   className="
-              px-3 py-1.5 rounded-md text-xs font-medium
-              bg-blue-600 text-white hover:bg-blue-700
-              transition-colors
-            "
+                    px-3 py-1.5 rounded-md text-xs font-medium
+                    bg-blue-600 text-white hover:bg-blue-700
+                    transition-colors
+                  "
                 >
                   Edit
                 </button>
@@ -251,10 +251,10 @@ const AskedQuestions = () => {
                     setDeleteModalOpen(true);
                   }}
                   className="
-              px-3 py-1.5 rounded-md text-xs font-medium
-              bg-red-600 text-white hover:bg-red-700
-              transition-colors
-            "
+                    px-3 py-1.5 rounded-md text-xs font-medium
+                    bg-red-600 text-white hover:bg-red-700
+                    transition-colors
+                  "
                 >
                   Delete
                 </button>
