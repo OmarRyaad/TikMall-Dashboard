@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AnimatePresence, motion } from "framer-motion";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import {
+  BuildingStorefrontIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 
 interface StoreOwner {
   _id: string;
@@ -128,7 +131,8 @@ const StoreOwners = () => {
 
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-[#456FFF]">
+        <h2 className="flex items-center gap-2 text-2xl md:text-3xl font-bold text-[#456FFF]">
+          <BuildingStorefrontIcon className="w-8 h-8 text-blue-600" />
           Store Owners
         </h2>
 

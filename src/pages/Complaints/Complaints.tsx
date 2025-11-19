@@ -1,7 +1,8 @@
 "use client";
 
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, MegaphoneIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
+import { ToastContainer } from "react-toastify";
 
 interface User {
   _id: string;
@@ -109,7 +110,18 @@ const Complaints = () => {
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4 text-blue-600">Complaints</h2>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        toastClassName="!z-[9999]"
+      />
+      <h2
+        className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
+        style={{ color: "#456FFF" }}
+      >
+        <MegaphoneIcon className="w-7 h-7 text-blue-600" />
+        Complaints
+      </h2>
 
       {/* Status Filter */}
       <div className="mb-6 flex justify-end">

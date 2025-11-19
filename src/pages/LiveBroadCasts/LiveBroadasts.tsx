@@ -1,18 +1,47 @@
 "use client";
+import {
+  BuildingStorefrontIcon,
+  CalendarDaysIcon,
+  HashtagIcon,
+  PauseCircleIcon,
+  VideoCameraIcon,
+} from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
+import { CheckCircleIcon, EyeIcon, UserCircleIcon } from "../../icons";
 
 interface Broadcast {
   _id: string;
   title?: string;
   status?: string;
   createdAt: string;
+  viewersCount?: number;
+
+  streamedBy?: {
+    _id: string;
+    role: string;
+    storeName: string;
+  };
+
+  storeDepartment?: {
+    _id: string;
+    name: {
+      en: string;
+      ar: string;
+    };
+    description: {
+      en: string;
+      ar: string;
+    };
+    icon: string;
+  };
 }
 
 const LiveBroadcasts = () => {
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+  const totalActive = broadcasts.length;
 
   const fetchBroadcasts = async () => {
     try {
@@ -113,25 +142,104 @@ const LiveBroadcasts = () => {
         autoClose={5000}
         toastClassName="!z-[9999]"
       />
-      <ul className="space-y-3">
-        {broadcasts.map((broadcast) => (
-          <li
+
+      <h2 className="flex items-center gap-3 text-2xl md:text-3xl font-bold mb-6 text-[#456FFF]">
+        <VideoCameraIcon className="w-8 h-8 text-[#456FFF]" />
+        Active Live Broadcasts
+        <span className="flex items-center gap-1 ml-3 px-3 py-1 bg-blue-100 text-blue-600 text-sm font-semibold rounded-full">
+          <HashtagIcon className="w-4 h-4" />
+          {totalActive}
+        </span>
+      </h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {broadcasts.map((broadcast: Broadcast) => (
+          <div
             key={broadcast._id}
-            className="p-4 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition bg-white"
+            className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-pointer group"
           >
-            <p className="text-lg font-medium text-gray-800">
-              {broadcast.title || "Untitled"}
-            </p>
-            <p className="text-sm text-gray-600 mt-1">
-              <strong>Status:</strong> {broadcast.status || "Unknown"}
-            </p>
-            <p className="text-sm text-gray-600">
-              <strong>Created At:</strong>{" "}
-              {new Date(broadcast.createdAt).toLocaleString()}
-            </p>
-          </li>
+            {/* Header */}
+            <div className="flex items-center gap-4 mb-3">
+              <img
+                src={broadcast.storeDepartment?.icon}
+                alt="icon"
+                className="w-14 h-14 rounded-lg object-cover border border-gray-300"
+              />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {broadcast.title || "Untitled Live"}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {broadcast.storeDepartment?.name?.en || "Department"}
+                </p>
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="flex items-center gap-2 mb-2">
+              <span
+                className={`flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full 
+      ${
+        broadcast.status === "active"
+          ? "bg-green-100 text-green-700"
+          : "bg-gray-200 text-gray-700"
+      }`}
+              >
+                {broadcast.status === "active" ? (
+                  <CheckCircleIcon className="h-4 w-4" />
+                ) : (
+                  <PauseCircleIcon className="h-4 w-4" />
+                )}
+                {broadcast.status || "Unknown"}
+              </span>
+
+              <span className="text-xs text-blue-500 group-hover:underline flex items-center gap-1">
+                <HashtagIcon className="h-4 w-4" />
+                ID: {broadcast._id.slice(-6)}
+              </span>
+            </div>
+
+            {/* Store & Streamer Info */}
+            <div className="mt-3 text-sm space-y-2">
+              {/* Store Name */}
+              <div className="flex items-center gap-2 text-gray-700">
+                <BuildingStorefrontIcon className="w-5 h-5 text-blue-500" />
+                <p>
+                  <strong>Store:</strong>{" "}
+                  {broadcast.streamedBy?.storeName || "N/A"}
+                </p>
+              </div>
+
+              {/* Streamed By */}
+              <div className="flex items-center gap-2 text-gray-700">
+                <UserCircleIcon className="w-5 h-5 text-purple-500" />
+                <p>
+                  <strong>Streamed By:</strong> {broadcast.streamedBy?.role}
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-4 flex items-center justify-between">
+              {/* Date with Icon */}
+              <div className="flex items-center gap-1.5 text-gray-500">
+                <CalendarDaysIcon className="w-4 h-4 text-gray-400" />
+                <p className="text-xs">
+                  {new Date(broadcast.createdAt).toLocaleString()}
+                </p>
+              </div>
+
+              {/* Viewers Count with Icon */}
+              <div className="flex items-center gap-1.5 text-gray-700">
+                <EyeIcon className="w-5 h-5" />
+                <span className="text-sm font-medium">
+                  {broadcast.viewersCount ?? 0}
+                </span>
+              </div>
+            </div>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 };

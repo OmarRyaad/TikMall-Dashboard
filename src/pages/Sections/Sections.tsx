@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Modal } from "../../components/ui/modal";
 import { toast, ToastContainer } from "react-toastify";
+import { Squares2X2Icon } from "@heroicons/react/24/outline";
 
 interface Department {
   _id: string;
@@ -10,23 +11,29 @@ interface Department {
   description: { en: string; ar: string };
   icon: string;
 }
+interface IconType {
+  url: string;
+  loading: boolean;
+}
 
 const Sections = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false); // Track Add vs Edit
+  const [isEditMode, setIsEditMode] = useState(false);
   const [formData, setFormData] = useState({
     id: "",
     nameAr: "",
     nameEn: "",
     descAr: "",
     descEn: "",
-    icon: "",
+    icons: [] as IconType[], // array of images
   });
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [keepOpen, setKeepOpen] = useState(false);
+  const [saving, setSaving] = useState(false); // for create/save button
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : "";
 
@@ -57,7 +64,7 @@ const Sections = () => {
       nameEn: dept.name.en,
       descAr: dept.description.ar,
       descEn: dept.description.en,
-      icon: typeof dept.icon === "string" ? dept.icon : "",
+      icons: formData.icons,
     });
     setIsOpen(true);
   };
@@ -71,7 +78,7 @@ const Sections = () => {
       nameEn: "",
       descAr: "",
       descEn: "",
-      icon: "",
+      icons: formData.icons,
     });
     setIsOpen(true);
   };
@@ -115,19 +122,33 @@ const Sections = () => {
 
   // Handle icon upload
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) {
-      setFormData((prev) => ({ ...prev, icon: "" }));
-      return;
-    }
-    const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData((prev) => ({
-        ...prev,
-        icon: reader.result?.toString() || "",
-      }));
-    };
-    reader.readAsDataURL(file);
+    if (!e.target.files) return;
+
+    const files = Array.from(e.target.files);
+
+    const newIcons: IconType[] = files.map(() => ({ url: "", loading: true }));
+
+    // Add placeholders
+    setFormData((prev) => ({
+      ...prev,
+      icons: [...prev.icons, ...newIcons],
+    }));
+
+    // Load each image
+    files.forEach((file, idx) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => {
+          const updatedIcons = [...prev.icons];
+          updatedIcons[prev.icons.length - newIcons.length + idx] = {
+            url: reader.result?.toString() || "",
+            loading: false, // finished loading
+          };
+          return { ...prev, icons: updatedIcons };
+        });
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleCancel = () => setIsOpen(false);
@@ -138,9 +159,10 @@ const Sections = () => {
       return;
     }
 
+    setSaving(true); // start loading
     try {
       if (isEditMode) {
-        // === EDIT MODE (PATCH) ===
+        // EDIT logic
         const res = await fetch(
           `https://api.tik-mall.com/admin/api/department/${formData.id}`,
           {
@@ -152,21 +174,23 @@ const Sections = () => {
             body: JSON.stringify({
               name: { en: formData.nameEn, ar: formData.nameAr },
               description: { en: formData.descEn, ar: formData.descAr },
-              icon: formData.icon,
+              icons: formData.icons,
             }),
           }
         );
         const updated = await res.json();
         if (!res.ok) {
           toast.error(updated.error || "Failed to update department");
+          setSaving(false);
           return;
         }
         setDepartments((prev) =>
           prev.map((d) => (d._id === formData.id ? updated.department : d))
         );
         toast.success("Department updated successfully");
+        setIsOpen(!keepOpen ? false : true);
       } else {
-        // === ADD MODE (POST) ===
+        // ADD logic
         const res = await fetch(
           "https://api.tik-mall.com/admin/api/create/department",
           {
@@ -178,22 +202,36 @@ const Sections = () => {
             body: JSON.stringify({
               name: { en: formData.nameEn, ar: formData.nameAr },
               description: { en: formData.descEn, ar: formData.descAr },
-              icon: formData.icon,
+              icons: formData.icons,
             }),
           }
         );
         const result = await res.json();
         if (!res.ok) {
           toast.error(result.error || "Failed to create department");
+          setSaving(false);
           return;
         }
         setDepartments((prev) => [...prev, result.department]);
         toast.success("Department created successfully");
-      }
 
-      setIsOpen(false);
+        if (keepOpen) {
+          setFormData({
+            id: "",
+            nameAr: "",
+            nameEn: "",
+            descAr: "",
+            descEn: "",
+            icons: [],
+          });
+        } else {
+          setIsOpen(false);
+        }
+      }
     } catch {
       toast.error("Something went wrong");
+    } finally {
+      setSaving(false); // end loading
     }
   };
 
@@ -237,11 +275,13 @@ const Sections = () => {
         toastClassName="!z-[9999]"
       />
       <h2
-        className="text-2xl md:text-3xl font-bold mb-4"
+        className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
         style={{ color: "#456FFF" }}
       >
+        <Squares2X2Icon className="w-8 h-8 text-blue-600" />
         Sections
       </h2>
+
       {/* Add Button */}
       <div className="mb-4 flex justify-end">
         <button
@@ -380,35 +420,88 @@ const Sections = () => {
                       onChange={handleChange}
                       className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20"
                     />
-                    <div className="flex flex-col items-start">
-                      <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                        Icon
+                    <div className="mt-3 flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="keepOpen"
+                        checked={keepOpen}
+                        onChange={() => setKeepOpen((prev) => !prev)}
+                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <label
+                        htmlFor="keepOpen"
+                        className="text-sm text-gray-700 dark:text-gray-300"
+                      >
+                        Add multiple sections without closing
                       </label>
-                      <div className="flex items-center space-x-4">
-                        <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
-                          Choose File
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleIconChange}
-                            className="hidden"
-                          />
-                        </label>
-                        {formData.icon ? (
-                          <img
-                            src={formData.icon}
-                            alt="Icon preview"
-                            className="h-16 w-16 rounded-md object-cover border border-gray-300 dark:border-gray-700"
-                          />
+                    </div>
+                    <div className="flex items-center space-x-4 flex-wrap mt-2">
+                      <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                        Choose Icons
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleIconChange}
+                          className="hidden"
+                        />
+                      </label>
+
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {formData.icons.length ? (
+                          formData.icons.map((icon, idx) => (
+                            <div
+                              key={idx}
+                              className="relative h-12 w-12 rounded-md border border-gray-300 dark:border-gray-700 overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800"
+                            >
+                              {/* Loader */}
+                              {icon.loading && (
+                                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                              )}
+
+                              {/* Icon preview بعد التحميل */}
+                              {!icon.loading && icon.url && (
+                                <div className="absolute inset-0 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-6 w-6 text-gray-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M3 7v4h4l5-5 5 5h4V7m0 10v4h-4l-5-5-5 5H3v-4"
+                                    />
+                                  </svg>
+                                </div>
+                              )}
+
+                              {/* Delete button */}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    icons: prev.icons.filter(
+                                      (_, i) => i !== idx
+                                    ),
+                                  }))
+                                }
+                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                              >
+                                &times;
+                              </button>
+                            </div>
+                          ))
                         ) : (
-                          <div className="h-16 w-16 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-100 flex items-center justify-center text-gray-400">
-                            No Icon
+                          <div className="h-12 w-12 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-100 flex items-center justify-center text-gray-400">
+                            No Icons
                           </div>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        Only images are allowed. Max size 2MB.
-                      </p>
                     </div>
                   </div>
                   <div className="mt-6 flex justify-end gap-3">
@@ -420,8 +513,14 @@ const Sections = () => {
                     </button>
                     <button
                       onClick={handleSave}
-                      className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-all"
+                      disabled={saving}
+                      className={`px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-all flex items-center justify-center gap-2 ${
+                        saving ? "opacity-70 cursor-not-allowed" : ""
+                      }`}
                     >
+                      {saving && (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      )}
                       {isEditMode ? "Save" : "Create"}
                     </button>
                   </div>

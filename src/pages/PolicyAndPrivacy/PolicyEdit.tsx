@@ -85,7 +85,7 @@ const PolicyEdit = () => {
 
     try {
       const res = await fetch(
-        `https://api.tik-mall.com/admin/api/policy/${encodeURIComponent(
+        `https://api.tik-mall.com/policies/policyName/${encodeURIComponent(
           policy._id
         )}`,
         {

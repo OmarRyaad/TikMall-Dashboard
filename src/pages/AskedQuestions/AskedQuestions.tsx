@@ -2,7 +2,10 @@
 import { useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChatBubbleLeftIcon } from "@heroicons/react/24/outline";
+import {
+  ChatBubbleLeftIcon,
+  QuestionMarkCircleIcon,
+} from "@heroicons/react/24/outline";
 
 interface FAQ {
   _id: string;
@@ -174,6 +177,7 @@ const AskedQuestions = () => {
         className="text-2xl md:text-3xl font-bold mb-4 flex items-center gap-3"
         style={{ color: "#456FFF" }}
       >
+        <QuestionMarkCircleIcon className="w-8 h-8 text-blue-600" />
         Asked Questions
         <span className="bg-blue-100 text-blue-700 text-sm font-semibold px-3 py-1 rounded-full">
           {faqs.length} {faqs.length === 1 ? "Comment" : "Comments"}

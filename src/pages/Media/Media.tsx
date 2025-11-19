@@ -149,20 +149,19 @@ const Media = () => {
         toastClassName="!z-[9999]"
       />
       <h2
-        className="text-2xl md:text-3xl font-bold mb-4"
+        className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
         style={{ color: "#456FFF" }}
       >
+        <PhotoIcon className="w-8 h-8 text-blue-600" />
         Media
       </h2>
+
       {/* FILTERS */}
       <div className="flex justify-end mb-6">
         <div
           className="
             flex items-center gap-4
-            bg-white dark:bg-gray-900
-            border border-gray-200 dark:border-gray-700
             rounded-xl px-5 py-3
-            shadow-sm
           "
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 space-y-2 sm:space-y-0">

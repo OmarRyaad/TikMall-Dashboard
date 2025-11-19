@@ -3,6 +3,7 @@ import { ToastContainer, toast } from "react-toastify";
 import { AnimatePresence, motion } from "framer-motion";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { BellAlertIcon } from "@heroicons/react/24/outline";
 
 interface User {
   id: string;
@@ -12,7 +13,7 @@ interface User {
 
 const Notifications = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false); // ✅ Add dropdown state
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     NotificationTitle: "",
@@ -35,7 +36,7 @@ const Notifications = () => {
 
   const handleCancel = () => {
     setIsOpen(false);
-    setDropdownOpen(false); // ✅ close dropdown when modal closes
+    setDropdownOpen(false);
     setFormData({
       NotificationTitle: "",
       NotificationMessage: "",
@@ -138,11 +139,13 @@ const Notifications = () => {
 
       <div className="flex justify-between items-center mb-6">
         <h2
-          className="text-2xl md:text-3xl font-bold"
+          className="flex items-center gap-2 text-2xl md:text-3xl font-bold"
           style={{ color: "#456FFF" }}
         >
+          <BellAlertIcon className="w-8 h-8" />
           Notifications
         </h2>
+
         <button
           onClick={openCreateModal}
           className="px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600"

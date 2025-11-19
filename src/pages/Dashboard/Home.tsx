@@ -11,6 +11,8 @@ import {
   PhotoIcon,
   EyeIcon,
   PlayCircleIcon,
+  ChartBarIcon,
+  SignalIcon,
 } from "@heroicons/react/24/outline";
 import { ArrowUpIcon, UserCircleIcon, UserIcon } from "../../icons";
 import { ToastContainer } from "react-toastify";
@@ -60,11 +62,13 @@ export default function Home() {
         <div className="col-span-12 space-y-6">
           {/* --- USER STATISTICS --- */}
           <h2
-            className="text-2xl md:text-3xl font-bold mb-4"
+            className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
             style={{ color: "#456FFF" }}
           >
+            <ChartBarIcon className="w-8 h-8 text-blue-600" />
             User Statistics
           </h2>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             <UsersMetrics
               UsersMetricsIcon={
@@ -173,11 +177,13 @@ export default function Home() {
 
           {/* --- MEDIA STATISTICS --- */}
           <h2
-            className="text-2xl md:text-3xl font-bold mb-4"
+            className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
             style={{ color: "#456FFF" }}
           >
+            <ChartBarIcon className="w-8 h-8 text-blue-600" />
             Media Statistics
           </h2>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             <UsersMetrics
               UsersMetricsIcon={
@@ -316,11 +322,13 @@ export default function Home() {
 
           {/* --- STREAM STATISTICS --- */}
           <h2
-            className="text-2xl md:text-3xl font-bold mb-4"
+            className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
             style={{ color: "#456FFF" }}
           >
+            <SignalIcon className="w-8 h-8 text-blue-600" />
             Broadcast Statistics
           </h2>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             <UsersMetrics
               UsersMetricsIcon={<CalculatorIcon />}

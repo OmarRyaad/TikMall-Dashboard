@@ -10,6 +10,7 @@ import {
   ShoppingBagIcon,
   DocumentTextIcon,
   LockClosedIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 
 interface Permissions {
@@ -254,9 +255,11 @@ const Moderators = () => {
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-[#456FFF]">
+        <h2 className="flex items-center gap-2 text-2xl md:text-3xl font-bold text-[#456FFF]">
+          <UserGroupIcon className="w-8 h-8 text-blue-600" />
           Moderators
         </h2>
+
         <button
           onClick={handleAdd}
           className="px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300 self-start md:self-auto"

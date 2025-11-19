@@ -5,7 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactQuill from "react-quill-new";
 import "react-toastify/dist/ReactToastify.css";
 import "react-quill-new/dist/quill.snow.css";
-import { DocumentTextIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowPathIcon,
+  DocumentTextIcon,
+  ShieldCheckIcon,
+} from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 interface Policy {
   _id: string;
@@ -139,12 +143,22 @@ const PolicyAndPrivacy = () => {
       />
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-blue-600">Policies & Privacy</h1>
+        {/* Title with Icon */}
+        <h2
+          className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
+          style={{ color: "#456FFF" }}
+        >
+          <ShieldCheckIcon className="w-9 h-9 text-blue-600" />
+          Policies & Privacy
+        </h2>
+
+        {/* Refresh Button with Icon */}
         <div className="flex gap-2">
           <button
             onClick={fetchPolicies}
-            className="mb-4 px-5 py-2 bg-gray-200 text-gray-700 rounded-lg shadow hover:bg-gray-300 transition-all duration-300"
+            className="mb-4 px-5 py-2 bg-gray-200 text-gray-700 rounded-lg shadow hover:bg-gray-300 transition-all duration-300 flex items-center gap-2"
           >
+            <ArrowPathIcon className="w-5 h-5" />
             Refresh
           </button>
         </div>
