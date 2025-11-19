@@ -79,10 +79,13 @@ const Customers = () => {
     setDeleteLoading(true);
 
     try {
-      const res = await fetch(`https://api.tik-mall.com/api/delete/${id}`, {
-        method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const res = await fetch(
+        `https://api.tik-mall.com/admin/api/delete/${id}`,
+        {
+          method: "DELETE",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
 
       if (!res.ok) throw new Error("Failed to delete customer");
 

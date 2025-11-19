@@ -62,6 +62,12 @@ const Moderators = () => {
     active: true,
   });
 
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [moderatorToDelete, setModeratorToDelete] = useState<Moderator | null>(
+    null
+  );
+
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
@@ -74,11 +80,8 @@ const Moderators = () => {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
       );
-
       if (!res.ok) throw new Error("Failed to fetch moderators");
-
       const data = (await res.json()) as { users: ApiModerator[] };
-
       const formatted: Moderator[] = data.users
         .filter((u) => !u.isSuperAdmin)
         .map((u) => ({
@@ -91,7 +94,6 @@ const Moderators = () => {
           liveBroadcast: u.permissions.manageMediaAndStreams ?? false,
           contentManagement: u.permissions.manageDepartmentsAndFaqs ?? false,
         }));
-
       setModerators(formatted);
     } catch (err) {
       toast.error("Failed to load moderators");
@@ -148,10 +150,8 @@ const Moderators = () => {
       toast.error("Please fill all required fields");
       return;
     }
-
     try {
       setLoading(true);
-
       const payload = {
         name: formData.name,
         phone: { number: formData.phone },
@@ -168,7 +168,6 @@ const Moderators = () => {
           manageStatistics: false,
         },
       };
-
       const url = isEditMode
         ? `https://api.tik-mall.com/admin/api/modify-permissions/${formData._id}`
         : "https://api.tik-mall.com/admin/api/modify-permissions";
@@ -183,12 +182,10 @@ const Moderators = () => {
       });
 
       const result = await res.json();
-
-      if (!res.ok) {
+      if (!res.ok)
         throw new Error(
           (result as { message?: string }).message || "Operation failed"
         );
-      }
 
       toast.success(isEditMode ? "Moderator updated!" : "Moderator created!");
       fetchModerators();
@@ -200,29 +197,34 @@ const Moderators = () => {
     }
   };
 
-  const handleDeleteClick = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this moderator?")) return;
+  const handleDeleteClick = (moderator: Moderator) => {
+    setModeratorToDelete(moderator);
+    setDeleteModalOpen(true);
+  };
 
+  const handleDelete = async (moderator: Moderator) => {
+    if (!moderator._id) return;
     try {
+      setDeleteLoading(true);
       const res = await fetch(
-        `https://api.tik-mall.com/admin/api/child/${id}`,
+        `https://api.tik-mall.com/admin/api/delete/${moderator._id}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(
-          (err as { message?: string }).message || "Delete failed"
-        );
+        throw new Error(err.message || "Delete failed");
       }
-
-      toast.success("Moderator deleted");
+      toast.success("Moderator deleted!");
       fetchModerators();
-    } catch (error) {
-      toast.error((error as Error).message);
+      setDeleteModalOpen(false);
+      setModeratorToDelete(null);
+    } catch (err) {
+      toast.error((err as Error).message || "Something went wrong");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -282,7 +284,6 @@ const Moderators = () => {
                   )}
                 </tr>
               </thead>
-
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {moderators.map((mod, idx) => (
                   <tr
@@ -307,8 +308,6 @@ const Moderators = () => {
                         {mod.active ? "Active" : "Inactive"}
                       </span>
                     </td>
-
-                    {/* ACTIONS */}
                     <td className="px-4 md:px-6 py-3 flex flex-wrap gap-2">
                       <button
                         onClick={() => handleEdit(mod)}
@@ -316,9 +315,8 @@ const Moderators = () => {
                       >
                         Edit
                       </button>
-
                       <button
-                        onClick={() => mod._id && handleDeleteClick(mod._id)}
+                        onClick={() => handleDeleteClick(mod)}
                         className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700"
                       >
                         Delete
@@ -336,7 +334,7 @@ const Moderators = () => {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Add/Edit Modal */}
       <AnimatePresence>
         {isOpen && (
           <>
@@ -346,7 +344,6 @@ const Moderators = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             />
-
             <motion.div
               className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 overflow-y-auto"
               initial={{ scale: 0.9, opacity: 0 }}
@@ -357,8 +354,6 @@ const Moderators = () => {
                 <h3 className="text-2xl font-bold mb-6">
                   {isEditMode ? "Edit Moderator" : "Add New Moderator"}
                 </h3>
-
-                {/* Inputs */}
                 <div className="space-y-5">
                   <input
                     type="text"
@@ -368,7 +363,6 @@ const Moderators = () => {
                     onChange={handleChange}
                     className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
                   />
-
                   <input
                     type="text"
                     name="phone"
@@ -377,7 +371,6 @@ const Moderators = () => {
                     onChange={handleChange}
                     className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
                   />
-
                   {!isEditMode && (
                     <input
                       type="password"
@@ -388,7 +381,6 @@ const Moderators = () => {
                       className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
                     />
                   )}
-
                   <label className="flex items-center gap-3">
                     <input
                       type="checkbox"
@@ -404,10 +396,9 @@ const Moderators = () => {
                 {/* Permissions */}
                 <div className="mt-8">
                   <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <LockClosedIcon className="w-6 h-6 text-yellow-500" />
+                    <LockClosedIcon className="w-6 h-6 text-yellow-500" />{" "}
                     Permissions
                   </h4>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
                       {
@@ -439,7 +430,6 @@ const Moderators = () => {
                           <Icon className="w-6 h-6 text-blue-500" />
                           <span className="font-medium">{label}</span>
                         </div>
-
                         <input
                           type="checkbox"
                           name={key}
@@ -452,7 +442,6 @@ const Moderators = () => {
                   </div>
                 </div>
 
-                {/* Buttons */}
                 <div className="mt-8 flex flex-col sm:flex-row justify-end gap-4">
                   <button
                     onClick={handleCancel}
@@ -460,7 +449,6 @@ const Moderators = () => {
                   >
                     Cancel
                   </button>
-
                   <button
                     onClick={handleSave}
                     disabled={loading}
@@ -472,6 +460,52 @@ const Moderators = () => {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Modal */}
+      <AnimatePresence>
+        {deleteModalOpen && moderatorToDelete && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          >
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg dark:bg-gray-900">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                Confirm Delete
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Are you sure you want to delete{" "}
+                <strong>{moderatorToDelete.name}</strong>?
+              </p>
+              <div className="mt-5 flex flex-col sm:flex-row justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setDeleteModalOpen(false);
+                    setModeratorToDelete(null);
+                  }}
+                  className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() =>
+                    moderatorToDelete && handleDelete(moderatorToDelete)
+                  }
+                  disabled={deleteLoading}
+                  className={`rounded-md px-4 py-2 text-sm text-white ${
+                    deleteLoading
+                      ? "bg-red-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700"
+                  }`}
+                >
+                  {deleteLoading ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

@@ -80,7 +80,7 @@ const StoreOwners = () => {
 
     try {
       const res = await fetch(
-        `https://api.tik-mall.com/admin/api/users/delete/${id}`,
+        `https://api.tik-mall.com/admin/admin/api/delete/${id}`,
         {
           method: "DELETE",
           headers: token ? { Authorization: `Bearer ${token}` } : {},
