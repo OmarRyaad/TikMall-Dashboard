@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
-import { QuestionMarkCircleIcon } from "@heroicons/react/24/outline";
+import { ChatBubbleLeftIcon } from "@heroicons/react/24/outline";
 
 interface FAQ {
   _id: string;
@@ -30,7 +30,6 @@ const AskedQuestions = () => {
 
   const token = localStorage.getItem("accessToken");
 
-  // Fetch FAQs
   const fetchFaqs = async () => {
     try {
       setLoading(true);
@@ -50,7 +49,6 @@ const AskedQuestions = () => {
     }
   };
 
-  // Create or Edit FAQ
   const handleSubmit = async () => {
     if (
       !formData.question_en ||
@@ -106,7 +104,6 @@ const AskedQuestions = () => {
     }
   };
 
-  // Delete FAQ
   const handleDelete = async (id: string) => {
     try {
       setDeleteLoading(true);
@@ -130,7 +127,6 @@ const AskedQuestions = () => {
     }
   };
 
-  // Open Edit Modal
   const handleEdit = (faq: FAQ) => {
     setFormData({
       question_en: faq.question.en,
@@ -173,12 +169,17 @@ const AskedQuestions = () => {
         autoClose={5000}
         toastClassName="!z-[9999]"
       />
+
       <h2
-        className="text-2xl md:text-3xl font-bold mb-4"
+        className="text-2xl md:text-3xl font-bold mb-4 flex items-center gap-3"
         style={{ color: "#456FFF" }}
       >
         Asked Questions
+        <span className="bg-blue-100 text-blue-700 text-sm font-semibold px-3 py-1 rounded-full">
+          {faqs.length} {faqs.length === 1 ? "Comment" : "Comments"}
+        </span>
       </h2>
+
       {/* Add Button */}
       <div className="mb-4 flex justify-end">
         <button
@@ -198,10 +199,10 @@ const AskedQuestions = () => {
         </button>
       </div>
 
-      {/* Cards Grid */}
-      <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      {/* Comment-Style List */}
+      <div className="space-y-6">
         {faqs.length === 0 ? (
-          <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+          <div className="flex flex-col items-center justify-center py-20 text-center">
             <p className="text-gray-500 text-lg">
               No questions have been added yet.
             </p>
@@ -210,54 +211,52 @@ const AskedQuestions = () => {
           faqs.map((faq) => (
             <div
               key={faq._id}
-              className="
-          relative flex flex-col justify-between
-          rounded-2xl border border-gray-200
-          bg-white dark:bg-gray-900
-          shadow-sm hover:shadow-lg transition-shadow
-          p-5 cursor-pointer
-        "
+              className="flex gap-4 p-4 bg-white dark:bg-gray-900 rounded-2xl shadow hover:shadow-md transition-shadow"
             >
-              {/* Icon + Title */}
-              <div className="flex items-start gap-3">
-                <QuestionMarkCircleIcon className="w-7 h-7 text-blue-500 flex-shrink-0" />
-
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 leading-tight">
-                  {faq.question.en}
-                </h3>
+              {/* Avatar */}
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                  <ChatBubbleLeftIcon className="w-6 h-6" />
+                </div>
               </div>
 
-              {/* Answer */}
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 line-clamp-3">
-                {faq.answer.en}
-              </p>
+              {/* Comment Content */}
+              <div className="flex-1">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                    Asked by Admin
+                  </h4>
+                  <span className="text-xs text-gray-400">Just now</span>
+                </div>
 
-              {/* Actions */}
-              <div className="mt-5 flex justify-between items-center">
-                <button
-                  onClick={() => handleEdit(faq)}
-                  className="
-                    px-3 py-1.5 rounded-md text-xs font-medium
-                    bg-blue-600 text-white hover:bg-blue-700
-                    transition-colors
-                  "
-                >
-                  Edit
-                </button>
+                <p className="text-gray-900 dark:text-gray-200 mt-1">
+                  {faq.question.en}
+                </p>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">
+                  {faq.answer.en}
+                </p>
 
-                <button
-                  onClick={() => {
-                    setFaqToDelete(faq._id);
-                    setDeleteModalOpen(true);
-                  }}
-                  className="
-                    px-3 py-1.5 rounded-md text-xs font-medium
-                    bg-red-600 text-white hover:bg-red-700
-                    transition-colors
-                  "
-                >
-                  Delete
-                </button>
+                {/* Actions */}
+                <div className="mt-3 flex gap-3 text-xs">
+                  <button
+                    onClick={() => handleEdit(faq)}
+                    className="text-blue-600 hover:underline font-medium"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFaqToDelete(faq._id);
+                      setDeleteModalOpen(true);
+                    }}
+                    className="text-red-600 hover:underline font-medium"
+                  >
+                    Delete
+                  </button>
+                  <button className="text-gray-400 cursor-not-allowed">
+                    Reply
+                  </button>
+                </div>
               </div>
             </div>
           ))

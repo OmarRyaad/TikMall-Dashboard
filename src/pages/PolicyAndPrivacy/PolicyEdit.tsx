@@ -158,10 +158,12 @@ const PolicyEdit = () => {
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
-        className="mb-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-all flex items-center gap-2"
+        className="flex items-center justify-center gap-2 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200"
       >
-        <ChevronLeftIcon className="h-5 w-5 text-gray-700" />
-        Back
+        <div className="p-1 bg-white rounded-full shadow-md">
+          <ChevronLeftIcon className="h-4 w-4 text-gray-700" />
+        </div>
+        <span className="text-gray-700 font-medium text-sm">Back</span>
       </button>
 
       {/* Policy Title */}

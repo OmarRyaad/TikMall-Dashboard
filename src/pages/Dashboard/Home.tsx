@@ -14,6 +14,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { ArrowUpIcon, UserCircleIcon, UserIcon } from "../../icons";
 import { ToastContainer } from "react-toastify";
+import MonthlySalesChart from "../../components/ecommerce/MonthlySalesChart";
+import StatisticsChart from "../../components/ecommerce/StatisticsChart";
 
 export default function Home() {
   const { users, media, streams, loading } = useStatisticsData();
@@ -453,12 +455,12 @@ export default function Home() {
             </div>
           </div>
 
-          {/* <MonthlySalesChart /> */}
+          <MonthlySalesChart />
         </div>
 
-        {/* <div className="col-span-12">
+        <div className="col-span-12">
           <StatisticsChart />
-        </div> */}
+        </div>
       </div>
     </>
   );

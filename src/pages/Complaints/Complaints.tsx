@@ -7,8 +7,6 @@ interface User {
   _id: string;
   name?: string;
   phone?: { number: string };
-  role?: string;
-  email?: { mail: string; isVerified: boolean };
 }
 
 interface Complaint {
@@ -18,24 +16,22 @@ interface Complaint {
   description: string;
   status: string;
   createdAt: string;
-  updatedAt: string;
 }
 
 const Complaints = () => {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [page, setPage] = useState<number>(1);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
 
   const token = localStorage.getItem("accessToken");
 
   const fetchComplaints = async (status: string, page: number) => {
     setLoading(true);
     try {
-      // Construct query parameters
       const params = new URLSearchParams({
-        status: status === "all" ? "" : status, // API ignores empty status
+        status: status === "all" ? "" : status,
         page: page.toString(),
         limit: "10",
       });
@@ -51,7 +47,6 @@ const Complaints = () => {
       );
 
       if (!res.ok) throw new Error("Failed to fetch complaints");
-
       const data = await res.json();
       setComplaints(data.complaints);
     } catch (error) {
@@ -84,8 +79,6 @@ const Complaints = () => {
         }
       );
       if (!res.ok) throw new Error("Failed to update status");
-
-      // Refresh complaints after update
       fetchComplaints(statusFilter, page);
     } catch (error) {
       console.error(error);
@@ -96,7 +89,7 @@ const Complaints = () => {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center h-[80vh]">
+      <div className="flex items-center justify-center h-[80vh] bg-transparent">
         <div className="relative flex flex-col items-center">
           <div className="relative w-20 h-20">
             <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-blue-500 animate-spin" />
@@ -116,32 +109,22 @@ const Complaints = () => {
 
   return (
     <div className="p-6">
-      <h2
-        className="text-2xl md:text-3xl font-bold mb-4"
-        style={{ color: "#456FFF" }}
-      >
-        Complaints
-      </h2>
+      <h2 className="text-2xl font-bold mb-4 text-blue-600">Complaints</h2>
 
       {/* Status Filter */}
       <div className="mb-6 flex justify-end">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 shadow-sm w-full sm:w-auto">
-          {/* Icon and Label */}
-          <div className="flex items-center gap-2 mb-2 sm:mb-0">
-            <CheckCircleIcon className="w-5 h-5 text-gray-500" />
-            <label className="font-medium text-gray-700 dark:text-gray-300">
-              Filter by status:
-            </label>
-          </div>
-
-          {/* Select */}
+        <div className="flex items-center gap-2">
+          <CheckCircleIcon className="w-5 h-5 text-gray-500" />
+          <label className="font-medium text-gray-700 dark:text-gray-300">
+            Filter by status:
+          </label>
           <select
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="bg-transparent px-2 py-1 text-gray-800 dark:text-gray-200 focus:outline-none rounded-md focus:ring-2 focus:ring-blue-500 border border-gray-300 dark:border-gray-600 w-full sm:w-auto"
+            className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 px-2 py-1 rounded"
           >
             <option value="all">All</option>
             <option value="pending">Pending</option>
@@ -152,85 +135,109 @@ const Complaints = () => {
         </div>
       </div>
 
-      {complaints.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 px-8 bg-gray-50 rounded-3xl shadow-lg border border-gray-200 max-w-md mx-auto text-center">
-          <h2 className="text-2xl font-bold text-gray-700 mb-2">
-            No Complaints Found
-          </h2>
-          <p className="text-gray-500">
-            There are currently no complaints with this status.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {complaints.map((c) => (
-            <div
-              key={c._id}
-              className="flex flex-col justify-between p-5 border rounded-2xl shadow-md hover:shadow-xl transition-all bg-white"
-            >
-              <div className="flex justify-between items-start mb-3">
-                <h2 className="font-semibold text-lg text-gray-800">
-                  {c.reason}
-                </h2>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    c.status === "pending"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : c.status === "reviewed"
-                      ? "bg-blue-600 text-white"
-                      : c.status === "resolved"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
+      {/* Complaints Table */}
+      <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700">
+        <table className="min-w-full border-collapse">
+          <thead className="bg-gray-50 dark:bg-gray-900/30 border-b border-gray-100 dark:border-gray-800">
+            <tr>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                #
+              </th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                Reason
+              </th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                Description
+              </th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                Status
+              </th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                User
+              </th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            {complaints.length ? (
+              complaints.map((c, idx) => (
+                <tr
+                  key={c._id}
+                  className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
                 >
-                  {c.status === "rejected"
-                    ? "Refused"
-                    : c.status === "reviewed"
-                    ? "Reviewed"
-                    : c.status === "resolved"
-                    ? "Solved"
-                    : c.status}
-                </span>
-              </div>
-
-              <p className="text-gray-600 mb-2">{c.description}</p>
-              <p className="text-gray-500 text-sm mb-2">
-                By: {c.userId?.name || c.userId?.phone?.number || "Anonymous"}
-              </p>
-              <p className="text-gray-400 text-xs mb-4">
-                Created: {new Date(c.createdAt).toLocaleString()}
-              </p>
-
-              {/* Buttons */}
-              <div className="flex gap-3 flex-wrap mt-auto">
-                <button
-                  disabled={updatingId === c._id}
-                  onClick={() => updateStatus(c._id, "rejected")}
-                  className="flex-1 px-4 py-2 bg-red-700 text-white font-semibold rounded-lg hover:bg-red-800 transition disabled:opacity-50 shadow-md"
+                  <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                    {idx + 1}
+                  </td>
+                  <td className="py-3 px-4 text-sm font-medium text-gray-800 dark:text-white">
+                    {c.reason}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+                    {c.description}
+                  </td>
+                  <td className="py-3 px-4">
+                    <span
+                      className={`px-2 py-1 rounded-full text-sm font-medium ${
+                        c.status === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : c.status === "reviewed"
+                          ? "bg-blue-600 text-white"
+                          : c.status === "resolved"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {c.status === "rejected"
+                        ? "Refused"
+                        : c.status === "reviewed"
+                        ? "Reviewed"
+                        : c.status === "resolved"
+                        ? "Solved"
+                        : c.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                    {c.userId?.name || c.userId?.phone?.number || "Anonymous"}
+                  </td>
+                  <td className="py-3 px-4 flex gap-1">
+                    <button
+                      disabled={updatingId === c._id}
+                      onClick={() => updateStatus(c._id, "rejected")}
+                      className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 disabled:opacity-50"
+                    >
+                      Reject
+                    </button>
+                    <button
+                      disabled={updatingId === c._id}
+                      onClick={() => updateStatus(c._id, "resolved")}
+                      className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Solve
+                    </button>
+                    <button
+                      disabled={updatingId === c._id}
+                      onClick={() => updateStatus(c._id, "reviewed")}
+                      className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      Reviewed
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  className="py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400"
+                  colSpan={6}
                 >
-                  Reject
-                </button>
-
-                <button
-                  disabled={updatingId === c._id}
-                  onClick={() => updateStatus(c._id, "resolved")}
-                  className="flex-1 px-4 py-2 bg-green-700 text-white font-semibold rounded-lg hover:bg-green-800 transition disabled:opacity-50 shadow-md"
-                >
-                  Solve
-                </button>
-
-                <button
-                  disabled={updatingId === c._id}
-                  onClick={() => updateStatus(c._id, "reviewed")}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 shadow-md"
-                >
-                  Reviewed
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+                  No complaints found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

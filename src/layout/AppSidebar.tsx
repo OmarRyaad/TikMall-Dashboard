@@ -112,10 +112,24 @@ const AppSidebar: React.FC = () => {
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // const isActive = (path: string) => location.pathname === path;
   const isActive = useCallback(
-    (path: string) => location.pathname === path,
-    [location.pathname]
+    (path?: string) => {
+      if (!path) return false;
+
+      const currentPath = location.pathname;
+      const hasPolicyQuery = new URLSearchParams(location.search).has("name");
+
+      if (path === "/policy-and-Privacy") {
+        return (
+          currentPath === "/policy-and-Privacy" ||
+          currentPath.startsWith("/policy-and-Privacy") ||
+          hasPolicyQuery
+        );
+      }
+
+      return currentPath === path;
+    },
+    [location.pathname, location.search]
   );
 
   useEffect(() => {
