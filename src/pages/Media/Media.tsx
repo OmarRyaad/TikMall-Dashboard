@@ -3,10 +3,8 @@ import {
   BuildingOffice2Icon,
   HeartIcon,
   PhotoIcon,
-  TrashIcon,
 } from "@heroicons/react/24/outline";
-import { Modal } from "../../components/ui/modal";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -41,8 +39,6 @@ const Media = () => {
 
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [mediaToDelete, setMediaToDelete] = useState<string | null>(null);
 
   const [filterType, setFilterType] = useState("image");
   const [filterDepartment, setFilterDepartment] = useState("");
@@ -97,47 +93,6 @@ const Media = () => {
     };
     fetchDepartments();
   }, [token, lang]);
-
-  const handleDelete = (id: string) => {
-    setMediaToDelete(id);
-    setDeleteModalOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!mediaToDelete) return;
-
-    try {
-      const res = await fetch(
-        `https://api.tik-mall.com/admin/api/media/${mediaToDelete}`,
-        {
-          method: "DELETE",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
-      );
-      const data = await res.json();
-      if (res.ok) {
-        setMedia((prev) => prev.filter((item) => item._id !== mediaToDelete));
-        toast.success(
-          lang === "ar" ? "تم حذف الوسائط بنجاح" : "Media deleted successfully"
-        );
-      } else {
-        toast.error(
-          data.error ||
-            (lang === "ar" ? "فشل حذف الوسائط" : "Failed to delete media")
-        );
-      }
-    } catch (error) {
-      console.error("Delete error:", error);
-      toast.error(
-        lang === "ar"
-          ? "حدث خطأ أثناء الحذف"
-          : "An error occurred while deleting."
-      );
-    } finally {
-      setDeleteModalOpen(false);
-      setMediaToDelete(null);
-    }
-  };
 
   if (loading)
     return (
@@ -260,13 +215,6 @@ const Media = () => {
                     <HeartIcon className="h-4 w-4 text-red-400" />
                     <span>{item.likesCount}</span>
                   </div>
-                  <button
-                    onClick={() => handleDelete(item._id)}
-                    className="flex items-center gap-1 rounded-md bg-red-600 px-2 py-1 text-xs font-medium transition hover:bg-red-700"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                    {lang === "ar" ? "حذف" : "Delete"}
-                  </button>
                 </div>
               </div>
             </div>
@@ -278,36 +226,6 @@ const Media = () => {
           </div>
         )}
       </div>
-
-      {/* DELETE MODAL */}
-      <Modal
-        isOpen={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        className="max-w-md p-6"
-      >
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-          {lang === "ar" ? "حذف الوسائط" : "Delete Media"}
-        </h3>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-          {lang === "ar"
-            ? "هل أنت متأكد من حذف هذه الوسائط؟"
-            : "Are you sure you want to delete this media?"}
-        </p>
-        <div className="mt-4 flex justify-end gap-3">
-          <button
-            onClick={() => setDeleteModalOpen(false)}
-            className="rounded-md px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
-          >
-            {lang === "ar" ? "إلغاء" : "Cancel"}
-          </button>
-          <button
-            onClick={handleConfirmDelete}
-            className="rounded-md px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700"
-          >
-            {lang === "ar" ? "حذف" : "Delete"}
-          </button>
-        </div>
-      </Modal>
     </div>
   );
 };
