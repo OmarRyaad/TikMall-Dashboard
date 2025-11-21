@@ -192,19 +192,39 @@ const StoreOwners = () => {
             <table className="w-full min-w-[600px] md:min-w-full">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-4 md:px-6 py-3 text-left text-xs text-gray-500 uppercase">
+                  <th
+                    className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
+                  >
                     #
                   </th>
-                  <th className="px-4 md:px-6 py-3 text-left text-xs text-gray-500 uppercase">
+                  <th
+                    className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
+                  >
                     {lang === "ar" ? "الاسم" : "Name"}
                   </th>
-                  <th className="px-4 md:px-6 py-3 text-left text-xs text-gray-500 uppercase">
+                  <th
+                    className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
+                  >
                     {lang === "ar" ? "رقم الهاتف" : "Phone"}
                   </th>
-                  <th className="px-4 md:px-6 py-3 text-left text-xs text-gray-500 uppercase">
+                  <th
+                    className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
+                  >
                     {lang === "ar" ? "الحالة" : "Status"}
                   </th>
-                  <th className="px-4 md:px-6 py-3 text-left text-xs text-gray-500 uppercase">
+                  <th
+                    className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
+                  >
                     {lang === "ar" ? "الإجراءات" : "Actions"}
                   </th>
                 </tr>
@@ -216,13 +236,25 @@ const StoreOwners = () => {
                     key={owner._id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
-                    <td className="px-4 md:px-6 py-3 text-sm dark:text-gray-300">
+                    <td
+                      className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
                       {idx + 1}
                     </td>
-                    <td className="px-4 md:px-6 py-3 font-medium dark:text-gray-300">
+                    <td
+                      className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
                       {owner.name}
                     </td>
-                    <td className="px-4 md:px-6 py-3 text-sm text-gray-600 dark:text-gray-300">
+                    <td
+                      className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
                       {owner.phone?.number || "—"}
                     </td>
                     <td className="px-4 md:px-6 py-3">

@@ -318,7 +318,9 @@ const Moderators = () => {
                   ].map((title, i) => (
                     <th
                       key={i}
-                      className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                      className={`px-4 md:px-6 py-3 ${
+                        isRTL ? "text-right" : "text-left"
+                      } text-xs font-medium text-gray-500 uppercase`}
                     >
                       {title}
                     </th>
@@ -331,16 +333,32 @@ const Moderators = () => {
                     key={mod._id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
-                    <td className="px-4 md:px-6 py-3 text-sm dark:text-gray-300">
+                    <td
+                      className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
                       {idx + 1}
                     </td>
-                    <td className="px-4 md:px-6 py-3 font-medium dark:text-gray-300">
+                    <td
+                      className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
                       {mod.name}
                     </td>
-                    <td className="px-4 md:px-6 py-3 text-sm text-gray-600 dark:text-gray-300">
+                    <td
+                      className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
                       {mod.phone}
                     </td>
-                    <td className="px-4 md:px-6 py-3">
+                    <td
+                      className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium ${
                           mod.active

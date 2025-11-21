@@ -382,19 +382,39 @@ const Sections = () => {
           <table className="min-w-full border-collapse">
             <thead className="border-y border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30">
               <tr>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                <th
+                  className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
+                    isRTL ? "text-right" : "text-left"
+                  }`}
+                >
                   #
                 </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                <th
+                  className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
+                    isRTL ? "text-right" : "text-left"
+                  }`}
+                >
                   {lang === "ar" ? "الأيقونة" : "Icon"}
                 </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                <th
+                  className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
+                    isRTL ? "text-right" : "text-left"
+                  }`}
+                >
                   {lang === "ar" ? "الاسم" : "Name"}
                 </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                <th
+                  className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
+                    isRTL ? "text-right" : "text-left"
+                  }`}
+                >
                   {lang === "ar" ? "الوصف" : "Description"}
                 </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                <th
+                  className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
+                    isRTL ? "text-right" : "text-left"
+                  }`}
+                >
                   {lang === "ar" ? "الإجراءات" : "Actions"}
                 </th>
               </tr>
@@ -406,7 +426,11 @@ const Sections = () => {
                     key={dept._id}
                     className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
                   >
-                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                    <td
+                      className={`py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90 ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
                       {idx + 1}
                     </td>
                     <td className="py-3 px-4">
@@ -416,10 +440,18 @@ const Sections = () => {
                         className="h-12 w-12 rounded-md object-cover"
                       />
                     </td>
-                    <td className="py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90">
+                    <td
+                      className={`py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90 ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
                       {lang === "ar" ? dept.name.ar : dept.name.en}
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+                    <td
+                      className={`py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90 ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
                       {lang === "ar"
                         ? dept.description.ar
                         : dept.description.en}

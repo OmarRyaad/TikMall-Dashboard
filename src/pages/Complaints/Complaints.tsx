@@ -2,9 +2,8 @@
 
 import { CheckCircleIcon, MegaphoneIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
-import { ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import { useLanguage } from "../../context/LanguageContext";
-
 interface User {
   _id: string;
   name?: string;
@@ -84,9 +83,20 @@ const Complaints = () => {
         }
       );
       if (!res.ok) throw new Error("Failed to update status");
+      toast.success(
+        lang === "ar"
+          ? `تم تحديث الشكوى إلى ${status}`
+          : `Complaint status updated to ${status}`
+      );
+
       fetchComplaints(statusFilter, page);
     } catch (error) {
       console.error(error);
+      toast.error(
+        lang === "ar"
+          ? "فشل تحديث حالة الشكوى"
+          : "Failed to update complaint status"
+      );
     } finally {
       setUpdatingId(null);
     }
@@ -185,7 +195,9 @@ const Complaints = () => {
               ].map((title) => (
                 <th
                   key={title}
-                  className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+                  className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
+                    isRTL ? "text-right" : "text-left"
+                  }`}
                 >
                   {title}
                 </th>
@@ -199,13 +211,25 @@ const Complaints = () => {
                   key={c._id}
                   className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
                 >
-                  <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                  <td
+                    className={`py-3 px-4 text-sm font-medium text-gray-800 dark:text-white ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
+                  >
                     {idx + 1}
                   </td>
-                  <td className="py-3 px-4 text-sm font-medium text-gray-800 dark:text-white">
+                  <td
+                    className={`py-3 px-4 text-sm font-medium text-gray-800 dark:text-white ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
+                  >
                     {c.reason}
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+                  <td
+                    className={`py-3 px-4 text-sm font-medium text-gray-800 dark:text-white ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
+                  >
                     {c.description}
                   </td>
                   <td className="py-3 px-4">

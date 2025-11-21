@@ -34,6 +34,47 @@ type NavItem = {
 
 const AppSidebar: React.FC = () => {
   const { t, lang } = useLanguage();
+  const [announces, setAnnounces] = useState<{ [key: string]: boolean }>({});
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+
+  useEffect(() => {
+    const fetchAnnounces = () => {
+      fetch("https://api.tik-mall.com/admin/api/announces", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          const newAnnounces: { [key: string]: boolean } = {};
+          data.flags.forEach((f: { key: string; value: boolean }) => {
+            newAnnounces[f.key] = f.value;
+          });
+          setAnnounces(newAnnounces);
+        })
+        .catch(console.error);
+    };
+
+    fetchAnnounces();
+
+    const intervalId = setInterval(fetchAnnounces, 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [token]);
+
+  const handleAnnounceSeen = (path: string | undefined) => {
+    if (!path) return;
+    const type = path as "complaints" | "media" | "live-broad-casts";
+    if (!["complaints", "media", "live-broad-casts"].includes(type)) return;
+    if (!announces[type]) return;
+
+    fetch("https://api.tik-mall.com/admin/api/seen/announce", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type }),
+    })
+      .then(() => setAnnounces((prev) => ({ ...prev, [type]: false })))
+      .catch(console.error);
+  };
 
   const navItems: NavItem[] = [
     {
@@ -178,7 +219,16 @@ const AppSidebar: React.FC = () => {
                 {nav.icon}
               </span>
               {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="menu-item-text">{nav.name}</span>
+                <span className="relative">
+                  {nav.name}
+                  {["complaints", "media", "live-broad-casts"].includes(
+                    nav.path || ""
+                  ) && (
+                    <span className="absolute right-0 top-0.5 z-10 h-2 w-2 rounded-full bg-orange-400">
+                      <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
+                    </span>
+                  )}
+                </span>
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
@@ -194,7 +244,8 @@ const AppSidebar: React.FC = () => {
           ) : (
             nav.path && (
               <Link
-                to={nav.path}
+                to={nav.path!}
+                onClick={() => handleAnnounceSeen(nav.path)}
                 className={`menu-item group ${
                   isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
                 }`}
@@ -210,6 +261,13 @@ const AppSidebar: React.FC = () => {
                 </span>
                 {(isExpanded || isHovered || isMobileOpen) && (
                   <span className="menu-item-text">{nav.name}</span>
+                )}
+                {["complaints", "media", "live-broad-casts"].includes(
+                  nav.path || ""
+                ) && (
+                  <span className="absolute right-0 top-0.5 z-10 h-2 w-2 rounded-full bg-orange-400">
+                    <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
+                  </span>
                 )}
               </Link>
             )
