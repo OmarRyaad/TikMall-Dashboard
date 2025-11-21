@@ -12,6 +12,7 @@ import {
   LockClosedIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface Permissions {
   manageAdmins?: boolean;
@@ -55,6 +56,9 @@ interface Moderator {
 }
 
 const Moderators = () => {
+  const { lang } = useLanguage();
+  const isRTL = lang === "ar";
+
   const [moderators, setModerators] = useState<Moderator[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -97,7 +101,9 @@ const Moderators = () => {
         }));
       setModerators(formatted);
     } catch (err) {
-      toast.error("Failed to load moderators");
+      toast.error(
+        lang === "ar" ? "فشل تحميل المدراء" : "Failed to load moderators"
+      );
       console.error(err);
     } finally {
       setLoading(false);
@@ -148,7 +154,11 @@ const Moderators = () => {
       !formData.phone ||
       (!isEditMode && !formData.password)
     ) {
-      toast.error("Please fill all required fields");
+      toast.error(
+        lang === "ar"
+          ? "يرجى ملء جميع الحقول المطلوبة"
+          : "Please fill all required fields"
+      );
       return;
     }
     try {
@@ -169,6 +179,7 @@ const Moderators = () => {
           manageStatistics: false,
         },
       };
+
       const url = isEditMode
         ? `https://api.tik-mall.com/admin/api/modify-permissions/${formData._id}`
         : "https://api.tik-mall.com/admin/api/modify-permissions";
@@ -188,11 +199,22 @@ const Moderators = () => {
           (result as { message?: string }).message || "Operation failed"
         );
 
-      toast.success(isEditMode ? "Moderator updated!" : "Moderator created!");
+      toast.success(
+        isEditMode
+          ? lang === "ar"
+            ? "تم تحديث المدير بنجاح!"
+            : "Moderator updated!"
+          : lang === "ar"
+          ? "تم إنشاء المدير بنجاح!"
+          : "Moderator created!"
+      );
       fetchModerators();
       setIsOpen(false);
     } catch (error) {
-      toast.error((error as Error).message || "Something went wrong");
+      toast.error(
+        (error as Error).message ||
+          (lang === "ar" ? "حدث خطأ ما" : "Something went wrong")
+      );
     } finally {
       setLoading(false);
     }
@@ -218,12 +240,17 @@ const Moderators = () => {
         const err = await res.json();
         throw new Error(err.message || "Delete failed");
       }
-      toast.success("Moderator deleted!");
+      toast.success(
+        lang === "ar" ? "تم حذف المدير بنجاح!" : "Moderator deleted!"
+      );
       fetchModerators();
       setDeleteModalOpen(false);
       setModeratorToDelete(null);
     } catch (err) {
-      toast.error((err as Error).message || "Something went wrong");
+      toast.error(
+        (err as Error).message ||
+          (lang === "ar" ? "حدث خطأ أثناء الحذف" : "Something went wrong")
+      );
     } finally {
       setDeleteLoading(false);
     }
@@ -238,7 +265,11 @@ const Moderators = () => {
             <div className="absolute inset-2 rounded-full border-4 border-t-transparent border-cyan-400 animate-[spin_1.5s_linear_infinite]" />
           </div>
           <p className="mt-6 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-            Loading <span className="text-blue-500">Moderators</span>...
+            {lang === "ar" ? "جاري تحميل" : "Loading"}{" "}
+            <span className="text-blue-500">
+              {lang === "ar" ? "المدراء" : "Moderators"}
+            </span>
+            ...
           </p>
         </div>
       </div>
@@ -246,7 +277,10 @@ const Moderators = () => {
   }
 
   return (
-    <div className="p-4 md:p-6">
+    <div
+      dir={isRTL ? "rtl" : "ltr"}
+      className={`p-4 md:p-6 ${isRTL ? "text-right" : "text-left"}`}
+    >
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -257,14 +291,14 @@ const Moderators = () => {
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
         <h2 className="flex items-center gap-2 text-2xl md:text-3xl font-bold text-[#456FFF]">
           <UserGroupIcon className="w-8 h-8 text-blue-600" />
-          Moderators
+          {lang === "ar" ? "المدراء" : "Moderators"}
         </h2>
 
         <button
           onClick={handleAdd}
           className="px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300 self-start md:self-auto"
         >
-          + Add Moderator
+          + {lang === "ar" ? "إضافة مدير" : "Add Moderator"}
         </button>
       </div>
 
@@ -275,16 +309,20 @@ const Moderators = () => {
             <table className="w-full min-w-[650px]">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  {["#", "Name", "Phone", "Status", "Actions"].map(
-                    (title, i) => (
-                      <th
-                        key={i}
-                        className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
-                      >
-                        {title}
-                      </th>
-                    )
-                  )}
+                  {[
+                    "#",
+                    lang === "ar" ? "الاسم" : "Name",
+                    lang === "ar" ? "رقم الهاتف" : "Phone",
+                    lang === "ar" ? "الحالة" : "Status",
+                    lang === "ar" ? "الإجراءات" : "Actions",
+                  ].map((title, i) => (
+                    <th
+                      key={i}
+                      className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                    >
+                      {title}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -310,7 +348,13 @@ const Moderators = () => {
                             : "bg-red-100 text-red-800"
                         }`}
                       >
-                        {mod.active ? "Active" : "Inactive"}
+                        {mod.active
+                          ? lang === "ar"
+                            ? "نشط"
+                            : "Active"
+                          : lang === "ar"
+                          ? "غير نشط"
+                          : "Inactive"}
                       </span>
                     </td>
                     <td className="px-4 md:px-6 py-3 flex flex-wrap gap-2">
@@ -318,13 +362,13 @@ const Moderators = () => {
                         onClick={() => handleEdit(mod)}
                         className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700"
                       >
-                        Edit
+                        {lang === "ar" ? "تعديل" : "Edit"}
                       </button>
                       <button
                         onClick={() => handleDeleteClick(mod)}
                         className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700"
                       >
-                        Delete
+                        {lang === "ar" ? "حذف" : "Delete"}
                       </button>
                     </td>
                   </tr>
@@ -334,7 +378,7 @@ const Moderators = () => {
           </div>
         ) : (
           <div className="text-center py-20 text-gray-500">
-            No moderators found.
+            {lang === "ar" ? "لا يوجد مدراء" : "No moderators found."}
           </div>
         )}
       </div>
@@ -357,13 +401,20 @@ const Moderators = () => {
             >
               <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg md:max-w-2xl p-6 md:p-8">
                 <h3 className="text-2xl font-bold mb-6">
-                  {isEditMode ? "Edit Moderator" : "Add New Moderator"}
+                  {isEditMode
+                    ? lang === "ar"
+                      ? "تعديل المدير"
+                      : "Edit Moderator"
+                    : lang === "ar"
+                    ? "إضافة مدير جديد"
+                    : "Add New Moderator"}
                 </h3>
+
                 <div className="space-y-5">
                   <input
                     type="text"
                     name="name"
-                    placeholder="Full Name"
+                    placeholder={lang === "ar" ? "الاسم الكامل" : "Full Name"}
                     value={formData.name || ""}
                     onChange={handleChange}
                     className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
@@ -371,7 +422,11 @@ const Moderators = () => {
                   <input
                     type="text"
                     name="phone"
-                    placeholder="Phone Number (e.g. +20123456789)"
+                    placeholder={
+                      lang === "ar"
+                        ? "رقم الهاتف (مثال: +20123456789)"
+                        : "Phone Number (e.g. +20123456789)"
+                    }
                     value={formData.phone || ""}
                     onChange={handleChange}
                     className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
@@ -380,7 +435,7 @@ const Moderators = () => {
                     <input
                       type="password"
                       name="password"
-                      placeholder="Password"
+                      placeholder={lang === "ar" ? "كلمة المرور" : "Password"}
                       value={formData.password || ""}
                       onChange={handleChange}
                       className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
@@ -394,7 +449,9 @@ const Moderators = () => {
                       onChange={handleChange}
                       className="w-5 h-5"
                     />
-                    <span className="font-medium">Active Account</span>
+                    <span className="font-medium">
+                      {lang === "ar" ? "الحساب مفعل" : "Active Account"}
+                    </span>
                   </label>
                 </div>
 
@@ -402,28 +459,36 @@ const Moderators = () => {
                 <div className="mt-8">
                   <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <LockClosedIcon className="w-6 h-6 text-yellow-500" />{" "}
-                    Permissions
+                    {lang === "ar" ? "الصلاحيات" : "Permissions"}
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
                       {
                         key: "userManagement" as const,
-                        label: "User Management",
+                        label:
+                          lang === "ar"
+                            ? "إدارة المستخدمين"
+                            : "User Management",
                         Icon: UserIcon,
                       },
                       {
                         key: "liveBroadcast" as const,
-                        label: "Live Broadcast",
+                        label:
+                          lang === "ar" ? "البث المباشر" : "Live Broadcast",
                         Icon: VideoCameraIcon,
                       },
                       {
                         key: "storeManagement" as const,
-                        label: "Store Management",
+                        label:
+                          lang === "ar" ? "إدارة المتاجر" : "Store Management",
                         Icon: ShoppingBagIcon,
                       },
                       {
                         key: "contentManagement" as const,
-                        label: "Content Management",
+                        label:
+                          lang === "ar"
+                            ? "إدارة المحتوى"
+                            : "Content Management",
                         Icon: DocumentTextIcon,
                       },
                     ].map(({ key, label, Icon }) => (
@@ -452,14 +517,24 @@ const Moderators = () => {
                     onClick={handleCancel}
                     className="px-6 py-3 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
-                    Cancel
+                    {lang === "ar" ? "إلغاء" : "Cancel"}
                   </button>
                   <button
                     onClick={handleSave}
                     disabled={loading}
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-70"
                   >
-                    {loading ? "Saving..." : isEditMode ? "Update" : "Create"}
+                    {loading
+                      ? lang === "ar"
+                        ? "جاري الحفظ..."
+                        : "Saving..."
+                      : isEditMode
+                      ? lang === "ar"
+                        ? "تحديث"
+                        : "Update"
+                      : lang === "ar"
+                      ? "إنشاء"
+                      : "Create"}
                   </button>
                 </div>
               </div>
@@ -468,7 +543,7 @@ const Moderators = () => {
         )}
       </AnimatePresence>
 
-      {/* Delete Modal */}
+      {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {deleteModalOpen && moderatorToDelete && (
           <motion.div
@@ -479,11 +554,13 @@ const Moderators = () => {
           >
             <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg dark:bg-gray-900">
               <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                Confirm Delete
+                {lang === "ar" ? "تأكيد الحذف" : "Confirm Delete"}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Are you sure you want to delete{" "}
-                <strong>{moderatorToDelete.name}</strong>?
+                {lang === "ar"
+                  ? "هل أنت متأكد من حذف"
+                  : "Are you sure you want to delete"}{" "}
+                <strong>{moderatorToDelete.name}</strong>؟
               </p>
               <div className="mt-5 flex flex-col sm:flex-row justify-end gap-3">
                 <button
@@ -493,7 +570,7 @@ const Moderators = () => {
                   }}
                   className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
-                  Cancel
+                  {lang === "ar" ? "إلغاء" : "Cancel"}
                 </button>
                 <button
                   onClick={() =>
@@ -506,7 +583,13 @@ const Moderators = () => {
                       : "bg-red-600 hover:bg-red-700"
                   }`}
                 >
-                  {deleteLoading ? "Deleting..." : "Delete"}
+                  {deleteLoading
+                    ? lang === "ar"
+                      ? "جاري الحذف..."
+                      : "Deleting..."
+                    : lang === "ar"
+                    ? "حذف"
+                    : "Delete"}
                 </button>
               </div>
             </div>

@@ -46,8 +46,10 @@ export default function Home() {
 
           {/* Text with shimmer */}
           <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-            Loading{" "}
-            <span className="text-blue-500 dark:text-cyan-400">Statistics</span>
+            {lang === "ar" ? "جاري تحميل" : "Loading"}{" "}
+            <span className="text-blue-500 dark:text-cyan-400">
+              {lang === "ar" ? "الإحصائيات" : "Statistics"}
+            </span>
             ...
           </p>
         </div>
@@ -64,10 +66,18 @@ export default function Home() {
         autoClose={5000}
         toastClassName="!z-[9999]"
       />
+
       <PageMeta
-        title="TikMall Admin Dashboard"
-        description="TikMall statistics overview"
+        title={
+          lang === "ar" ? "لوحة تحكم مدير تيك مول" : "TikMall Admin Dashboard"
+        }
+        description={
+          lang === "ar"
+            ? "نظرة عامة على إحصائيات تيك مول"
+            : "TikMall statistics overview"
+        }
       />
+
       <div className="grid grid-cols-12 gap-4 md:gap-6">
         <div className="col-span-12 space-y-6">
           {/* --- USER STATISTICS --- */}
@@ -76,7 +86,7 @@ export default function Home() {
             style={{ color: "#456FFF" }}
           >
             <ChartBarIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            User Statistics
+            {lang === "ar" ? "إحصائيات المستخدمين" : "User Statistics"}
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -84,11 +94,15 @@ export default function Home() {
               UsersMetricsIcon={
                 <UserGroupIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
               }
-              UsersMetricsName="Total Users"
+              UsersMetricsName={
+                lang === "ar" ? "إجمالي المستخدمين" : "Total Users"
+              }
               UsersMetricsTotallyNum={users?.totalUsers?.toString() ?? "-"}
               UsersMetricsBadge={{
                 color: "success",
-                value: `${users?.newUsersLastMonth ?? 0} new this month`,
+                value: `${users?.newUsersLastMonth ?? 0} ${
+                  lang === "ar" ? "جديد هذا الشهر" : "new this month"
+                }`,
                 icon: (
                   <ArrowUpIcon className="text-green-500 dark:text-green-300 w-4 h-4" />
                 ),
@@ -98,7 +112,9 @@ export default function Home() {
               UsersMetricsIcon={
                 <BuildingStorefrontIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
               }
-              UsersMetricsName="Store Owners"
+              UsersMetricsName={
+                lang === "ar" ? "أصحاب المتاجر" : "Store Owners"
+              }
               UsersMetricsTotallyNum={users?.storeOwners?.toString() ?? "-"}
               UsersMetricsBadge={{
                 color: "primary",
@@ -115,7 +131,7 @@ export default function Home() {
               UsersMetricsIcon={
                 <UserIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
               }
-              UsersMetricsName="Customers"
+              UsersMetricsName={lang === "ar" ? "العملاء" : "Customers"}
               UsersMetricsTotallyNum={users?.customers?.toString() ?? "-"}
               UsersMetricsBadge={{
                 color: "info",
@@ -143,22 +159,24 @@ export default function Home() {
                     </th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       <div className="flex items-center gap-1">
-                        <UserIcon className="h-4 w-4" /> Name
+                        <UserIcon className="h-4 w-4" />{" "}
+                        {lang === "ar" ? "الاسم" : "Name"}
                       </div>
                     </th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       <div className="flex items-center gap-1">
-                        <BuildingStorefrontIcon className="h-4 w-4" /> Store
+                        <BuildingStorefrontIcon className="h-4 w-4" />{" "}
+                        {lang === "ar" ? "المتجر" : "Store"}
                       </div>
                     </th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       <div className="flex items-center gap-1">
-                        <UserGroupIcon className="h-4 w-4" /> Followers
+                        <UserGroupIcon className="h-4 w-4" />{" "}
+                        {lang === "ar" ? "المتابعون" : "Followers"}
                       </div>
                     </th>
                   </tr>
                 </thead>
-
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {users?.mostFollowed?.length ? (
                     users.mostFollowed.map((user, idx) => (
@@ -186,7 +204,9 @@ export default function Home() {
                         className="py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400"
                         colSpan={4}
                       >
-                        No data available
+                        {lang === "ar"
+                          ? "لا توجد بيانات متاحة"
+                          : "No data available"}
                       </td>
                     </tr>
                   )}
@@ -201,7 +221,7 @@ export default function Home() {
             style={{ color: "#456FFF" }}
           >
             <ChartBarIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            Media Statistics
+            {lang === "ar" ? "إحصائيات الوسائط" : "Media Statistics"}
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -209,11 +229,15 @@ export default function Home() {
               UsersMetricsIcon={
                 <CalculatorIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
               }
-              UsersMetricsName="Total Media"
+              UsersMetricsName={
+                lang === "ar" ? "إجمالي الوسائط" : "Total Media"
+              }
               UsersMetricsTotallyNum={media?.totalMedia?.toString() ?? "-"}
               UsersMetricsBadge={{
                 color: "info",
-                value: `${media?.totalSizeGB ?? 0} GB`,
+                value: `${media?.totalSizeGB ?? 0} ${
+                  lang === "ar" ? "جيجابايت" : "GB"
+                }`,
                 icon: (
                   <ArrowUpIcon className="text-cyan-500 dark:text-cyan-300 w-4 h-4" />
                 ),
@@ -223,13 +247,17 @@ export default function Home() {
               UsersMetricsIcon={
                 <CalculatorIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
               }
-              UsersMetricsName="Most Liked Media"
+              UsersMetricsName={
+                lang === "ar" ? "الوسائط الأكثر إعجاباً" : "Most Liked Media"
+              }
               UsersMetricsTotallyNum={
                 media?.mostLiked?.[0]?.likesCount?.toString() ?? "-"
               }
               UsersMetricsBadge={{
                 color: "success",
-                value: media?.mostLiked?.[0]?.title ?? "N/A",
+                value:
+                  media?.mostLiked?.[0]?.title ??
+                  (lang === "ar" ? "غير متوفر" : "N/A"),
                 icon: (
                   <ArrowUpIcon className="text-green-500 dark:text-green-300 w-4 h-4" />
                 ),
@@ -239,9 +267,12 @@ export default function Home() {
               UsersMetricsIcon={
                 <CalculatorIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
               }
-              UsersMetricsName="Top Creator"
+              UsersMetricsName={
+                lang === "ar" ? "أفضل منشئ محتوى" : "Top Creator"
+              }
               UsersMetricsTotallyNum={
-                media?.mostLiked?.[0]?.uploadedBy?.name ?? "N/A"
+                media?.mostLiked?.[0]?.uploadedBy?.name ??
+                (lang === "ar" ? "غير متوفر" : "N/A")
               }
               UsersMetricsBadge={{
                 color: "warning",
@@ -266,33 +297,36 @@ export default function Home() {
                     </th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1">
-                        <PhotoIcon className="h-4 w-4" /> Thumbnail
+                        <PhotoIcon className="h-4 w-4" />{" "}
+                        {lang === "ar" ? "الصورة" : "Thumbnail"}
                       </div>
                     </th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1">
-                        <PencilSquareIcon className="h-4 w-4" /> Title
+                        <PencilSquareIcon className="h-4 w-4" />{" "}
+                        {lang === "ar" ? "العنوان" : "Title"}
                       </div>
                     </th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1">
-                        <UserCircleIcon className="h-4 w-4" /> Uploaded By
+                        <UserCircleIcon className="h-4 w-4" />{" "}
+                        {lang === "ar" ? "تم الرفع بواسطة" : "Uploaded By"}
                       </div>
                     </th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1">
-                        <BuildingStorefrontIcon className="h-4 w-4" /> Store
+                        <BuildingStorefrontIcon className="h-4 w-4" />{" "}
+                        {lang === "ar" ? "المتجر" : "Store"}
                       </div>
                     </th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1">
                         <HeartIcon className="h-4 w-4 text-pink-500 dark:text-pink-400" />{" "}
-                        Likes
+                        {lang === "ar" ? "الإعجابات" : "Likes"}
                       </div>
                     </th>
                   </tr>
                 </thead>
-
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {media?.mostLiked?.length ? (
                     media.mostLiked.map((item, idx) => (
@@ -335,7 +369,9 @@ export default function Home() {
                         className="py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400"
                         colSpan={6}
                       >
-                        No data available
+                        {lang === "ar"
+                          ? "لا توجد بيانات متاحة"
+                          : "No data available"}
                       </td>
                     </tr>
                   )}
@@ -344,13 +380,13 @@ export default function Home() {
             </div>
           </div>
 
-          {/* --- STREAM STATISTICS --- */}
+          {/* --- BROADCAST STATISTICS --- */}
           <h2
             className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
             style={{ color: "#456FFF" }}
           >
             <SignalIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            Broadcast Statistics
+            {lang === "ar" ? "إحصائيات البث المباشر" : "Broadcast Statistics"}
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -358,11 +394,15 @@ export default function Home() {
               UsersMetricsIcon={
                 <CalculatorIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
               }
-              UsersMetricsName="Total Streams"
+              UsersMetricsName={
+                lang === "ar" ? "إجمالي البثوث" : "Total Streams"
+              }
               UsersMetricsTotallyNum={streams?.totalStreams?.toString() ?? "-"}
               UsersMetricsBadge={{
                 color: "info",
-                value: `${streams?.activeStreams ?? 0} Active`,
+                value: `${streams?.activeStreams ?? 0} ${
+                  lang === "ar" ? "نشط الآن" : "Active"
+                }`,
                 icon: (
                   <ArrowUpIcon className="text-cyan-500 dark:text-cyan-300 w-4 h-4" />
                 ),
@@ -372,13 +412,17 @@ export default function Home() {
               UsersMetricsIcon={
                 <CalculatorIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
               }
-              UsersMetricsName="Total Viewers"
+              UsersMetricsName={
+                lang === "ar" ? "إجمالي المشاهدين" : "Total Viewers"
+              }
               UsersMetricsTotallyNum={streams?.totalViewers?.toString() ?? "-"}
               UsersMetricsBadge={{
                 color: "success",
                 value: `${(
                   (streams?.totalViewers ?? 0) / (streams?.totalStreams ?? 1)
-                ).toFixed(2)} Avg per Stream`,
+                ).toFixed(2)} ${
+                  lang === "ar" ? "متوسط لكل بث" : "Avg per Stream"
+                }`,
                 icon: (
                   <ArrowUpIcon className="text-green-500 dark:text-green-300 w-4 h-4" />
                 ),
@@ -388,13 +432,15 @@ export default function Home() {
               UsersMetricsIcon={
                 <CalculatorIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
               }
-              UsersMetricsName="Top Stream"
+              UsersMetricsName={lang === "ar" ? "أعلى بث مشاهدة" : "Top Stream"}
               UsersMetricsTotallyNum={
                 streams?.mostViewed?.[0]?.viewersCount?.toString() ?? "-"
               }
               UsersMetricsBadge={{
                 color: "warning",
-                value: streams?.mostViewed?.[0]?.title ?? "N/A",
+                value:
+                  streams?.mostViewed?.[0]?.title ??
+                  (lang === "ar" ? "غير متوفر" : "N/A"),
                 icon: (
                   <ArrowUpIcon className="text-yellow-500 dark:text-yellow-300 w-4 h-4" />
                 ),
@@ -415,22 +461,24 @@ export default function Home() {
                     </th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1">
-                        <PlayCircleIcon className="h-4 w-4" /> Title
+                        <PlayCircleIcon className="h-4 w-4" />{" "}
+                        {lang === "ar" ? "عنوان البث" : "Title"}
                       </div>
                     </th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1">
-                        <UserIcon className="h-4 w-4" /> Streamer
+                        <UserIcon className="h-4 w-4" />{" "}
+                        {lang === "ar" ? "المذيع" : "Streamer"}
                       </div>
                     </th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1">
-                        <EyeIcon className="h-4 w-4" /> Viewers
+                        <EyeIcon className="h-4 w-4" />{" "}
+                        {lang === "ar" ? "المشاهدون" : "Viewers"}
                       </div>
                     </th>
                   </tr>
                 </thead>
-
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {streams?.mostViewed?.length ? (
                     streams.mostViewed.map((stream, idx) => (
@@ -458,7 +506,9 @@ export default function Home() {
                         className="py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400"
                         colSpan={4}
                       >
-                        No data available
+                        {lang === "ar"
+                          ? "لا توجد بيانات متاحة"
+                          : "No data available"}
                       </td>
                     </tr>
                   )}
