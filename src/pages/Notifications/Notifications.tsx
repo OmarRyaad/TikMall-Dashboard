@@ -1,9 +1,12 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
-import "react-datepicker/dist/react-datepicker.css";
+import "react-toastify/dist/ReactToastify.css";
 import { BellAlertIcon } from "@heroicons/react/24/outline";
 import Flatpickr from "react-flatpickr";
-import "../../index.css";
+import "flatpickr/dist/flatpickr.min.css";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface User {
   id: string;
@@ -12,10 +15,13 @@ interface User {
 }
 
 const Notifications = () => {
+  const { lang } = useLanguage();
+  const isRTL = lang === "ar";
+
   const [formData, setFormData] = useState({
     NotificationTitle: "",
     NotificationMessage: "",
-    schedule: "instant",
+    schedule: "instant" as "instant" | "future",
     futureDate: new Date(),
   });
 
@@ -29,16 +35,15 @@ const Notifications = () => {
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : "";
 
   useEffect(() => {
-    fetchSelectedUsers();
-  }, []);
+    if (token) fetchSelectedUsers();
+  }, [token]);
 
   const normalizePhone = (
     phone: string | { number: string; isVerified: boolean }
   ) => {
     if (!phone) return "";
     if (typeof phone === "string") return phone;
-    if (typeof phone === "object") return phone.number || "";
-    return "";
+    return phone.number || "";
   };
 
   const fetchSelectedUsers = async () => {
@@ -61,12 +66,16 @@ const Notifications = () => {
       setSelectedUsers(normalized);
       setOriginalUsers(normalized);
     } catch (error) {
-      toast.error("Failed to fetch selected users.");
+      toast.error(
+        lang === "ar"
+          ? "فشل جلب قائمة المستخدمين"
+          : "Failed to fetch selected users."
+      );
       console.error(error);
     }
   };
 
-  // 🔍 SEARCH USERS HANDLER
+  // SEARCH USERS HANDLER
   useEffect(() => {
     const delay = setTimeout(() => {
       if (search.trim() === "") {
@@ -88,7 +97,6 @@ const Notifications = () => {
           const data = await res.json();
 
           let users: User[] = [];
-
           if (data?.user) users = [data.user];
           else if (data?.users) users = data.users;
 
@@ -99,7 +107,9 @@ const Notifications = () => {
 
           setSelectedUsers(normalized);
         } catch {
-          toast.error("User not found");
+          toast.error(
+            lang === "ar" ? "لم يتم العثور على المستخدم" : "User not found"
+          );
           setSelectedUsers([]);
         }
       };
@@ -108,7 +118,7 @@ const Notifications = () => {
     }, 500);
 
     return () => clearTimeout(delay);
-  }, [search, token, originalUsers]);
+  }, [search, token, originalUsers, lang]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -133,12 +143,20 @@ const Notifications = () => {
   const handleSave = async (data: typeof formData) => {
     if (loadingSend) return;
 
-    if (!data.NotificationTitle || !data.NotificationMessage) {
-      toast.error("Please enter both title and message.");
+    if (!data.NotificationTitle.trim() || !data.NotificationMessage.trim()) {
+      toast.error(
+        lang === "ar"
+          ? "يرجى إدخال العنوان والرسالة"
+          : "Please enter both title and message."
+      );
       return;
     }
     if (checkedUsers.length === 0) {
-      toast.error("Please select at least one user.");
+      toast.error(
+        lang === "ar"
+          ? "يرجى اختيار مستخدم واحد على الأقل"
+          : "Please select at least one user."
+      );
       return;
     }
 
@@ -171,7 +189,11 @@ const Notifications = () => {
 
       if (!res.ok) throw new Error("Failed");
 
-      toast.success("Notification sent successfully!");
+      toast.success(
+        lang === "ar"
+          ? "تم إرسال الإشعار بنجاح!"
+          : "Notification sent successfully!"
+      );
 
       setFormData({
         NotificationTitle: "",
@@ -180,183 +202,213 @@ const Notifications = () => {
         futureDate: new Date(),
       });
       setCheckedUsers([]);
+      setSearch("");
     } catch {
-      toast.error("Error sending notification");
+      toast.error(
+        lang === "ar"
+          ? "حدث خطأ أثناء إرسال الإشعار"
+          : "Error sending notification"
+      );
     } finally {
       setLoadingSend(false);
     }
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6 bg-gray-50 dark:bg-gray-900">
-      <ToastContainer position="top-right" autoClose={5000} />
+    <div
+      dir={isRTL ? "rtl" : "ltr"}
+      className="max-w-6xl mx-auto p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+    >
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        toastClassName="!z-[9999]"
+      />
 
       <div className="flex justify-between items-center mb-8">
         <h2
-          className="flex items-center gap-2 text-3xl font-bold"
+          className="flex items-center gap-3 text-3xl md:text-4xl font-bold"
           style={{ color: "#456FFF" }}
         >
-          <BellAlertIcon className="w-10 h-10" />
-          Send Notifications
+          <BellAlertIcon className="w-10 h-10 text-blue-600" />
+          {lang === "ar" ? "إرسال إشعارات" : "Send Notifications"}
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Side - Notification Content & Scheduling */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-              Notification Content
+          {/* Notification Content */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
+            <h3 className="text-xl font-bold mb-5 text-gray-900 dark:text-white flex items-center gap-2">
+              <BellAlertIcon className="w-6 h-6 text-blue-600" />
+              {lang === "ar" ? "محتوى الإشعار" : "Notification Content"}
             </h3>
 
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Notification Title
-            </label>
-            <input
-              type="text"
-              name="NotificationTitle"
-              value={formData.NotificationTitle}
-              onChange={handleChange}
-              className="w-full mb-4 px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
-              placeholder="Enter notification title"
-            />
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">
+                  {lang === "ar" ? "عنوان الإشعار" : "Notification Title"}
+                </label>
+                <input
+                  type="text"
+                  name="NotificationTitle"
+                  value={formData.NotificationTitle}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  placeholder={
+                    lang === "ar"
+                      ? "مثال: تخفيضات كبيرة اليوم!"
+                      : "e.g. Big Sale Today!"
+                  }
+                />
+              </div>
 
-            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-              Notification Message
-            </label>
-            <textarea
-              name="NotificationMessage"
-              value={formData.NotificationMessage}
-              onChange={handleChange}
-              rows={4}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
-              placeholder="Write your message..."
-            />
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">
+                  {lang === "ar" ? "نص الرسالة" : "Notification Message"}
+                </label>
+                <textarea
+                  name="NotificationMessage"
+                  value={formData.NotificationMessage}
+                  onChange={handleChange}
+                  rows={5}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition"
+                  placeholder={
+                    lang === "ar"
+                      ? "اكتب رسالتك هنا..."
+                      : "Write your message..."
+                  }
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-              Scheduling
+          {/* Scheduling */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
+            <h3 className="text-xl font-bold mb-5 text-gray-900 dark:text-white">
+              {lang === "ar" ? "موعد الإرسال" : "Scheduling"}
             </h3>
 
-            <label className="flex items-center gap-2 mb-2 text-gray-700 dark:text-gray-300">
-              <input
-                type="radio"
-                name="schedule"
-                value="instant"
-                checked={formData.schedule === "instant"}
-                onChange={handleChange}
-              />
-              Instant Sending
-            </label>
-
-            <label className="flex items-center gap-2 mb-3 text-gray-700 dark:text-gray-300">
-              <input
-                type="radio"
-                name="schedule"
-                value="future"
-                checked={formData.schedule === "future"}
-                onChange={handleChange}
-              />
-              Schedule for Future
-            </label>
-
-            {formData.schedule === "future" && (
-              <div className="relative">
-                <Flatpickr
-                  value={formData.futureDate}
-                  onChange={([date]) =>
-                    setFormData({ ...formData, futureDate: date })
-                  }
-                  options={{
-                    enableTime: true,
-                    dateFormat: "d/m/Y h:i K",
-                    time_24hr: false,
-                    onOpen: () => {
-                      document
-                        .querySelectorAll(".flatpickr-calendar")
-                        .forEach((el) => {
-                          el.classList.toggle(
-                            "dark",
-                            document.documentElement.classList.contains("dark")
-                          );
-                        });
-                    },
-                  }}
-                  className="w-full px-4 py-3 pr-10 text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:hover:bg-gray-700 transition-all cursor-pointer"
+            <div className="space-y-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="schedule"
+                  value="instant"
+                  checked={formData.schedule === "instant"}
+                  onChange={handleChange}
+                  className="w-5 h-5 text-blue-600"
                 />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg
-                    className="w-5 h-5 text-gray-500 dark:text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
+                <span className="text-lg font-medium text-gray-800 dark:text-gray-200">
+                  {lang === "ar" ? "إرسال فوري" : "Instant Sending"}
+                </span>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="schedule"
+                  value="future"
+                  checked={formData.schedule === "future"}
+                  onChange={handleChange}
+                  className="w-5 h-5 text-blue-600"
+                />
+                <span className="text-lg font-medium text-gray-800 dark:text-gray-200">
+                  {lang === "ar" ? "جدولة لوقت لاحق" : "Schedule for Future"}
+                </span>
+              </label>
+
+              {formData.schedule === "future" && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                    {lang === "ar"
+                      ? "اختر التاريخ والوقت"
+                      : "Select Date & Time"}
+                  </label>
+                  <Flatpickr
+                    value={formData.futureDate}
+                    onChange={([date]) =>
+                      setFormData({ ...formData, futureDate: date })
+                    }
+                    options={{
+                      enableTime: true,
+                      dateFormat: lang === "ar" ? "d/m/Y h:i K" : "m/d/Y h:i K",
+                      time_24hr: false,
+                      locale: lang === "ar" ? "ar" : "en",
+                    }}
+                    className="w-full px-4 py-3 text-lg font-medium text-gray-900 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-500/30 dark:bg-gray-900 dark:text-white dark:border-gray-600 transition-all cursor-pointer"
+                  />
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
-        {/* USERS SIDE */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg px-7 py-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Users
-            </h3>
+        {/* Right Side - Users List */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                {lang === "ar" ? "المستلمون" : "Recipients"}
+                <span className="text-sm font-normal text-gray-500 dark:text-gray-400 mr-2">
+                  ({checkedUsers.length}/{selectedUsers.length})
+                </span>
+              </h3>
 
-            <button
-              onClick={toggleSelectAll}
-              className="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg"
-            >
-              {checkedUsers.length === selectedUsers.length
-                ? "Unselect All"
-                : "Select All"}
-            </button>
+              <button
+                onClick={toggleSelectAll}
+                className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+              >
+                {checkedUsers.length === selectedUsers.length
+                  ? lang === "ar"
+                    ? "إلغاء الكل"
+                    : "Unselect All"
+                  : lang === "ar"
+                  ? "تحديد الكل"
+                  : "Select All"}
+              </button>
+            </div>
+
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={
+                lang === "ar" ? "ابحث بالهاتف..." : "Search by phone..."
+              }
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            />
           </div>
 
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by phone..."
-            className="w-full mt-4 mb-3 px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
-          />
-
-          <div className="max-h-[380px] overflow-y-auto">
+          <div className="max-h-96 overflow-y-auto px-4 pb-4">
             {selectedUsers.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                No users found.
+              <p className="text-center py-10 text-gray-500 dark:text-gray-400">
+                {lang === "ar" ? "لا يوجد مستخدمون" : "No users found."}
               </p>
             ) : (
-              <ul className="space-y-3">
+              <ul className="space-y-3 mt-4">
                 {selectedUsers.map((u) => (
                   <li
                     key={u.id}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 cursor-pointer"
                     onClick={() => toggleUserCheck(u.id)}
+                    className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition"
                   >
                     <input
                       type="checkbox"
                       checked={checkedUsers.includes(u.id)}
                       onChange={() => toggleUserCheck(u.id)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5"
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
                     />
-
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-gray-900 dark:text-gray-100">
-                        {u.name}
-                      </span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {normalizePhone(u.phone)}
-                      </span>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        {u.name || (lang === "ar" ? "بدون اسم" : "No Name")}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {normalizePhone(u.phone) ||
+                          (lang === "ar" ? "لا يوجد رقم" : "No phone")}
+                      </p>
                     </div>
                   </li>
                 ))}
@@ -366,17 +418,24 @@ const Notifications = () => {
         </div>
       </div>
 
-      <div className="mt-5 flex justify-center">
+      {/* Send Button */}
+      <div className="mt-10 text-center">
         <button
           onClick={() => handleSave(formData)}
           disabled={loadingSend}
-          className={`px-6 py-3 rounded-xl text-white text-lg transition ${
+          className={`px-12 py-4 rounded-2xl text-white text-xl font-bold transition-all transform hover:scale-105 active:scale-95 shadow-xl ${
             loadingSend
-              ? "bg-blue-300 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700"
+              ? "bg-blue-400 cursor-not-allowed"
+              : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
           }`}
         >
-          {loadingSend ? "Sending..." : "Send Notification"}
+          {loadingSend
+            ? lang === "ar"
+              ? "جاري الإرسال..."
+              : "Sending..."
+            : lang === "ar"
+            ? "إرسال الإشعار الآن"
+            : "Send Notification Now"}
         </button>
       </div>
     </div>

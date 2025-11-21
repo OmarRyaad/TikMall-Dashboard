@@ -8,6 +8,7 @@ import {
 import { Modal } from "../../components/ui/modal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface UploadedBy {
   _id: string;
@@ -33,7 +34,11 @@ interface Department {
   _id: string;
   name: { en: string; ar: string };
 }
+
 const Media = () => {
+  const { lang } = useLanguage();
+  const isRTL = lang === "ar";
+
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -46,7 +51,8 @@ const Media = () => {
     { _id: string; name: string }[]
   >([]);
 
-  const token = localStorage.getItem("accessToken");
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
   // Fetch media
   useEffect(() => {
@@ -57,7 +63,7 @@ const Media = () => {
         if (filterDepartment) url += `&storeDepartment=${filterDepartment}`;
 
         const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         const data = await res.json();
         setMedia(data.items || []);
@@ -76,13 +82,13 @@ const Media = () => {
         const res = await fetch(
           "https://api.tik-mall.com/admin/api/list/media",
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
           }
         );
         const data = await res.json();
         const formatted = data.items.map((d: Department) => ({
           _id: d._id,
-          name: d.name.ar,
+          name: lang === "ar" ? d.name.ar : d.name.en,
         }));
         setDepartments(formatted);
       } catch (err) {
@@ -90,7 +96,7 @@ const Media = () => {
       }
     };
     fetchDepartments();
-  }, [token]);
+  }, [token, lang]);
 
   const handleDelete = (id: string) => {
     setMediaToDelete(id);
@@ -103,18 +109,30 @@ const Media = () => {
     try {
       const res = await fetch(
         `https://api.tik-mall.com/admin/api/media/${mediaToDelete}`,
-        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+        {
+          method: "DELETE",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
       );
       const data = await res.json();
       if (res.ok) {
         setMedia((prev) => prev.filter((item) => item._id !== mediaToDelete));
-        toast.success("Media deleted successfully ✅");
+        toast.success(
+          lang === "ar" ? "تم حذف الوسائط بنجاح" : "Media deleted successfully"
+        );
       } else {
-        toast.error(data.error || "Failed to delete media ❌");
+        toast.error(
+          data.error ||
+            (lang === "ar" ? "فشل حذف الوسائط" : "Failed to delete media")
+        );
       }
     } catch (error) {
       console.error("Delete error:", error);
-      toast.error("An error occurred while deleting.");
+      toast.error(
+        lang === "ar"
+          ? "حدث خطأ أثناء الحذف"
+          : "An error occurred while deleting."
+      );
     } finally {
       setDeleteModalOpen(false);
       setMediaToDelete(null);
@@ -135,14 +153,21 @@ const Media = () => {
             <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
           </div>
           <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-            Loading <span className="text-blue-500">Media</span>...
+            {lang === "ar" ? "جاري تحميل" : "Loading"}{" "}
+            <span className="text-blue-500">
+              {lang === "ar" ? "الوسائط" : "Media"}
+            </span>
+            ...
           </p>
         </div>
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div
+      dir={isRTL ? "rtl" : "ltr"}
+      className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6"
+    >
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -154,7 +179,7 @@ const Media = () => {
         style={{ color: "#456FFF" }}
       >
         <PhotoIcon className="w-8 h-8 text-blue-600" />
-        Media
+        {lang === "ar" ? "الوسائط" : "Media"}
       </h2>
 
       {/* FILTERS */}
@@ -166,7 +191,7 @@ const Media = () => {
               <div className="flex items-center gap-2 mb-2 sm:mb-0">
                 <PhotoIcon className="w-5 h-5 text-blue-500 dark:text-blue-400" />
                 <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Filter by type:
+                  {lang === "ar" ? "الفلتر حسب النوع:" : "Filter by type:"}
                 </span>
               </div>
               <select
@@ -174,8 +199,10 @@ const Media = () => {
                 onChange={(e) => setFilterType(e.target.value)}
                 className="bg-transparent border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
               >
-                <option value="image">Image</option>
-                <option value="video">Video</option>
+                <option value="image">{lang === "ar" ? "صور" : "Image"}</option>
+                <option value="video">
+                  {lang === "ar" ? "فيديو" : "Video"}
+                </option>
               </select>
             </div>
 
@@ -184,7 +211,9 @@ const Media = () => {
               <div className="flex items-center gap-2 mb-2 sm:mb-0">
                 <BuildingOffice2Icon className="w-5 h-5 text-purple-500 dark:text-purple-400" />
                 <span className="font-medium text-gray-700 dark:text-gray-300">
-                  Filter by department:
+                  {lang === "ar"
+                    ? "الفلتر حسب القسم:"
+                    : "Filter by department:"}
                 </span>
               </div>
               <select
@@ -192,7 +221,9 @@ const Media = () => {
                 onChange={(e) => setFilterDepartment(e.target.value)}
                 className="bg-transparent border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
               >
-                <option value="">All Departments</option>
+                <option value="">
+                  {lang === "ar" ? "جميع الأقسام" : "All Departments"}
+                </option>
                 {departments.map((dept) => (
                   <option key={dept._id} value={dept._id}>
                     {dept.name}
@@ -234,7 +265,7 @@ const Media = () => {
                     className="flex items-center gap-1 rounded-md bg-red-600 px-2 py-1 text-xs font-medium transition hover:bg-red-700"
                   >
                     <TrashIcon className="h-4 w-4" />
-                    Delete
+                    {lang === "ar" ? "حذف" : "Delete"}
                   </button>
                 </div>
               </div>
@@ -243,7 +274,7 @@ const Media = () => {
         ))}
         {media.length === 0 && (
           <div className="col-span-full text-center text-gray-500 dark:text-gray-400">
-            No media found.
+            {lang === "ar" ? "لا توجد وسائط" : "No media found."}
           </div>
         )}
       </div>
@@ -255,23 +286,25 @@ const Media = () => {
         className="max-w-md p-6"
       >
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-          Delete Media
+          {lang === "ar" ? "حذف الوسائط" : "Delete Media"}
         </h3>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-          Are you sure you want to delete this media?
+          {lang === "ar"
+            ? "هل أنت متأكد من حذف هذه الوسائط؟"
+            : "Are you sure you want to delete this media?"}
         </p>
         <div className="mt-4 flex justify-end gap-3">
           <button
             onClick={() => setDeleteModalOpen(false)}
             className="rounded-md px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
           >
-            Cancel
+            {lang === "ar" ? "إلغاء" : "Cancel"}
           </button>
           <button
             onClick={handleConfirmDelete}
             className="rounded-md px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700"
           >
-            Delete
+            {lang === "ar" ? "حذف" : "Delete"}
           </button>
         </div>
       </Modal>

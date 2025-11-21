@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Modal } from "../../components/ui/modal";
 import { toast, ToastContainer } from "react-toastify";
 import { Squares2X2Icon } from "@heroicons/react/24/outline";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface Department {
   _id: string;
@@ -17,6 +18,9 @@ interface IconType {
 }
 
 const Sections = () => {
+  const { lang } = useLanguage();
+  const isRTL = lang === "ar";
+
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,12 +32,12 @@ const Sections = () => {
     nameEn: "",
     descAr: "",
     descEn: "",
-    icons: [] as IconType[], // array of images
+    icons: [] as IconType[],
   });
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [keepOpen, setKeepOpen] = useState(false);
-  const [saving, setSaving] = useState(false); // for create/save button
+  const [saving, setSaving] = useState(false);
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : "";
 
@@ -49,11 +53,12 @@ const Sections = () => {
       })
       .then((data) => {
         if (data?.departments?.length) setDepartments(data.departments);
-        else setError("No departments found.");
+        else
+          setError(lang === "ar" ? "لا توجد أقسام" : "No departments found.");
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, lang]);
 
   // Open edit modal
   const handleEdit = (dept: Department) => {
@@ -101,15 +106,20 @@ const Sections = () => {
       );
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "Failed to delete department");
+        toast.error(
+          data.error ||
+            (lang === "ar" ? "فشل حذف القسم" : "Failed to delete department")
+        );
         return;
       }
       setDepartments((prev) => prev.filter((d) => d._id !== deleteId));
       setDeleteModalOpen(false);
       setDeleteId(null);
-      toast.success("Department deleted successfully");
+      toast.success(
+        lang === "ar" ? "تم حذف القسم بنجاح" : "Department deleted successfully"
+      );
     } catch {
-      toast.error("Something went wrong");
+      toast.error(lang === "ar" ? "حدث خطأ ما" : "Something went wrong");
     }
   };
 
@@ -128,12 +138,15 @@ const Sections = () => {
     if (!file) return;
 
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("Image must be < 10MB");
+      toast.error(
+        lang === "ar"
+          ? "حجم الصورة يجب أن يكون أقل من 10 ميجا"
+          : "Image must be < 10MB"
+      );
       return;
     }
 
     try {
-      // (1) اطلب presigned URL بالصيغة الصحيحة
       const res = await fetch("https://api.tik-mall.com/upload/get-presigned", {
         method: "POST",
         headers: {
@@ -152,13 +165,15 @@ const Sections = () => {
 
       const data = await res.json();
       if (!res.ok || !data.items?.length) {
-        toast.error(data.error || "Failed to get upload URL");
+        toast.error(
+          data.error ||
+            (lang === "ar" ? "فشل جلب رابط الرفع" : "Failed to get upload URL")
+        );
         return;
       }
 
       const uploadItem = data.items[0];
 
-      // (2) ارفع الصورة Binary باستخدام PUT
       const uploadRes = await fetch(uploadItem.url, {
         method: "PUT",
         headers: {
@@ -168,14 +183,12 @@ const Sections = () => {
       });
 
       if (!uploadRes.ok) {
-        toast.error("Image upload failed");
+        toast.error(lang === "ar" ? "فشل رفع الصورة" : "Image upload failed");
         return;
       }
 
-      // (3) رابط الصورة النهائي
       const finalImageURL = uploadItem.fileUrl;
 
-      // (4) خزّنه في formData
       setFormData((prev) => ({
         ...prev,
         icons: [
@@ -186,10 +199,16 @@ const Sections = () => {
         ],
       }));
 
-      toast.success("Icon uploaded successfully");
+      toast.success(
+        lang === "ar" ? "تم رفع الأيقونة بنجاح" : "Icon uploaded successfully"
+      );
     } catch (err) {
       console.log(err);
-      toast.error("Something went wrong while uploading image");
+      toast.error(
+        lang === "ar"
+          ? "حدث خطأ أثناء رفع الصورة"
+          : "Something went wrong while uploading image"
+      );
     }
   };
 
@@ -197,14 +216,17 @@ const Sections = () => {
 
   const handleSave = async () => {
     if (!formData.nameEn || !formData.nameAr) {
-      toast.error("Name in both languages is required");
+      toast.error(
+        lang === "ar"
+          ? "الاسم مطلوب باللغتين"
+          : "Name in both languages is required"
+      );
       return;
     }
 
-    setSaving(true); // start loading
+    setSaving(true);
     try {
       if (isEditMode) {
-        // EDIT logic
         const res = await fetch(
           `https://api.tik-mall.com/admin/api/department/${formData.id}`,
           {
@@ -222,17 +244,25 @@ const Sections = () => {
         );
         const updated = await res.json();
         if (!res.ok) {
-          toast.error(updated.error || "Failed to update department");
+          toast.error(
+            updated.error ||
+              (lang === "ar"
+                ? "فشل تحديث القسم"
+                : "Failed to update department")
+          );
           setSaving(false);
           return;
         }
         setDepartments((prev) =>
           prev.map((d) => (d._id === formData.id ? updated.department : d))
         );
-        toast.success("Department updated successfully");
+        toast.success(
+          lang === "ar"
+            ? "تم تحديث القسم بنجاح"
+            : "Department updated successfully"
+        );
         setIsOpen(!keepOpen ? false : true);
       } else {
-        // ADD logic
         const res = await fetch(
           "https://api.tik-mall.com/admin/api/create/department",
           {
@@ -250,12 +280,21 @@ const Sections = () => {
         );
         const result = await res.json();
         if (!res.ok) {
-          toast.error(result.error || "Failed to create department");
+          toast.error(
+            result.error ||
+              (lang === "ar"
+                ? "فشل إنشاء القسم"
+                : "Failed to create department")
+          );
           setSaving(false);
           return;
         }
         setDepartments((prev) => [...prev, result.department]);
-        toast.success("Department created successfully");
+        toast.success(
+          lang === "ar"
+            ? "تم إنشاء القسم بنجاح"
+            : "Department created successfully"
+        );
 
         if (keepOpen) {
           setFormData({
@@ -271,9 +310,9 @@ const Sections = () => {
         }
       }
     } catch {
-      toast.error("Something went wrong");
+      toast.error(lang === "ar" ? "حدث خطأ ما" : "Something went wrong");
     } finally {
-      setSaving(false); // end loading
+      setSaving(false);
     }
   };
 
@@ -291,7 +330,11 @@ const Sections = () => {
             <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
           </div>
           <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-            Loading <span className="text-blue-500">Sections</span>...
+            {lang === "ar" ? "جاري تحميل" : "Loading"}{" "}
+            <span className="text-blue-500">
+              {lang === "ar" ? "الأقسام" : "Sections"}
+            </span>
+            ...
           </p>
         </div>
       </div>
@@ -310,7 +353,7 @@ const Sections = () => {
     );
 
   return (
-    <>
+    <div dir={isRTL ? "rtl" : "ltr"}>
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -321,7 +364,7 @@ const Sections = () => {
         style={{ color: "#456FFF" }}
       >
         <Squares2X2Icon className="w-8 h-8 text-blue-600" />
-        Sections
+        {lang === "ar" ? "الأقسام" : "Sections"}
       </h2>
 
       {/* Add Button */}
@@ -330,7 +373,7 @@ const Sections = () => {
           onClick={handleAdd}
           className="mb-4 px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300"
         >
-          + Add Section
+          + {lang === "ar" ? "إضافة قسم" : "Add Section"}
         </button>
       </div>
 
@@ -343,16 +386,16 @@ const Sections = () => {
                   #
                 </th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Icon
+                  {lang === "ar" ? "الأيقونة" : "Icon"}
                 </th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Name (AR/EN)
+                  {lang === "ar" ? "الاسم" : "Name"}
                 </th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Description
+                  {lang === "ar" ? "الوصف" : "Description"}
                 </th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Actions
+                  {lang === "ar" ? "الإجراءات" : "Actions"}
                 </th>
               </tr>
             </thead>
@@ -374,23 +417,25 @@ const Sections = () => {
                       />
                     </td>
                     <td className="py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90">
-                      {dept?.name?.ar} / {dept?.name?.en}
+                      {lang === "ar" ? dept.name.ar : dept.name.en}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
-                      {dept?.description?.ar || dept?.description?.en}
+                      {lang === "ar"
+                        ? dept.description.ar
+                        : dept.description.en}
                     </td>
                     <td className="py-3 px-4 flex gap-2">
                       <button
                         onClick={() => handleEdit(dept)}
                         className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
                       >
-                        Edit
+                        {lang === "ar" ? "تعديل" : "Edit"}
                       </button>
                       <button
                         onClick={() => handleDeleteClick(dept._id)}
                         className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
                       >
-                        Delete
+                        {lang === "ar" ? "حذف" : "Delete"}
                       </button>
                     </td>
                   </tr>
@@ -401,7 +446,63 @@ const Sections = () => {
                     className="py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400"
                     colSpan={5}
                   >
-                    No departments available
+                    {lang === "ar"
+                      ? "لا توجد أقسام متاحة"
+                      : "No departments available"}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+              {departments.length ? (
+                departments.map((dept, idx) => (
+                  <tr
+                    key={dept._id}
+                    className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                  >
+                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                      {idx + 1}
+                    </td>
+                    <td className="py-3 px-4">
+                      <img
+                        src={dept?.icon || "/placeholder.jpg"}
+                        alt={dept?.name?.en}
+                        className="h-12 w-12 rounded-md object-cover"
+                      />
+                    </td>
+                    <td className="py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90">
+                      {dept?.name?.ar} / {dept?.name?.en}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+                      {lang === "ar"
+                        ? dept?.description?.ar
+                        : dept?.description?.en}
+                    </td>
+                    <td className="py-3 px-4 flex gap-2">
+                      <button
+                        onClick={() => handleEdit(dept)}
+                        className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                      >
+                        {lang === "ar" ? "تعديل" : "Edit"}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(dept._id)}
+                        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                      >
+                        {lang === "ar" ? "حذف" : "Delete"}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    className="py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400"
+                    colSpan={5}
+                  >
+                    {lang === "ar"
+                      ? "لا توجد أقسام متاحة"
+                      : "No departments available"}
                   </td>
                 </tr>
               )}
@@ -429,14 +530,22 @@ const Sections = () => {
               >
                 <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-6">
                   <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-                    {isEditMode ? "Edit Section" : "Add New Section"}
+                    {isEditMode
+                      ? lang === "ar"
+                        ? "تعديل القسم"
+                        : "Edit Section"
+                      : lang === "ar"
+                      ? "إضافة قسم جديد"
+                      : "Add New Section"}
                   </h2>
 
                   <div className="space-y-3">
                     <input
                       type="text"
                       name="nameAr"
-                      placeholder="Name (Arabic)"
+                      placeholder={
+                        lang === "ar" ? "الاسم (العربية)" : "Name (Arabic)"
+                      }
                       value={formData.nameAr}
                       onChange={handleChange}
                       className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded text-gray-800 dark:text-white"
@@ -444,21 +553,31 @@ const Sections = () => {
                     <input
                       type="text"
                       name="nameEn"
-                      placeholder="Name (English)"
+                      placeholder={
+                        lang === "ar" ? "الاسم (الإنجليزية)" : "Name (English)"
+                      }
                       value={formData.nameEn}
                       onChange={handleChange}
                       className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded text-gray-800 dark:text-white"
                     />
                     <textarea
                       name="descAr"
-                      placeholder="Description (Arabic)"
+                      placeholder={
+                        lang === "ar"
+                          ? "الوصف (العربية)"
+                          : "Description (Arabic)"
+                      }
                       value={formData.descAr}
                       onChange={handleChange}
                       className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20 text-gray-800 dark:text-white"
                     />
                     <textarea
                       name="descEn"
-                      placeholder="Description (English)"
+                      placeholder={
+                        lang === "ar"
+                          ? "الوصف (الإنجليزية)"
+                          : "Description (English)"
+                      }
                       value={formData.descEn}
                       onChange={handleChange}
                       className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20 text-gray-800 dark:text-white"
@@ -476,13 +595,15 @@ const Sections = () => {
                         htmlFor="keepOpen"
                         className="text-sm text-gray-700 dark:text-gray-300"
                       >
-                        Add multiple sections without closing
+                        {lang === "ar"
+                          ? "إضافة عدة أقسام دون إغلاق النافذة"
+                          : "Add multiple sections without closing"}
                       </label>
                     </div>
 
                     <div className="flex items-center space-x-4 flex-wrap mt-2">
                       <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
-                        Choose Icons
+                        {lang === "ar" ? "اختر الأيقونات" : "Choose Icons"}
                         <input
                           type="file"
                           accept="image/*"
@@ -521,13 +642,13 @@ const Sections = () => {
                                 }
                                 className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
                               >
-                                &times;
+                                ×
                               </button>
                             </div>
                           ))
                         ) : (
                           <div className="h-12 w-12 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500">
-                            No Icons
+                            {lang === "ar" ? "لا توجد أيقونات" : "No Icons"}
                           </div>
                         )}
                       </div>
@@ -539,7 +660,7 @@ const Sections = () => {
                       onClick={handleCancel}
                       className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white transition-all"
                     >
-                      Cancel
+                      {lang === "ar" ? "إلغاء" : "Cancel"}
                     </button>
                     <button
                       onClick={handleSave}
@@ -551,7 +672,13 @@ const Sections = () => {
                       {saving && (
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       )}
-                      {isEditMode ? "Save" : "Create"}
+                      {isEditMode
+                        ? lang === "ar"
+                          ? "حفظ"
+                          : "Save"
+                        : lang === "ar"
+                        ? "إنشاء"
+                        : "Create"}
                     </button>
                   </div>
                 </div>
@@ -568,28 +695,30 @@ const Sections = () => {
         ${deleteModalOpen ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
         >
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-            Delete Media
+            {lang === "ar" ? "حذف الق401" : "Delete Section"}
           </h3>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-            Are you sure you want to delete this media?
+            {lang === "ar"
+              ? "هل أنت متأكد من حذف هذا القسم نهائيًا؟"
+              : "Are you sure you want to delete this section?"}
           </p>
           <div className="mt-4 flex justify-end gap-3">
             <button
               onClick={() => setDeleteModalOpen(false)}
               className="rounded-md px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
             >
-              Cancel
+              {lang === "ar" ? "إلغاء" : "Cancel"}
             </button>
             <button
               onClick={handleConfirmDelete}
               className="rounded-md px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700"
             >
-              Delete
+              {lang === "ar" ? "حذف" : "Delete"}
             </button>
           </div>
         </Modal>
       </div>
-    </>
+    </div>
   );
 };
 

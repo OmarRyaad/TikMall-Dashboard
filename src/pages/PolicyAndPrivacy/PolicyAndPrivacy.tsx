@@ -11,6 +11,8 @@ import {
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "../../context/LanguageContext";
+
 interface Policy {
   _id: string;
   name: string;
@@ -21,7 +23,10 @@ interface Policy {
 }
 
 const PolicyAndPrivacy = () => {
+  const { lang } = useLanguage();
+  const isRTL = lang === "ar";
   const navigate = useNavigate();
+
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -44,9 +49,17 @@ const PolicyAndPrivacy = () => {
       );
       const data = await res.json();
       if (res.ok) setPolicies(data || []);
-      else toast.error(data?.message || "Failed to load policies");
+      else
+        toast.error(
+          data?.message ||
+            (lang === "ar" ? "فشل تحميل السياسات" : "Failed to load policies")
+        );
     } catch {
-      toast.error("Network error while fetching policies");
+      toast.error(
+        lang === "ar"
+          ? "خطأ في الاتصال بالشبكة"
+          : "Network error while fetching policies"
+      );
     } finally {
       setLoading(false);
     }
@@ -63,7 +76,11 @@ const PolicyAndPrivacy = () => {
     const arContent = formData.ar?.trim() || "<p></p>";
 
     if (!formData.name.trim()) {
-      toast.error("Please provide a name for the policy");
+      toast.error(
+        lang === "ar"
+          ? "يرجى كتابة اسم السياسة"
+          : "Please provide a name for the policy"
+      );
       return;
     }
 
@@ -93,18 +110,33 @@ const PolicyAndPrivacy = () => {
       const data = await res.json();
 
       if (res.ok) {
-        toast.success(editingPolicy ? "Policy updated!" : "Policy created!");
+        toast.success(
+          editingPolicy
+            ? lang === "ar"
+              ? "تم تحديث السياسة بنجاح!"
+              : "Policy updated!"
+            : lang === "ar"
+            ? "تم إنشاء السياسة بنجاح!"
+            : "Policy created!"
+        );
         setModalOpen(false);
         setFormData({ name: "", en: "", ar: "" });
         setEditingPolicy(null);
         fetchPolicies();
       } else {
         console.log("API Error:", data);
-        toast.error(data?.message || "Failed to save policy");
+        toast.error(
+          data?.message ||
+            (lang === "ar" ? "فشل حفظ السياسة" : "Failed to save policy")
+        );
       }
     } catch (err) {
       console.error(err);
-      toast.error("Network error while saving policy");
+      toast.error(
+        lang === "ar"
+          ? "خطأ في الاتصال أثناء حفظ السياسة"
+          : "Network error while saving policy"
+      );
     } finally {
       setCreateLoading(false);
     }
@@ -112,7 +144,7 @@ const PolicyAndPrivacy = () => {
 
   useEffect(() => {
     fetchPolicies();
-  }, []);
+  }, [lang]);
 
   if (loading)
     return (
@@ -128,14 +160,21 @@ const PolicyAndPrivacy = () => {
             <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
           </div>
           <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-            Loading <span className="text-blue-500">Policies</span>...
+            {lang === "ar" ? "جاري تحميل" : "Loading"}{" "}
+            <span className="text-blue-500">
+              {lang === "ar" ? "السياسات" : "Policies"}
+            </span>
+            ...
           </p>
         </div>
       </div>
     );
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900">
+    <div
+      dir={isRTL ? "rtl" : "ltr"}
+      className="p-6 bg-gray-50 dark:bg-gray-900"
+    >
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -144,23 +183,22 @@ const PolicyAndPrivacy = () => {
 
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        {/* Title with Icon */}
         <h2
-          className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
+          className="flex items-center gap-2 text-2xl md:text-3xl font-bold"
           style={{ color: "#456FFF" }}
         >
           <ShieldCheckIcon className="w-9 h-9 text-blue-600" />
-          Policies & Privacy
+          {lang === "ar" ? "السياسات والخصوصية" : "Policies & Privacy"}
         </h2>
 
         {/* Refresh Button */}
         <div className="flex gap-2">
           <button
             onClick={fetchPolicies}
-            className="mb-4 px-5 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 flex items-center gap-2"
+            className="px-5 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 flex items-center gap-2"
           >
             <ArrowPathIcon className="w-5 h-5" />
-            Refresh
+            {lang === "ar" ? "تحديث" : "Refresh"}
           </button>
         </div>
       </div>
@@ -168,7 +206,9 @@ const PolicyAndPrivacy = () => {
       {/* Policies Grid */}
       {policies.length === 0 ? (
         <div className="text-center text-gray-500 dark:text-gray-400 py-20">
-          No policies yet. Click “Add Policy” to create your first policy.
+          {lang === "ar"
+            ? "لا توجد سياسات حتى الآن. اضغط على “إضافة سياسة” لإنشاء أول سياسة."
+            : "No policies yet. Click “Add Policy” to create your first policy."}
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -185,9 +225,12 @@ const PolicyAndPrivacy = () => {
                 </h2>
               </div>
 
-              {/* Policy text */}
+              {/* Policy Preview */}
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 line-clamp-3">
-                {p.policy.en.replace(/<[^>]*>?/gm, "").slice(0, 140)}...
+                {(lang === "ar" ? p.policy.ar : p.policy.en)
+                  .replace(/<[^>]*>?/gm, "")
+                  .slice(0, 140)}
+                ...
               </p>
 
               {/* Actions */}
@@ -196,7 +239,7 @@ const PolicyAndPrivacy = () => {
                   onClick={() => openViewPage(p.name)}
                   className="px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  View
+                  {lang === "ar" ? "عرض" : "View"}
                 </button>
 
                 <button
@@ -209,7 +252,7 @@ const PolicyAndPrivacy = () => {
                   }
                   className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
                 >
-                  Edit
+                  {lang === "ar" ? "تعديل" : "Edit"}
                 </button>
               </div>
             </div>
@@ -225,57 +268,75 @@ const PolicyAndPrivacy = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4"
+            onClick={() => setModalOpen(false)}
           >
-            <div className="bg-white dark:bg-gray-900 rounded-xl max-w-lg w-full p-6 shadow-lg">
+            <div
+              className="bg-white dark:bg-gray-900 rounded-xl max-w-4xl w-full p-6 shadow-lg max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                {editingPolicy ? "Edit Policy" : "Add New Policy"}
+                {editingPolicy
+                  ? lang === "ar"
+                    ? "تعديل السياسة"
+                    : "Edit Policy"
+                  : lang === "ar"
+                  ? "إضافة سياسة جديدة"
+                  : "Add New Policy"}
               </h2>
 
               <input
                 type="text"
-                placeholder="Policy Name"
-                className="w-full border border-gray-300 dark:border-gray-700 rounded p-2 mb-3 text-gray-800 dark:text-white bg-white dark:bg-gray-800"
+                placeholder={lang === "ar" ? "اسم السياسة" : "Policy Name"}
+                className="w-full border border-gray-300 dark:border-gray-700 rounded p-3 mb-4 text-gray-800 dark:text-white bg-white dark:bg-gray-800 text-lg font-medium"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
               />
 
-              <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                Arabic Content
-              </label>
-              <ReactQuill
-                theme="snow"
-                value={formData.ar}
-                onChange={(value: string) =>
-                  setFormData({ ...formData, ar: value })
-                }
-                className="mb-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                    {lang === "ar" ? "المحتوى بالعربية" : "Arabic Content"}
+                  </label>
+                  <ReactQuill
+                    theme="snow"
+                    value={formData.ar}
+                    onChange={(value: string) =>
+                      setFormData({ ...formData, ar: value })
+                    }
+                    className="h-96 mb-12 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
+                    modules={{ toolbar: true }}
+                  />
+                </div>
 
-              <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                English Content
-              </label>
-              <ReactQuill
-                theme="snow"
-                value={formData.en}
-                onChange={(value: string) =>
-                  setFormData({ ...formData, en: value })
-                }
-                className="mb-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
-              />
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                    {lang === "ar" ? "المحتوى بالإنجليزية" : "English Content"}
+                  </label>
+                  <ReactQuill
+                    theme="snow"
+                    value={formData.en}
+                    onChange={(value: string) =>
+                      setFormData({ ...formData, en: value })
+                    }
+                    className="h-96 mb-12 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
+                    modules={{ toolbar: true }}
+                  />
+                </div>
+              </div>
 
-              <div className="flex justify-end gap-2 mt-4">
+              <div className="flex justify-end gap-3 mt-6">
                 <button
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 border rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-white transition-all"
+                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-white transition-all"
                 >
-                  Cancel
+                  {lang === "ar" ? "إلغاء" : "Cancel"}
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={createLoading}
-                  className={`px-4 py-2 rounded text-white ${
+                  className={`px-6 py-2.5 rounded-lg text-white font-medium transition-all ${
                     createLoading
                       ? "bg-blue-400 cursor-not-allowed"
                       : "bg-blue-600 hover:bg-blue-700"
@@ -283,10 +344,18 @@ const PolicyAndPrivacy = () => {
                 >
                   {createLoading
                     ? editingPolicy
-                      ? "Updating..."
+                      ? lang === "ar"
+                        ? "جاري التحديث..."
+                        : "Updating..."
+                      : lang === "ar"
+                      ? "جاري الإنشاء..."
                       : "Creating..."
                     : editingPolicy
-                    ? "Update"
+                    ? lang === "ar"
+                      ? "تحديث"
+                      : "Update"
+                    : lang === "ar"
+                    ? "إنشاء"
                     : "Create"}
                 </button>
               </div>

@@ -6,6 +6,7 @@ import {
   ChatBubbleLeftIcon,
   QuestionMarkCircleIcon,
 } from "@heroicons/react/24/outline";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface FAQ {
   _id: string;
@@ -14,6 +15,9 @@ interface FAQ {
 }
 
 const AskedQuestions = () => {
+  const { lang } = useLanguage();
+  const isRTL = lang === "ar";
+
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -43,10 +47,13 @@ const AskedQuestions = () => {
       if (res.ok) {
         setFaqs(data?.faqs || []);
       } else {
-        toast.error(data?.message || "Failed to load FAQs");
+        toast.error(
+          data?.message ||
+            (lang === "ar" ? "فشل تحميل الأسئلة" : "Failed to load FAQs")
+        );
       }
     } catch {
-      toast.error("Error fetching FAQs");
+      toast.error(lang === "ar" ? "خطأ في جلب الأسئلة" : "Error fetching FAQs");
     } finally {
       setLoading(false);
     }
@@ -59,7 +66,9 @@ const AskedQuestions = () => {
       !formData.answer_en ||
       !formData.answer_ar
     ) {
-      toast.error("Please fill in all fields");
+      toast.error(
+        lang === "ar" ? "يرجى ملء جميع الحقول" : "Please fill in all fields"
+      );
       return;
     }
 
@@ -86,7 +95,13 @@ const AskedQuestions = () => {
 
       if (res.ok) {
         toast.success(
-          editingFaqId ? "FAQ updated successfully" : "FAQ added successfully"
+          editingFaqId
+            ? lang === "ar"
+              ? "تم تعديل السؤال بنجاح"
+              : "FAQ updated successfully"
+            : lang === "ar"
+            ? "تم إضافة السؤال بنجاح"
+            : "FAQ added successfully"
         );
         setModalOpen(false);
         setEditingFaqId(null);
@@ -98,10 +113,13 @@ const AskedQuestions = () => {
         });
         fetchFaqs();
       } else {
-        toast.error(data?.message || "Failed to save FAQ");
+        toast.error(
+          data?.message ||
+            (lang === "ar" ? "فشل حفظ السؤال" : "Failed to save FAQ")
+        );
       }
     } catch {
-      toast.error("Error saving FAQ");
+      toast.error(lang === "ar" ? "خطأ في حفظ السؤال" : "Error saving FAQ");
     } finally {
       setCreateLoading(false);
     }
@@ -116,13 +134,18 @@ const AskedQuestions = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success("FAQ deleted successfully");
+        toast.success(
+          lang === "ar" ? "تم حذف السؤال بنجاح" : "FAQ deleted successfully"
+        );
         fetchFaqs();
       } else {
-        toast.error(data?.message || "Failed to delete FAQ");
+        toast.error(
+          data?.message ||
+            (lang === "ar" ? "فشل حذف السؤال" : "Failed to delete FAQ")
+        );
       }
     } catch {
-      toast.error("Error deleting FAQ");
+      toast.error(lang === "ar" ? "خطأ في حذف السؤال" : "Error deleting FAQ");
     } finally {
       setDeleteLoading(false);
       setDeleteModalOpen(false);
@@ -159,14 +182,18 @@ const AskedQuestions = () => {
             <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
           </div>
           <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-            Loading <span className="text-blue-500">Asked Questions</span>...
+            {lang === "ar" ? "جاري تحميل" : "Loading"}{" "}
+            <span className="text-blue-500">
+              {lang === "ar" ? "الأسئلة الشائعة" : "Asked Questions"}
+            </span>
+            ...
           </p>
         </div>
       </div>
     );
 
   return (
-    <div className="p-6">
+    <div dir={isRTL ? "rtl" : "ltr"} className="p-6">
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -178,9 +205,16 @@ const AskedQuestions = () => {
         style={{ color: "#456FFF" }}
       >
         <QuestionMarkCircleIcon className="w-8 h-8 text-blue-600" />
-        Asked Questions
+        {lang === "ar" ? "الأسئلة الشائعة" : "Asked Questions"}
         <span className="bg-blue-100 text-blue-700 text-sm font-semibold px-3 py-1 rounded-full">
-          {faqs.length} {faqs.length === 1 ? "Comment" : "Comments"}
+          {faqs.length}{" "}
+          {lang === "ar"
+            ? faqs.length === 1
+              ? "سؤال"
+              : "أسئلة"
+            : faqs.length === 1
+            ? "Question"
+            : "Questions"}
         </span>
       </h2>
 
@@ -199,7 +233,7 @@ const AskedQuestions = () => {
           }}
           className="mb-4 px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300"
         >
-          + Add Question
+          + {lang === "ar" ? "إضافة سؤال" : "Add Question"}
         </button>
       </div>
 
@@ -208,7 +242,9 @@ const AskedQuestions = () => {
         {faqs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <p className="text-gray-500 text-lg">
-              No questions have been added yet.
+              {lang === "ar"
+                ? "لم يتم إضافة أي أسئلة بعد."
+                : "No questions have been added yet."}
             </p>
           </div>
         ) : (
@@ -224,20 +260,22 @@ const AskedQuestions = () => {
                 </div>
               </div>
 
-              {/* Comment Content */}
+              {/* Content */}
               <div className="flex-1">
                 <div className="flex justify-between items-center">
                   <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                    Asked by Admin
+                    {lang === "ar" ? "سؤال من الإدارة" : "Asked by Admin"}
                   </h4>
-                  <span className="text-xs text-gray-400">Just now</span>
+                  <span className="text-xs text-gray-400">
+                    {lang === "ar" ? "الآن" : "Just now"}
+                  </span>
                 </div>
 
-                <p className="text-gray-900 dark:text-gray-200 mt-1">
-                  {faq.question.en}
+                <p className="text-gray-900 dark:text-gray-200 mt-1 font-medium">
+                  {lang === "ar" ? faq.question.ar : faq.question.en}
                 </p>
                 <p className="text-gray-600 dark:text-gray-400 mt-2">
-                  {faq.answer.en}
+                  {lang === "ar" ? faq.answer.ar : faq.answer.en}
                 </p>
 
                 {/* Actions */}
@@ -246,7 +284,7 @@ const AskedQuestions = () => {
                     onClick={() => handleEdit(faq)}
                     className="text-blue-600 hover:underline font-medium"
                   >
-                    Edit
+                    {lang === "ar" ? "تعديل" : "Edit"}
                   </button>
                   <button
                     onClick={() => {
@@ -255,10 +293,10 @@ const AskedQuestions = () => {
                     }}
                     className="text-red-600 hover:underline font-medium"
                   >
-                    Delete
+                    {lang === "ar" ? "حذف" : "Delete"}
                   </button>
                   <button className="text-gray-400 cursor-not-allowed">
-                    Reply
+                    {lang === "ar" ? "رد" : "Reply"}
                   </button>
                 </div>
               </div>
@@ -278,12 +316,20 @@ const AskedQuestions = () => {
           >
             <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg dark:bg-gray-900">
               <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                {editingFaqId ? "Edit FAQ" : "Add New FAQ"}
+                {editingFaqId
+                  ? lang === "ar"
+                    ? "تعديل السؤال"
+                    : "Edit FAQ"
+                  : lang === "ar"
+                  ? "إضافة سؤال جديد"
+                  : "Add New FAQ"}
               </h3>
               <div className="space-y-3">
                 <input
                   type="text"
-                  placeholder="Question (English)"
+                  placeholder={
+                    lang === "ar" ? "السؤال (الإنجليزية)" : "Question (English)"
+                  }
                   value={formData.question_en}
                   onChange={(e) =>
                     setFormData({ ...formData, question_en: e.target.value })
@@ -292,7 +338,9 @@ const AskedQuestions = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Question (Arabic)"
+                  placeholder={
+                    lang === "ar" ? "السؤال (العربية)" : "Question (Arabic)"
+                  }
                   value={formData.question_ar}
                   onChange={(e) =>
                     setFormData({ ...formData, question_ar: e.target.value })
@@ -300,19 +348,25 @@ const AskedQuestions = () => {
                   className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                 />
                 <textarea
-                  placeholder="Answer (English)"
+                  placeholder={
+                    lang === "ar" ? "الإجابة (الإنجليزية)" : "Answer (English)"
+                  }
                   value={formData.answer_en}
                   onChange={(e) =>
                     setFormData({ ...formData, answer_en: e.target.value })
                   }
+                  rows={3}
                   className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                 />
                 <textarea
-                  placeholder="Answer (Arabic)"
+                  placeholder={
+                    lang === "ar" ? "الإجابة (العربية)" : "Answer (Arabic)"
+                  }
                   value={formData.answer_ar}
                   onChange={(e) =>
                     setFormData({ ...formData, answer_ar: e.target.value })
                   }
+                  rows={3}
                   className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                 />
               </div>
@@ -321,7 +375,7 @@ const AskedQuestions = () => {
                   onClick={() => setModalOpen(false)}
                   className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
-                  Cancel
+                  {lang === "ar" ? "إلغاء" : "Cancel"}
                 </button>
                 <button
                   onClick={handleSubmit}
@@ -334,10 +388,18 @@ const AskedQuestions = () => {
                 >
                   {createLoading
                     ? editingFaqId
-                      ? "Updating..."
+                      ? lang === "ar"
+                        ? "جاري التعديل..."
+                        : "Updating..."
+                      : lang === "ar"
+                      ? "جاري الإنشاء..."
                       : "Creating..."
                     : editingFaqId
-                    ? "Update"
+                    ? lang === "ar"
+                      ? "تعديل"
+                      : "Update"
+                    : lang === "ar"
+                    ? "إنشاء"
                     : "Create"}
                 </button>
               </div>
@@ -357,10 +419,12 @@ const AskedQuestions = () => {
           >
             <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg dark:bg-gray-900">
               <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                Confirm Delete
+                {lang === "ar" ? "تأكيد الحذف" : "Confirm Delete"}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Are you sure you want to delete this FAQ?
+                {lang === "ar"
+                  ? "هل أنت متأكد من حذف هذا السؤال نهائيًا؟"
+                  : "Are you sure you want to delete this FAQ?"}
               </p>
               <div className="mt-5 flex justify-end gap-3">
                 <button
@@ -370,7 +434,7 @@ const AskedQuestions = () => {
                   }}
                   className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
-                  Cancel
+                  {lang === "ar" ? "إلغاء" : "Cancel"}
                 </button>
                 <button
                   onClick={() => faqToDelete && handleDelete(faqToDelete)}
@@ -381,7 +445,13 @@ const AskedQuestions = () => {
                       : "bg-red-600 hover:bg-red-700"
                   }`}
                 >
-                  {deleteLoading ? "Deleting..." : "Delete"}
+                  {deleteLoading
+                    ? lang === "ar"
+                      ? "جاري الحذف..."
+                      : "Deleting..."
+                    : lang === "ar"
+                    ? "حذف"
+                    : "Delete"}
                 </button>
               </div>
             </div>

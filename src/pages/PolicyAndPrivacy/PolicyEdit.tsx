@@ -7,6 +7,7 @@ import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 import "react-toastify/dist/ReactToastify.css";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface Policy {
   _id: string;
@@ -18,6 +19,8 @@ interface Policy {
 }
 
 const PolicyEdit = () => {
+  const { lang } = useLanguage();
+  const isRTL = lang === "ar";
   const navigate = useNavigate();
   const location = useLocation();
   const params = new URLSearchParams(location.search);
@@ -27,7 +30,9 @@ const PolicyEdit = () => {
   const [formData, setFormData] = useState({ name: "", en: "", ar: "" });
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
-  const [viewLang, setViewLang] = useState<"en" | "ar">("en");
+  const [viewLang, setViewLang] = useState<"en" | "ar">(
+    lang === "ar" ? "ar" : "en"
+  );
 
   const token = localStorage.getItem("accessToken");
 
@@ -44,7 +49,10 @@ const PolicyEdit = () => {
       );
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data?.message || "Failed to load policy");
+        toast.error(
+          data?.message ||
+            (lang === "ar" ? "فشل تحميل السياسة" : "Failed to load policy")
+        );
         setPolicy(null);
       } else {
         setPolicy(data);
@@ -55,7 +63,11 @@ const PolicyEdit = () => {
         });
       }
     } catch {
-      toast.error("Network error while fetching policy");
+      toast.error(
+        lang === "ar"
+          ? "خطأ في الاتصال بالشبكة"
+          : "Network error while fetching policy"
+      );
       setPolicy(null);
     } finally {
       setLoading(false);
@@ -65,16 +77,25 @@ const PolicyEdit = () => {
   // Save / update policy
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
-      toast.error("Please provide a name for the policy");
+      toast.error(
+        lang === "ar"
+          ? "يرجى كتابة اسم السياسة"
+          : "Please provide a name for the policy"
+      );
       return;
     }
 
     if (!policy?._id) {
-      toast.error("Cannot update policy: invalid ID");
+      toast.error(
+        lang === "ar"
+          ? "لا يمكن تحديث السياسة: معرف غير صالح"
+          : "Cannot update policy: invalid ID"
+      );
       return;
     }
 
     setSaveLoading(true);
+
     const body = {
       policyName: formData.name.trim(),
       policyData: {
@@ -98,15 +119,25 @@ const PolicyEdit = () => {
         }
       );
       const data = await res.json();
+
       if (res.ok) {
-        toast.success("Policy updated!");
+        toast.success(
+          lang === "ar" ? "تم حفظ السياسة بنجاح!" : "Policy updated!"
+        );
         navigate("/policy-and-Privacy");
       } else {
-        toast.error(data?.message || "Failed to update policy");
+        toast.error(
+          data?.message ||
+            (lang === "ar" ? "فشل تحديث السياسة" : "Failed to update policy")
+        );
       }
     } catch (err) {
       console.error(err);
-      toast.error("Network error while updating policy");
+      toast.error(
+        lang === "ar"
+          ? "خطأ في الاتصال أثناء الحفظ"
+          : "Network error while updating policy"
+      );
     } finally {
       setSaveLoading(false);
     }
@@ -115,6 +146,10 @@ const PolicyEdit = () => {
   useEffect(() => {
     fetchPolicy();
   }, [policyName]);
+
+  useEffect(() => {
+    setViewLang(lang === "ar" ? "ar" : "en");
+  }, [lang]);
 
   if (loading)
     return (
@@ -130,7 +165,11 @@ const PolicyEdit = () => {
             <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
           </div>
           <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-            Loading <span className="text-blue-500">Editing Policies</span>...
+            {lang === "ar" ? "جاري تحميل" : "Loading"}{" "}
+            <span className="text-blue-500">
+              {lang === "ar" ? "تعديل السياسة" : "Editing Policy"}
+            </span>
+            ...
           </p>
         </div>
       </div>
@@ -138,74 +177,100 @@ const PolicyEdit = () => {
 
   if (!policy)
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="bg-gray-100 dark:bg-gray-800 p-10 rounded-lg shadow-lg flex flex-col items-center gap-4">
-          <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200">
-            Policy Not Found
+      <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+        <div className="bg-gray-100 dark:bg-gray-800 p-10 rounded-2xl shadow-lg max-w-md">
+          <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-3">
+            {lang === "ar" ? "السياسة غير موجودة" : "Policy Not Found"}
           </h2>
-          <p className="text-gray-500 dark:text-gray-400 max-w-xs">
-            Sorry, the policy you are looking for does not exist or has been
-            removed.
+          <p className="text-gray-500 dark:text-gray-400">
+            {lang === "ar"
+              ? "عذرًا، السياسة التي تبحث عنها غير موجودة أو تم حذفها."
+              : "Sorry, the policy you are looking for does not exist or has been removed."}
           </p>
         </div>
       </div>
     );
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6 bg-gray-50 dark:bg-gray-900">
-      <ToastContainer position="top-right" />
+    <div
+      dir={isRTL ? "rtl" : "ltr"}
+      className="p-6 max-w-5xl mx-auto space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+    >
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        toastClassName="!z-[9999]"
+      />
 
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center justify-center gap-2 p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
+        className="flex items-center justify-center gap-2 p-3 rounded-full bg-white dark:bg-gray-800 shadow hover:shadow-md transition-all duration-200 group"
       >
-        <div className="p-1 bg-white dark:bg-gray-700 rounded-full shadow-md">
-          <ChevronLeftIcon className="h-4 w-4 text-gray-700 dark:text-gray-200" />
+        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors">
+          <ChevronLeftIcon
+            className={`h-5 w-5 text-blue-600 ${isRTL ? "rotate-180" : ""}`}
+          />
         </div>
-        <span className="text-gray-700 dark:text-gray-200 font-medium text-sm">
-          Back
+        <span className="text-gray-700 dark:text-gray-200 font-medium">
+          {lang === "ar" ? "رجوع" : "Back"}
         </span>
       </button>
 
       {/* Policy Title */}
-      <h1 className="text-3xl font-bold text-blue-600">{policy.name}</h1>
+      <h1 className="text-3xl md:text-4xl font-bold text-blue-600 text-center">
+        {policy.name}
+      </h1>
 
-      {/* Language toggle */}
-      <div className="flex gap-2">
+      {/* Language Toggle */}
+      <div className="flex justify-center gap-3 mb-6">
         <button
           onClick={() => setViewLang("en")}
-          className={`px-3 py-1 rounded ${
+          className={`px-6 py-2 rounded-lg font-medium transition-all ${
             viewLang === "en"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+              ? "bg-blue-600 text-white shadow-lg"
+              : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
           }`}
         >
           English
         </button>
         <button
           onClick={() => setViewLang("ar")}
-          className={`px-3 py-1 rounded ${
+          className={`px-6 py-2 py-2 rounded-lg font-medium transition-all ${
             viewLang === "ar"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+              ? "bg-blue-600 text-white shadow-lg"
+              : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
           }`}
         >
-          Arabic
+          العربية
         </button>
       </div>
 
-      {/* Policy Name */}
-      <input
-        type="text"
-        className="w-full border border-gray-300 dark:border-gray-700 rounded p-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
-        value={formData.name}
-        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        placeholder="Policy Name"
-      />
+      {/* Policy Name Input */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {lang === "ar" ? "اسم السياسة" : "Policy Name"}
+        </label>
+        <input
+          type="text"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-lg font-medium bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          placeholder={
+            lang === "ar" ? "اكتب اسم السياسة هنا..." : "Enter policy name..."
+          }
+        />
+      </div>
 
-      {/* ReactQuill editor */}
-      <div className="border border-gray-300 dark:border-gray-700 rounded overflow-hidden">
+      {/* Editor */}
+      <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-lg">
+        <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+            {viewLang === "ar"
+              ? "تحرير المحتوى بالعربية"
+              : "Editing Content in English"}
+          </p>
+        </div>
         <ReactQuill
           theme="snow"
           value={viewLang === "en" ? formData.en : formData.ar}
@@ -216,22 +281,40 @@ const PolicyEdit = () => {
                 : { ...formData, ar: value }
             )
           }
-          className="min-h-[300px] h-[400px] bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
+          className="h-96 bg-white dark:bg-gray-900"
+          modules={{
+            toolbar: [
+              [{ header: [1, 2, 3, false] }],
+              ["bold", "italic", "underline"],
+              [{ list: "ordered" }, { list: "bullet" }],
+              [{ align: [] }],
+              ["link"],
+              ["clean"],
+            ],
+          }}
         />
       </div>
 
       {/* Save Button */}
-      <button
-        onClick={handleSubmit}
-        disabled={saveLoading}
-        className={`px-4 py-2 rounded text-white ${
-          saveLoading
-            ? "bg-blue-400 cursor-not-allowed"
-            : "bg-blue-600 hover:bg-blue-700"
-        }`}
-      >
-        {saveLoading ? "Saving..." : "Save Policy"}
-      </button>
+      <div className="flex justify-end">
+        <button
+          onClick={handleSubmit}
+          disabled={saveLoading}
+          className={`px-8 py-3 rounded-xl text-white font-semibold text-lg transition-all transform hover:scale-105 active:scale-95 shadow-lg ${
+            saveLoading
+              ? "bg-blue-400 cursor-not-allowed"
+              : "bg-gradient-to-r from-blue-600 to-blue-700 hover: hover:from-blue-700 hover:to-blue-800"
+          }`}
+        >
+          {saveLoading
+            ? lang === "ar"
+              ? "جاري الحفظ..."
+              : "Saving..."
+            : lang === "ar"
+            ? "حفظ التغييرات"
+            : "Save Policy"}
+        </button>
+      </div>
     </div>
   );
 };

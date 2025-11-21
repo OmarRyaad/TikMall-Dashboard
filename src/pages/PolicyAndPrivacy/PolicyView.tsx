@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface Policy {
   _id: string;
@@ -14,6 +15,8 @@ interface Policy {
 }
 
 const PolicyView = () => {
+  const { lang } = useLanguage();
+  const isRTL = lang === "ar";
   const navigate = useNavigate();
   const location = useLocation();
   const params = new URLSearchParams(location.search);
@@ -21,7 +24,9 @@ const PolicyView = () => {
 
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [fetchLoading, setFetchLoading] = useState(false);
-  const [viewLang, setViewLang] = useState<"en" | "ar">("en");
+  const [viewLang, setViewLang] = useState<"en" | "ar">(
+    lang === "ar" ? "ar" : "en"
+  );
 
   const token = localStorage.getItem("accessToken");
 
@@ -40,13 +45,20 @@ const PolicyView = () => {
       );
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data?.message || "Failed to load policy");
+        toast.error(
+          data?.message ||
+            (lang === "ar" ? "فشل تحميل السياسة" : "Failed to load policy")
+        );
         setPolicy(null);
       } else {
         setPolicy(data);
       }
     } catch {
-      toast.error("Network error while fetching policy");
+      toast.error(
+        lang === "ar"
+          ? "خطأ في الاتصال بالشبكة"
+          : "Network error while fetching policy"
+      );
       setPolicy(null);
     } finally {
       setFetchLoading(false);
@@ -57,20 +69,33 @@ const PolicyView = () => {
     fetchPolicy();
   }, [policyName]);
 
+  useEffect(() => {
+    setViewLang(lang === "ar" ? "ar" : "en");
+  }, [lang]);
+
   return (
-    <div className="p-6 max-w-4xl mx-auto bg-gray-50 dark:bg-gray-900">
-      <ToastContainer position="top-right" />
+    <div
+      dir={isRTL ? "rtl" : "ltr"}
+      className="p-6 max-w-4xl mx-auto bg-gray-50 dark:bg-gray-900 min-h-screen"
+    >
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        toastClassName="!z-[9999]"
+      />
 
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center justify-center gap-2 p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
+        className="flex items-center justify-center gap-3 p-3 rounded-full bg-white dark:bg-gray-800 shadow hover:shadow-md transition-all duration-200 group mb-6"
       >
-        <div className="p-1 bg-white dark:bg-gray-700 rounded-full shadow-md">
-          <ChevronLeftIcon className="h-4 w-4 text-gray-700 dark:text-gray-200" />
+        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors">
+          <ChevronLeftIcon
+            className={`h-5 w-5 text-blue-600 ${isRTL ? "rotate-180" : ""}`}
+          />
         </div>
-        <span className="text-gray-700 dark:text-gray-200 font-medium text-sm">
-          Back
+        <span className="text-gray-700 dark:text-gray-200 font-medium">
+          {lang === "ar" ? "رجوع" : "Back"}
         </span>
       </button>
 
@@ -87,47 +112,52 @@ const PolicyView = () => {
               <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
             </div>
             <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-              Loading <span className="text-blue-500">Policy View</span>...
+              {lang === "ar" ? "جاري تحميل" : "Loading"}{" "}
+              <span className="text-blue-500">
+                {lang === "ar" ? "السياسة" : "Policy"}
+              </span>
+              ...
             </p>
           </div>
         </div>
       ) : policy ? (
-        <div>
+        <div className="space-y-6">
           {/* Policy Title */}
-          <h1 className="text-3xl font-bold mb-6 text-blue-600">
+          <h1 className="text-3xl md:text-4xl font-bold text-blue-600 text-center">
             {policy.name}
           </h1>
 
           {/* Language Toggle */}
-          <div className="flex gap-2 mb-4">
+          <div className="flex justify-center gap-4 mb-8">
             <button
               onClick={() => setViewLang("en")}
-              className={`px-3 py-1 rounded ${
+              className={`px-8 py-3 rounded-xl font-medium text-lg transition-all shadow-md ${
                 viewLang === "en"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+                  ? "bg-blue-600 text-white shadow-blue-500/50"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
               }`}
             >
               English
             </button>
             <button
               onClick={() => setViewLang("ar")}
-              className={`px-3 py-1 rounded ${
+              className={`px-8 py-3 rounded-xl font-medium text-lg transition-all shadow-md ${
                 viewLang === "ar"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+                  ? "bg-blue-600 text-white shadow-blue-500/50"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
               }`}
             >
-              Arabic
+              العربية
             </button>
           </div>
 
           {/* Policy Content */}
           <div
-            className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded p-6 min-h-[200px] prose max-w-none text-gray-900 dark:text-gray-100"
+            className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-8 shadow-xl min-h-[400px] prose prose-lg max-w-none"
             dir={viewLang === "ar" ? "rtl" : "ltr"}
           >
             <div
+              className="text-gray-800 dark:text-gray-100 leading-relaxed"
               dangerouslySetInnerHTML={{
                 __html: viewLang === "ar" ? policy.policy.ar : policy.policy.en,
               }}
@@ -135,9 +165,18 @@ const PolicyView = () => {
           </div>
         </div>
       ) : (
-        <p className="text-center text-gray-500 dark:text-gray-400 py-10">
-          Policy not found
-        </p>
+        <div className="text-center py-20">
+          <div className="bg-gray-100 dark:bg-gray-800 p-12 rounded-2xl shadow-lg max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4">
+              {lang === "ar" ? "السياسة غير موجودة" : "Policy Not Found"}
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400">
+              {lang === "ar"
+                ? "عذرًا، السياسة التي تبحث عنها غير موجودة أو تم حذفها."
+                : "Sorry, the policy you are looking for does not exist or has been removed."}
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

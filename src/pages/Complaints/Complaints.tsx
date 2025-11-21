@@ -3,6 +3,7 @@
 import { CheckCircleIcon, MegaphoneIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface User {
   _id: string;
@@ -20,6 +21,9 @@ interface Complaint {
 }
 
 const Complaints = () => {
+  const { lang } = useLanguage();
+  const isRTL = lang === "ar";
+
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -91,7 +95,10 @@ const Complaints = () => {
   if (loading)
     return (
       <div className="flex items-center justify-center h-[80vh] bg-transparent">
-        <div className="relative flex flex-col items-center">
+        <div
+          dir={isRTL ? "rtl" : "ltr"}
+          className="relative flex flex-col items-center"
+        >
           <div className="relative w-20 h-20">
             <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-blue-500 animate-spin" />
             <div className="absolute inset-2 rounded-full border-4 border-t-transparent border-cyan-400 animate-[spin_1.5s_linear_infinite]" />
@@ -102,25 +109,33 @@ const Complaints = () => {
             <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
           </div>
           <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-            Loading <span className="text-blue-500">Complaints</span>...
+            {lang === "ar" ? "جاري تحميل الشكاوى..." : "Loading"}{" "}
+            <span className="text-blue-500">
+              {lang === "ar" ? "الشكاوى" : "Complaints"}
+            </span>
+            ...
           </p>
         </div>
       </div>
     );
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div
+      dir={isRTL ? "rtl" : "ltr"}
+      className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+    >
       <ToastContainer
         position="top-right"
         autoClose={5000}
         toastClassName="!z-[9999]"
       />
+
       <h2
         className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4 text-gray-900 dark:text-white"
         style={{ color: "#456FFF" }}
       >
         <MegaphoneIcon className="w-7 h-7 text-blue-600" />
-        Complaints
+        {lang === "ar" ? "الشكاوى" : "Complaints"}
       </h2>
 
       {/* Status Filter */}
@@ -128,7 +143,7 @@ const Complaints = () => {
         <div className="flex items-center gap-2">
           <CheckCircleIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           <label className="font-medium text-gray-700 dark:text-gray-300">
-            Filter by status:
+            {lang === "ar" ? "تصفية حسب الحالة:" : "Filter by status:"}
           </label>
           <select
             value={statusFilter}
@@ -138,11 +153,19 @@ const Complaints = () => {
             }}
             className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 px-2 py-1 rounded text-gray-900 dark:text-gray-100"
           >
-            <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="reviewed">Reviewed</option>
-            <option value="resolved">Resolved</option>
-            <option value="rejected">Rejected</option>
+            <option value="all">{lang === "ar" ? "الكل" : "All"}</option>
+            <option value="pending">
+              {lang === "ar" ? "معلقة" : "Pending"}
+            </option>
+            <option value="reviewed">
+              {lang === "ar" ? "تمت المراجعة" : "Reviewed"}
+            </option>
+            <option value="resolved">
+              {lang === "ar" ? "تم الحل" : "Resolved"}
+            </option>
+            <option value="rejected">
+              {lang === "ar" ? "مرفوضة" : "Rejected"}
+            </option>
           </select>
         </div>
       </div>
@@ -152,16 +175,21 @@ const Complaints = () => {
         <table className="min-w-full border-collapse">
           <thead className="bg-gray-50 dark:bg-gray-900/30 border-b border-gray-100 dark:border-gray-800">
             <tr>
-              {["#", "Reason", "Description", "Status", "User", "Actions"].map(
-                (title) => (
-                  <th
-                    key={title}
-                    className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
-                  >
-                    {title}
-                  </th>
-                )
-              )}
+              {[
+                "#",
+                lang === "ar" ? "السبب" : "Reason",
+                lang === "ar" ? "الوصف" : "Description",
+                lang === "ar" ? "الحالة" : "Status",
+                lang === "ar" ? "المستخدم" : "User",
+                lang === "ar" ? "الإجراءات" : "Actions",
+              ].map((title) => (
+                <th
+                  key={title}
+                  className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+                >
+                  {title}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -192,17 +220,29 @@ const Complaints = () => {
                           : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                       }`}
                     >
-                      {c.status === "rejected"
-                        ? "Refused"
+                      {c.status === "pending"
+                        ? lang === "ar"
+                          ? "معلقة"
+                          : "Pending"
                         : c.status === "reviewed"
-                        ? "Reviewed"
+                        ? lang === "ar"
+                          ? "رُجعت"
+                          : "Reviewed"
                         : c.status === "resolved"
-                        ? "Solved"
+                        ? lang === "ar"
+                          ? "تم الحل"
+                          : "Solved"
+                        : c.status === "rejected"
+                        ? lang === "ar"
+                          ? "مرفوضة"
+                          : "Refused"
                         : c.status}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                    {c.userId?.name || c.userId?.phone?.number || "Anonymous"}
+                    {c.userId?.name ||
+                      c.userId?.phone?.number ||
+                      (lang === "ar" ? "مجهول" : "Anonymous")}
                   </td>
                   <td className="py-3 px-4 flex gap-1">
                     <button
@@ -210,21 +250,21 @@ const Complaints = () => {
                       onClick={() => updateStatus(c._id, "rejected")}
                       className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 disabled:opacity-50"
                     >
-                      Reject
+                      {lang === "ar" ? "رفض" : "Reject"}
                     </button>
                     <button
                       disabled={updatingId === c._id}
                       onClick={() => updateStatus(c._id, "resolved")}
                       className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50"
                     >
-                      Solve
+                      {lang === "ar" ? "حل" : "Solve"}
                     </button>
                     <button
                       disabled={updatingId === c._id}
                       onClick={() => updateStatus(c._id, "reviewed")}
                       className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50"
                     >
-                      Reviewed
+                      {lang === "ar" ? "مراجعة" : "Reviewed"}
                     </button>
                   </td>
                 </tr>
@@ -235,7 +275,7 @@ const Complaints = () => {
                   className="py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400"
                   colSpan={6}
                 >
-                  No complaints found
+                  {lang === "ar" ? "لا توجد شكاوى" : "No complaints found"}
                 </td>
               </tr>
             )}

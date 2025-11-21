@@ -9,6 +9,7 @@ import {
 import { useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
 import { CheckCircleIcon, EyeIcon, UserCircleIcon } from "../../icons";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface Broadcast {
   _id: string;
@@ -38,6 +39,9 @@ interface Broadcast {
 }
 
 const LiveBroadcasts = () => {
+  const { lang } = useLanguage();
+  const isRTL = lang === "ar";
+
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
@@ -64,7 +68,11 @@ const LiveBroadcasts = () => {
       setBroadcasts(data.items ?? []);
     } catch (err) {
       console.error(err);
-      setError("Failed to fetch live broadcasts.");
+      setError(
+        lang === "ar"
+          ? "فشل جلب البثوث المباشرة."
+          : "Failed to fetch live broadcasts."
+      );
     } finally {
       setLoading(false);
     }
@@ -88,7 +96,11 @@ const LiveBroadcasts = () => {
             <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
           </div>
           <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-            Loading <span className="text-blue-500">Active Broadcasts</span>...
+            {lang === "ar" ? "جاري تحميل" : "Loading"}{" "}
+            <span className="text-blue-500">
+              {lang === "ar" ? "البثوث المباشرة النشطة" : "Active Broadcasts"}
+            </span>
+            ...
           </p>
         </div>
       </div>
@@ -102,7 +114,7 @@ const LiveBroadcasts = () => {
           onClick={fetchBroadcasts}
           className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
         >
-          Retry
+          {lang === "ar" ? "إعادة المحاولة" : "Retry"}
         </button>
       </div>
     );
@@ -127,16 +139,18 @@ const LiveBroadcasts = () => {
           </svg>
         </div>
         <h3 className="text-2xl font-semibold text-gray-700">
-          No Active Broadcasts
+          {lang === "ar" ? "لا توجد بثوث مباشرة نشطة" : "No Active Broadcasts"}
         </h3>
         <p className="text-gray-500 mt-2 mb-6">
-          There are currently no live broadcasts streaming right now.
+          {lang === "ar"
+            ? "لا يوجد حاليًا أي بث مباشر يعمل الآن."
+            : "There are currently no live broadcasts streaming right now."}
         </p>
       </div>
     );
 
   return (
-    <div className="p-6">
+    <div dir={isRTL ? "rtl" : "ltr"} className="p-6">
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -145,7 +159,7 @@ const LiveBroadcasts = () => {
 
       <h2 className="flex items-center gap-3 text-2xl md:text-3xl font-bold mb-6 text-[#456FFF]">
         <VideoCameraIcon className="w-8 h-8 text-[#456FFF]" />
-        Active Live Broadcasts
+        {lang === "ar" ? "البثوث المباشرة النشطة" : "Active Live Broadcasts"}
         <span className="flex items-center gap-1 ml-3 px-3 py-1 bg-blue-100 text-blue-600 text-sm font-semibold rounded-full">
           <HashtagIcon className="w-4 h-4" />
           {totalActive}
@@ -167,10 +181,13 @@ const LiveBroadcasts = () => {
               />
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {broadcast.title || "Untitled Live"}
+                  {broadcast.title ||
+                    (lang === "ar" ? "بث مباشر بدون عنوان" : "Untitled Live")}
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {broadcast.storeDepartment?.name?.en || "Department"}
+                  {lang === "ar"
+                    ? broadcast.storeDepartment?.name?.ar || "القسم"
+                    : broadcast.storeDepartment?.name?.en || "Department"}
                 </p>
               </div>
             </div>
@@ -190,7 +207,13 @@ const LiveBroadcasts = () => {
                 ) : (
                   <PauseCircleIcon className="h-4 w-4" />
                 )}
-                {broadcast.status || "Unknown"}
+                {broadcast.status === "active"
+                  ? lang === "ar"
+                    ? "مباشر الآن"
+                    : "Live Now"
+                  : lang === "ar"
+                  ? "معلّق"
+                  : "Paused"}
               </span>
 
               <span className="text-xs text-blue-500 dark:text-blue-400 group-hover:underline flex items-center gap-1">
@@ -205,8 +228,8 @@ const LiveBroadcasts = () => {
               <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                 <BuildingStorefrontIcon className="w-5 h-5 text-blue-500 dark:text-blue-400" />
                 <p>
-                  <strong>Store:</strong>{" "}
-                  {broadcast.streamedBy?.storeName || "N/A"}
+                  <strong>{lang === "ar" ? "المتجر:" : "Store:"}</strong>{" "}
+                  {broadcast.streamedBy?.storeName || "غير متوفر"}
                 </p>
               </div>
 
@@ -214,7 +237,12 @@ const LiveBroadcasts = () => {
               <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
                 <UserCircleIcon className="w-5 h-5 text-purple-500 dark:text-purple-400" />
                 <p>
-                  <strong>Streamed By:</strong> {broadcast.streamedBy?.role}
+                  <strong>{lang === "ar" ? "يقدمه:" : "Streamed By:"}</strong>{" "}
+                  {broadcast.streamedBy?.role === "store_owner"
+                    ? lang === "ar"
+                      ? "صاحب المتجر"
+                      : "Store Owner"
+                    : broadcast.streamedBy?.role || "غير معروف"}
                 </p>
               </div>
             </div>
@@ -225,7 +253,16 @@ const LiveBroadcasts = () => {
               <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                 <CalendarDaysIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                 <p className="text-xs">
-                  {new Date(broadcast.createdAt).toLocaleString()}
+                  {new Date(broadcast.createdAt).toLocaleString(
+                    lang === "ar" ? "ar-EG" : "en-US",
+                    {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }
+                  )}
                 </p>
               </div>
 
