@@ -293,11 +293,13 @@ const Moderators = () => {
                     key={mod._id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
-                    <td className="px-4 md:px-6 py-3 text-sm">{idx + 1}</td>
-                    <td className="px-4 md:px-6 py-3 font-medium">
+                    <td className="px-4 md:px-6 py-3 text-sm dark:text-gray-300">
+                      {idx + 1}
+                    </td>
+                    <td className="px-4 md:px-6 py-3 font-medium dark:text-gray-300">
                       {mod.name}
                     </td>
-                    <td className="px-4 md:px-6 py-3 text-sm text-gray-600">
+                    <td className="px-4 md:px-6 py-3 text-sm text-gray-600 dark:text-gray-300">
                       {mod.phone}
                     </td>
                     <td className="px-4 md:px-6 py-3">

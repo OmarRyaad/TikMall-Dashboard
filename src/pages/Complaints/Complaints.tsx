@@ -109,14 +109,14 @@ const Complaints = () => {
     );
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <ToastContainer
         position="top-right"
         autoClose={5000}
         toastClassName="!z-[9999]"
       />
       <h2
-        className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
+        className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4 text-gray-900 dark:text-white"
         style={{ color: "#456FFF" }}
       >
         <MegaphoneIcon className="w-7 h-7 text-blue-600" />
@@ -126,7 +126,7 @@ const Complaints = () => {
       {/* Status Filter */}
       <div className="mb-6 flex justify-end">
         <div className="flex items-center gap-2">
-          <CheckCircleIcon className="w-5 h-5 text-gray-500" />
+          <CheckCircleIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           <label className="font-medium text-gray-700 dark:text-gray-300">
             Filter by status:
           </label>
@@ -136,7 +136,7 @@ const Complaints = () => {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 px-2 py-1 rounded"
+            className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 px-2 py-1 rounded text-gray-900 dark:text-gray-100"
           >
             <option value="all">All</option>
             <option value="pending">Pending</option>
@@ -152,24 +152,16 @@ const Complaints = () => {
         <table className="min-w-full border-collapse">
           <thead className="bg-gray-50 dark:bg-gray-900/30 border-b border-gray-100 dark:border-gray-800">
             <tr>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                #
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Reason
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Description
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Status
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                User
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Actions
-              </th>
+              {["#", "Reason", "Description", "Status", "User", "Actions"].map(
+                (title) => (
+                  <th
+                    key={title}
+                    className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+                  >
+                    {title}
+                  </th>
+                )
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -192,12 +184,12 @@ const Complaints = () => {
                     <span
                       className={`px-2 py-1 rounded-full text-sm font-medium ${
                         c.status === "pending"
-                          ? "bg-yellow-100 text-yellow-800"
+                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
                           : c.status === "reviewed"
                           ? "bg-blue-600 text-white"
                           : c.status === "resolved"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                       }`}
                     >
                       {c.status === "rejected"

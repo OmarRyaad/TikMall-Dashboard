@@ -58,18 +58,20 @@ const PolicyView = () => {
   }, [policyName]);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-4xl mx-auto bg-gray-50 dark:bg-gray-900">
       <ToastContainer position="top-right" />
 
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center justify-center gap-2 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200"
+        className="flex items-center justify-center gap-2 p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
       >
-        <div className="p-1 bg-white rounded-full shadow-md">
-          <ChevronLeftIcon className="h-4 w-4 text-gray-700" />
+        <div className="p-1 bg-white dark:bg-gray-700 rounded-full shadow-md">
+          <ChevronLeftIcon className="h-4 w-4 text-gray-700 dark:text-gray-200" />
         </div>
-        <span className="text-gray-700 font-medium text-sm">Back</span>
+        <span className="text-gray-700 dark:text-gray-200 font-medium text-sm">
+          Back
+        </span>
       </button>
 
       {fetchLoading ? (
@@ -103,7 +105,7 @@ const PolicyView = () => {
               className={`px-3 py-1 rounded ${
                 viewLang === "en"
                   ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700"
+                  : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
               }`}
             >
               English
@@ -113,7 +115,7 @@ const PolicyView = () => {
               className={`px-3 py-1 rounded ${
                 viewLang === "ar"
                   ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700"
+                  : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
               }`}
             >
               Arabic
@@ -122,7 +124,7 @@ const PolicyView = () => {
 
           {/* Policy Content */}
           <div
-            className="bg-gray-50 border rounded p-6 min-h-[200px] prose max-w-none"
+            className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded p-6 min-h-[200px] prose max-w-none text-gray-900 dark:text-gray-100"
             dir={viewLang === "ar" ? "rtl" : "ltr"}
           >
             <div
@@ -133,7 +135,9 @@ const PolicyView = () => {
           </div>
         </div>
       ) : (
-        <p className="text-center text-gray-500 py-10">Policy not found</p>
+        <p className="text-center text-gray-500 dark:text-gray-400 py-10">
+          Policy not found
+        </p>
       )}
     </div>
   );

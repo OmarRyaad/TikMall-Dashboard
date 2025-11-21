@@ -17,6 +17,7 @@ import {
   BuildingStorefrontIcon,
 } from "@heroicons/react/24/outline";
 import { HorizontaLDots } from "../icons";
+import { useLanguage } from "../context/LanguageContext";
 
 type NavItem = {
   name: string;
@@ -31,75 +32,70 @@ type NavItem = {
   }[];
 };
 
-const navItems: NavItem[] = [
-  {
-    name: "Statistics",
-    icon: <ChartBarIcon className="w-6 h-6" />,
-    path: "/",
-  },
-  {
-    name: "Users",
-    icon: <UserIcon className="w-6 h-6" />,
-    path: "/users",
-    subItems: [
-      {
-        name: "Moderators",
-        path: "/users/moderators",
-        pro: false,
-        icon: <UserGroupIcon className="w-5 h-5" />,
-      },
-      {
-        name: "Store Owners",
-        path: "/users/store-owners",
-        pro: false,
-        icon: <BuildingStorefrontIcon className="w-5 h-5" />,
-      },
-      {
-        name: "Customers",
-        path: "/users/customers",
-        pro: false,
-        icon: <UserIcon className="w-5 h-5" />,
-      },
-    ],
-  },
-  {
-    name: "Media",
-    icon: <PhotoIcon className="w-6 h-6" />,
-    path: "/media",
-  },
-  {
-    name: "Live Broad Casts",
-    icon: <VideoCameraIcon className="w-6 h-6" />,
-    path: "/live-broad-casts",
-  },
-  {
-    name: "Sections",
-    icon: <Squares2X2Icon className="w-6 h-6" />,
-    path: "/sections",
-  },
-  {
-    name: "Asked Questions",
-    icon: <QuestionMarkCircleIcon className="w-6 h-6" />,
-    path: "/asked-questions",
-  },
-  {
-    name: "Policy and Privacy",
-    icon: <ShieldCheckIcon className="w-6 h-6" />,
-    path: "/policy-and-Privacy",
-  },
-  {
-    name: "Complaints",
-    icon: <ExclamationCircleIcon className="w-6 h-6" />,
-    path: "/complaints",
-  },
-  {
-    name: "Notifications",
-    icon: <BellIcon className="w-6 h-6" />,
-    path: "/notifications",
-  },
-];
-
 const AppSidebar: React.FC = () => {
+  const { t, lang } = useLanguage();
+
+  const navItems: NavItem[] = [
+    {
+      name: t.statistics,
+      icon: <ChartBarIcon className="w-6 h-6" />,
+      path: "/",
+    },
+    {
+      name: t.users,
+      icon: <UserIcon className="w-6 h-6" />,
+      path: "/users",
+      subItems: [
+        {
+          name: t.moderators,
+          path: "/users/moderators",
+          icon: <UserGroupIcon className="w-5 h-5" />,
+        },
+        {
+          name: t.storeOwners,
+          path: "/users/store-owners",
+          icon: <BuildingStorefrontIcon className="w-5 h-5" />,
+        },
+        {
+          name: t.customers,
+          path: "/users/customers",
+          icon: <UserIcon className="w-5 h-5" />,
+        },
+      ],
+    },
+    { name: t.media, icon: <PhotoIcon className="w-6 h-6" />, path: "/media" },
+    {
+      name: t.liveBroadcasts,
+      icon: <VideoCameraIcon className="w-6 h-6" />,
+      path: "/live-broad-casts",
+    },
+    {
+      name: t.sections,
+      icon: <Squares2X2Icon className="w-6 h-6" />,
+      path: "/sections",
+    },
+    {
+      name: t.askedQuestions,
+      icon: <QuestionMarkCircleIcon className="w-6 h-6" />,
+      path: "/asked-questions",
+    },
+    {
+      name: t.policyAndPrivacy,
+      icon: <ShieldCheckIcon className="w-6 h-6" />,
+      path: "/policy-and-Privacy",
+    },
+    {
+      name: t.complaints,
+      icon: <ExclamationCircleIcon className="w-6 h-6" />,
+      path: "/complaints",
+    },
+    {
+      name: t.notifications,
+      icon: <BellIcon className="w-6 h-6" />,
+      path: "/notifications",
+    },
+  ];
+
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
 
@@ -115,7 +111,6 @@ const AppSidebar: React.FC = () => {
   const isActive = useCallback(
     (path?: string) => {
       if (!path) return false;
-
       const currentPath = location.pathname;
       const hasPolicyQuery = new URLSearchParams(location.search).has("name");
 
@@ -126,7 +121,6 @@ const AppSidebar: React.FC = () => {
           hasPolicyQuery
         );
       }
-
       return currentPath === path;
     },
     [location.pathname, location.search]
@@ -175,7 +169,7 @@ const AppSidebar: React.FC = () => {
               }`}
             >
               <span
-                className={`menu-item-icon-size  ${
+                className={`menu-item-icon-size ${
                   openSubmenu?.type === menuType && openSubmenu?.index === index
                     ? "menu-item-icon-active"
                     : "menu-item-icon-inactive"
@@ -250,7 +244,6 @@ const AppSidebar: React.FC = () => {
                         </span>
                       )}
                       <span>{subItem.name}</span>
-
                       <span className="flex items-center gap-1 ml-auto">
                         {subItem.new && (
                           <span
@@ -288,16 +281,27 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out border-r border-gray-200 
-        ${
-          isExpanded || isMobileOpen
-            ? "w-[290px]"
-            : isHovered
-            ? "w-[290px]"
-            : "w-[90px]"
-        }
-        ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0`}
+      className={`
+    fixed mt-16 flex flex-col lg:mt-0 top-0
+    ${lang === "ar" ? "right-0" : "left-0"}  // <-- dynamic
+    px-5 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900
+    h-screen transition-all duration-300 ease-in-out border-r border-gray-200
+    ${
+      isExpanded || isMobileOpen
+        ? "w-[290px]"
+        : isHovered
+        ? "w-[290px]"
+        : "w-[90px]"
+    }
+    ${
+      isMobileOpen
+        ? "translate-x-0"
+        : lang === "ar"
+        ? "translate-x-full"
+        : "-translate-x-full"
+    }
+    lg:translate-x-0
+  `}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -346,7 +350,7 @@ const AppSidebar: React.FC = () => {
                 }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Menu"
+                  t.menu
                 ) : (
                   <HorizontaLDots className="size-6" />
                 )}

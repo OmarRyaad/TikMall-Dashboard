@@ -1,10 +1,14 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { UserIcon } from "@heroicons/react/24/outline";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function UserDropdown() {
+  const { t, toggleLanguage } = useLanguage();
+
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<{ name: string; phone: string } | null>(
     null
@@ -41,7 +45,6 @@ export default function UserDropdown() {
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11 bg-gray-200 flex items-center justify-center">
           <UserIcon className="h-6 w-6 text-gray-500" />
         </span>
-
         <span className="block mr-1 font-medium text-theme-sm">
           {user?.name || "no name found!"}
         </span>
@@ -81,7 +84,10 @@ export default function UserDropdown() {
         <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
           <li>
             <DropdownItem
-              onItemClick={closeDropdown}
+              onItemClick={() => {
+                toggleLanguage(); // toggle EN / AR
+                closeDropdown();
+              }}
               tag="a"
               className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
@@ -100,7 +106,7 @@ export default function UserDropdown() {
                   d="M12 2C6.477 2 2 6.477 2 12c0 5.523 4.477 10 10 10s10-4.477 10-10C22 6.477 17.523 2 12 2zM2 12h20M12 2a15.957 15.957 0 00-4 10 15.957 15.957 0 004 10 15.957 15.957 0 004-10 15.957 15.957 0 00-4-10z"
                 />
               </svg>
-              Change Language
+              {t.changeLanguage} {/* Use translation */}
             </DropdownItem>
           </li>
         </ul>
@@ -123,7 +129,7 @@ export default function UserDropdown() {
               fill=""
             />
           </svg>
-          Sign out
+          {t.signOut} {/* Use translation */}
         </button>
       </Dropdown>
     </div>

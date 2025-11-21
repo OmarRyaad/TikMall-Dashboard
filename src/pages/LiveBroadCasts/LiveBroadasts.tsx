@@ -156,20 +156,20 @@ const LiveBroadcasts = () => {
         {broadcasts.map((broadcast: Broadcast) => (
           <div
             key={broadcast._id}
-            className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-pointer group"
+            className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 cursor-pointer group"
           >
             {/* Header */}
             <div className="flex items-center gap-4 mb-3">
               <img
                 src={broadcast.storeDepartment?.icon}
                 alt="icon"
-                className="w-14 h-14 rounded-lg object-cover border border-gray-300"
+                className="w-14 h-14 rounded-lg object-cover border border-gray-300 dark:border-gray-600"
               />
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {broadcast.title || "Untitled Live"}
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {broadcast.storeDepartment?.name?.en || "Department"}
                 </p>
               </div>
@@ -179,11 +179,11 @@ const LiveBroadcasts = () => {
             <div className="flex items-center gap-2 mb-2">
               <span
                 className={`flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full 
-      ${
-        broadcast.status === "active"
-          ? "bg-green-100 text-green-700"
-          : "bg-gray-200 text-gray-700"
-      }`}
+            ${
+              broadcast.status === "active"
+                ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-400"
+                : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+            }`}
               >
                 {broadcast.status === "active" ? (
                   <CheckCircleIcon className="h-4 w-4" />
@@ -193,7 +193,7 @@ const LiveBroadcasts = () => {
                 {broadcast.status || "Unknown"}
               </span>
 
-              <span className="text-xs text-blue-500 group-hover:underline flex items-center gap-1">
+              <span className="text-xs text-blue-500 dark:text-blue-400 group-hover:underline flex items-center gap-1">
                 <HashtagIcon className="h-4 w-4" />
                 ID: {broadcast._id.slice(-6)}
               </span>
@@ -202,8 +202,8 @@ const LiveBroadcasts = () => {
             {/* Store & Streamer Info */}
             <div className="mt-3 text-sm space-y-2">
               {/* Store Name */}
-              <div className="flex items-center gap-2 text-gray-700">
-                <BuildingStorefrontIcon className="w-5 h-5 text-blue-500" />
+              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                <BuildingStorefrontIcon className="w-5 h-5 text-blue-500 dark:text-blue-400" />
                 <p>
                   <strong>Store:</strong>{" "}
                   {broadcast.streamedBy?.storeName || "N/A"}
@@ -211,8 +211,8 @@ const LiveBroadcasts = () => {
               </div>
 
               {/* Streamed By */}
-              <div className="flex items-center gap-2 text-gray-700">
-                <UserCircleIcon className="w-5 h-5 text-purple-500" />
+              <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                <UserCircleIcon className="w-5 h-5 text-purple-500 dark:text-purple-400" />
                 <p>
                   <strong>Streamed By:</strong> {broadcast.streamedBy?.role}
                 </p>
@@ -222,15 +222,15 @@ const LiveBroadcasts = () => {
             {/* Footer */}
             <div className="mt-4 flex items-center justify-between">
               {/* Date with Icon */}
-              <div className="flex items-center gap-1.5 text-gray-500">
-                <CalendarDaysIcon className="w-4 h-4 text-gray-400" />
+              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                <CalendarDaysIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                 <p className="text-xs">
                   {new Date(broadcast.createdAt).toLocaleString()}
                 </p>
               </div>
 
               {/* Viewers Count with Icon */}
-              <div className="flex items-center gap-1.5 text-gray-700">
+              <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
                 <EyeIcon className="w-5 h-5" />
                 <span className="text-sm font-medium">
                   {broadcast.viewersCount ?? 0}

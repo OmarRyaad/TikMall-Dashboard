@@ -135,12 +135,13 @@ const PolicyAndPrivacy = () => {
     );
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gray-50 dark:bg-gray-900">
       <ToastContainer
         position="top-right"
         autoClose={5000}
         toastClassName="!z-[9999]"
       />
+
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         {/* Title with Icon */}
@@ -152,11 +153,11 @@ const PolicyAndPrivacy = () => {
           Policies & Privacy
         </h2>
 
-        {/* Refresh Button with Icon */}
+        {/* Refresh Button */}
         <div className="flex gap-2">
           <button
             onClick={fetchPolicies}
-            className="mb-4 px-5 py-2 bg-gray-200 text-gray-700 rounded-lg shadow hover:bg-gray-300 transition-all duration-300 flex items-center gap-2"
+            className="mb-4 px-5 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 flex items-center gap-2"
           >
             <ArrowPathIcon className="w-5 h-5" />
             Refresh
@@ -166,7 +167,7 @@ const PolicyAndPrivacy = () => {
 
       {/* Policies Grid */}
       {policies.length === 0 ? (
-        <div className="text-center text-gray-500 py-20">
+        <div className="text-center text-gray-500 dark:text-gray-400 py-20">
           No policies yet. Click “Add Policy” to create your first policy.
         </div>
       ) : (
@@ -174,11 +175,11 @@ const PolicyAndPrivacy = () => {
           {policies.map((p) => (
             <div
               key={p._id}
-              className="relative flex flex-col justify-between rounded-2xl border border-gray-200 bg-white dark:bg-gray-900 shadow-sm hover:shadow-lg transition-shadow p-5"
+              className="relative flex flex-col justify-between rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg transition-shadow p-5"
             >
               {/* Icon + Title */}
               <div className="flex items-start gap-3">
-                <DocumentTextIcon className="w-7 h-7 text-purple-600 flex-shrink-0" />
+                <DocumentTextIcon className="w-7 h-7 text-purple-600" />
                 <h2 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 leading-tight">
                   {p.name}
                 </h2>
@@ -193,7 +194,7 @@ const PolicyAndPrivacy = () => {
               <div className="mt-5 flex justify-between items-center">
                 <button
                   onClick={() => openViewPage(p.name)}
-                  className="px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors"
+                  className="px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   View
                 </button>
@@ -206,7 +207,7 @@ const PolicyAndPrivacy = () => {
                       )}`
                     )
                   }
-                  className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
                 >
                   Edit
                 </button>
@@ -223,23 +224,24 @@ const PolicyAndPrivacy = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4"
           >
-            <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-lg">
-              <h2 className="text-xl font-semibold mb-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl max-w-lg w-full p-6 shadow-lg">
+              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
                 {editingPolicy ? "Edit Policy" : "Add New Policy"}
               </h2>
+
               <input
                 type="text"
                 placeholder="Policy Name"
-                className="w-full border rounded p-2 mb-3"
+                className="w-full border border-gray-300 dark:border-gray-700 rounded p-2 mb-3 text-gray-800 dark:text-white bg-white dark:bg-gray-800"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
               />
 
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
                 Arabic Content
               </label>
               <ReactQuill
@@ -248,10 +250,10 @@ const PolicyAndPrivacy = () => {
                 onChange={(value: string) =>
                   setFormData({ ...formData, ar: value })
                 }
-                className="mb-3 bg-white border rounded"
+                className="mb-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
               />
 
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
                 English Content
               </label>
               <ReactQuill
@@ -260,13 +262,13 @@ const PolicyAndPrivacy = () => {
                 onChange={(value: string) =>
                   setFormData({ ...formData, en: value })
                 }
-                className="mb-3 bg-white border rounded"
+                className="mb-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700"
               />
 
               <div className="flex justify-end gap-2 mt-4">
                 <button
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 border rounded hover:bg-gray-100"
+                  className="px-4 py-2 border rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-white transition-all"
                 >
                   Cancel
                 </button>

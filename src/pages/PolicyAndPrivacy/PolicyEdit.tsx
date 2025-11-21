@@ -85,8 +85,8 @@ const PolicyEdit = () => {
 
     try {
       const res = await fetch(
-        `https://api.tik-mall.com/policies/policyName/${encodeURIComponent(
-          policy._id
+        `https://api.tik-mall.com/admin/api/policy/${encodeURIComponent(
+          policy.name
         )}`,
         {
           method: "PATCH",
@@ -152,18 +152,20 @@ const PolicyEdit = () => {
     );
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-6 max-w-4xl mx-auto space-y-6 bg-gray-50 dark:bg-gray-900">
       <ToastContainer position="top-right" />
 
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center justify-center gap-2 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200"
+        className="flex items-center justify-center gap-2 p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
       >
-        <div className="p-1 bg-white rounded-full shadow-md">
-          <ChevronLeftIcon className="h-4 w-4 text-gray-700" />
+        <div className="p-1 bg-white dark:bg-gray-700 rounded-full shadow-md">
+          <ChevronLeftIcon className="h-4 w-4 text-gray-700 dark:text-gray-200" />
         </div>
-        <span className="text-gray-700 font-medium text-sm">Back</span>
+        <span className="text-gray-700 dark:text-gray-200 font-medium text-sm">
+          Back
+        </span>
       </button>
 
       {/* Policy Title */}
@@ -176,7 +178,7 @@ const PolicyEdit = () => {
           className={`px-3 py-1 rounded ${
             viewLang === "en"
               ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-gray-700"
+              : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
           }`}
         >
           English
@@ -186,7 +188,7 @@ const PolicyEdit = () => {
           className={`px-3 py-1 rounded ${
             viewLang === "ar"
               ? "bg-blue-600 text-white"
-              : "bg-gray-200 text-gray-700"
+              : "bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
           }`}
         >
           Arabic
@@ -196,14 +198,14 @@ const PolicyEdit = () => {
       {/* Policy Name */}
       <input
         type="text"
-        className="w-full border rounded p-2"
+        className="w-full border border-gray-300 dark:border-gray-700 rounded p-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
         value={formData.name}
         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
         placeholder="Policy Name"
       />
 
       {/* ReactQuill editor */}
-      <div className="border rounded overflow-hidden">
+      <div className="border border-gray-300 dark:border-gray-700 rounded overflow-hidden">
         <ReactQuill
           theme="snow"
           value={viewLang === "en" ? formData.en : formData.ar}
@@ -214,7 +216,7 @@ const PolicyEdit = () => {
                 : { ...formData, ar: value }
             )
           }
-          className="min-h-[300px] h-[400px] bg-white"
+          className="min-h-[300px] h-[400px] bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
         />
       </div>
 

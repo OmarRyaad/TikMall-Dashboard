@@ -360,8 +360,7 @@ const AskedQuestions = () => {
                 Confirm Delete
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Are you sure you want to delete this FAQ? This action cannot be
-                undone.
+                Are you sure you want to delete this FAQ?
               </p>
               <div className="mt-5 flex justify-end gap-3">
                 <button

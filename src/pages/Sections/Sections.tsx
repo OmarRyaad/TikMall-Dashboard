@@ -64,7 +64,7 @@ const Sections = () => {
       nameEn: dept.name.en,
       descAr: dept.description.ar,
       descEn: dept.description.en,
-      icons: formData.icons,
+      icons: dept.icon ? [{ url: dept.icon, loading: false }] : [],
     });
     setIsOpen(true);
   };
@@ -78,7 +78,7 @@ const Sections = () => {
       nameEn: "",
       descAr: "",
       descEn: "",
-      icons: formData.icons,
+      icons: [],
     });
     setIsOpen(true);
   };
@@ -121,34 +121,76 @@ const Sections = () => {
   };
 
   // Handle icon upload
-  const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIconChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
 
-    const files = Array.from(e.target.files);
+    const file = e.target.files[0];
+    if (!file) return;
 
-    const newIcons: IconType[] = files.map(() => ({ url: "", loading: true }));
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image must be < 10MB");
+      return;
+    }
 
-    // Add placeholders
-    setFormData((prev) => ({
-      ...prev,
-      icons: [...prev.icons, ...newIcons],
-    }));
+    try {
+      // (1) اطلب presigned URL بالصيغة الصحيحة
+      const res = await fetch("https://api.tik-mall.com/upload/get-presigned", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          files: [
+            {
+              filename: file.name,
+              contentType: file.type,
+            },
+          ],
+        }),
+      });
 
-    // Load each image
-    files.forEach((file, idx) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => {
-          const updatedIcons = [...prev.icons];
-          updatedIcons[prev.icons.length - newIcons.length + idx] = {
-            url: reader.result?.toString() || "",
-            loading: false, // finished loading
-          };
-          return { ...prev, icons: updatedIcons };
-        });
-      };
-      reader.readAsDataURL(file);
-    });
+      const data = await res.json();
+      if (!res.ok || !data.items?.length) {
+        toast.error(data.error || "Failed to get upload URL");
+        return;
+      }
+
+      const uploadItem = data.items[0];
+
+      // (2) ارفع الصورة Binary باستخدام PUT
+      const uploadRes = await fetch(uploadItem.url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        toast.error("Image upload failed");
+        return;
+      }
+
+      // (3) رابط الصورة النهائي
+      const finalImageURL = uploadItem.fileUrl;
+
+      // (4) خزّنه في formData
+      setFormData((prev) => ({
+        ...prev,
+        icons: [
+          {
+            url: finalImageURL,
+            loading: false,
+          },
+        ],
+      }));
+
+      toast.success("Icon uploaded successfully");
+    } catch (err) {
+      console.log(err);
+      toast.error("Something went wrong while uploading image");
+    }
   };
 
   const handleCancel = () => setIsOpen(false);
@@ -326,16 +368,16 @@ const Sections = () => {
                     </td>
                     <td className="py-3 px-4">
                       <img
-                        src={dept.icon || "/placeholder.jpg"}
-                        alt={dept.name.en}
+                        src={dept?.icon || "/placeholder.jpg"}
+                        alt={dept?.name?.en}
                         className="h-12 w-12 rounded-md object-cover"
                       />
                     </td>
                     <td className="py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90">
-                      {dept.name.ar} / {dept.name.en}
+                      {dept?.name?.ar} / {dept?.name?.en}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
-                      {dept.description.ar || dept.description.en}
+                      {dept?.description?.ar || dept?.description?.en}
                     </td>
                     <td className="py-3 px-4 flex gap-2">
                       <button
@@ -389,6 +431,7 @@ const Sections = () => {
                   <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
                     {isEditMode ? "Edit Section" : "Add New Section"}
                   </h2>
+
                   <div className="space-y-3">
                     <input
                       type="text"
@@ -396,7 +439,7 @@ const Sections = () => {
                       placeholder="Name (Arabic)"
                       value={formData.nameAr}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded"
+                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded text-gray-800 dark:text-white"
                     />
                     <input
                       type="text"
@@ -404,22 +447,23 @@ const Sections = () => {
                       placeholder="Name (English)"
                       value={formData.nameEn}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded"
+                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded text-gray-800 dark:text-white"
                     />
                     <textarea
                       name="descAr"
                       placeholder="Description (Arabic)"
                       value={formData.descAr}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20"
+                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20 text-gray-800 dark:text-white"
                     />
                     <textarea
                       name="descEn"
                       placeholder="Description (English)"
                       value={formData.descEn}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20"
+                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20 text-gray-800 dark:text-white"
                     />
+
                     <div className="mt-3 flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -435,13 +479,13 @@ const Sections = () => {
                         Add multiple sections without closing
                       </label>
                     </div>
+
                     <div className="flex items-center space-x-4 flex-wrap mt-2">
                       <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
                         Choose Icons
                         <input
                           type="file"
                           accept="image/*"
-                          multiple
                           onChange={handleIconChange}
                           className="hidden"
                         />
@@ -454,32 +498,17 @@ const Sections = () => {
                               key={idx}
                               className="relative h-12 w-12 rounded-md border border-gray-300 dark:border-gray-700 overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800"
                             >
-                              {/* Loader */}
                               {icon.loading && (
                                 <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                               )}
 
-                              {/* Icon preview بعد التحميل */}
                               {!icon.loading && icon.url && (
-                                <div className="absolute inset-0 bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-6 w-6 text-gray-400"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M3 7v4h4l5-5 5 5h4V7m0 10v4h-4l-5-5-5 5H3v-4"
-                                    />
-                                  </svg>
-                                </div>
+                                <img
+                                  src={icon.url}
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
                               )}
 
-                              {/* Delete button */}
                               <button
                                 type="button"
                                 onClick={() =>
@@ -497,13 +526,14 @@ const Sections = () => {
                             </div>
                           ))
                         ) : (
-                          <div className="h-12 w-12 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-100 flex items-center justify-center text-gray-400">
+                          <div className="h-12 w-12 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500">
                             No Icons
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
+
                   <div className="mt-6 flex justify-end gap-3">
                     <button
                       onClick={handleCancel}

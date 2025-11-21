@@ -13,13 +13,18 @@ import {
   PlayCircleIcon,
   ChartBarIcon,
   SignalIcon,
+  UserIcon,
+  UserCircleIcon,
 } from "@heroicons/react/24/outline";
-import { ArrowUpIcon, UserCircleIcon, UserIcon } from "../../icons";
+import { ArrowUpIcon } from "../../icons";
 import { ToastContainer } from "react-toastify";
 import MonthlySalesChart from "../../components/ecommerce/MonthlySalesChart";
 import StatisticsChart from "../../components/ecommerce/StatisticsChart";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function Home() {
+  const { lang } = useLanguage();
+  const isRTL = lang === "ar";
   const { users, media, streams, loading } = useStatisticsData();
 
   if (loading)
@@ -41,14 +46,19 @@ export default function Home() {
 
           {/* Text with shimmer */}
           <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-            Loading <span className="text-blue-500">Statistics</span>...
+            Loading{" "}
+            <span className="text-blue-500 dark:text-cyan-400">Statistics</span>
+            ...
           </p>
         </div>
       </div>
     );
 
   return (
-    <>
+    <div
+      dir={isRTL ? "rtl" : "ltr"}
+      className={isRTL ? "text-right" : "text-left"}
+    >
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -65,25 +75,29 @@ export default function Home() {
             className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
             style={{ color: "#456FFF" }}
           >
-            <ChartBarIcon className="w-8 h-8 text-blue-600" />
+            <ChartBarIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             User Statistics
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             <UsersMetrics
               UsersMetricsIcon={
-                <UserGroupIcon className="text-gray-800 size-6 dark:text-white/90" />
+                <UserGroupIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
               }
               UsersMetricsName="Total Users"
               UsersMetricsTotallyNum={users?.totalUsers?.toString() ?? "-"}
               UsersMetricsBadge={{
                 color: "success",
                 value: `${users?.newUsersLastMonth ?? 0} new this month`,
-                icon: <ArrowUpIcon />,
+                icon: (
+                  <ArrowUpIcon className="text-green-500 dark:text-green-300 w-4 h-4" />
+                ),
               }}
             />
             <UsersMetrics
-              UsersMetricsIcon={<BuildingStorefrontIcon />}
+              UsersMetricsIcon={
+                <BuildingStorefrontIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
+              }
               UsersMetricsName="Store Owners"
               UsersMetricsTotallyNum={users?.storeOwners?.toString() ?? "-"}
               UsersMetricsBadge={{
@@ -92,11 +106,15 @@ export default function Home() {
                   ((users?.storeOwners ?? 0) / (users?.totalUsers ?? 1)) *
                   100
                 ).toFixed(1)}%`,
-                icon: <ArrowUpIcon />,
+                icon: (
+                  <ArrowUpIcon className="text-blue-500 dark:text-blue-300 w-4 h-4" />
+                ),
               }}
             />
             <UsersMetrics
-              UsersMetricsIcon={<UserIcon />}
+              UsersMetricsIcon={
+                <UserIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
+              }
               UsersMetricsName="Customers"
               UsersMetricsTotallyNum={users?.customers?.toString() ?? "-"}
               UsersMetricsBadge={{
@@ -105,14 +123,17 @@ export default function Home() {
                   ((users?.customers ?? 0) / (users?.totalUsers ?? 1)) *
                   100
                 ).toFixed(1)}%`,
-                icon: <ArrowUpIcon />,
+                icon: (
+                  <ArrowUpIcon className="text-cyan-500 dark:text-cyan-300 w-4 h-4" />
+                ),
               }}
             />
           </div>
+
+          {/* --- USERS TABLE --- */}
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
             <div className="max-w-full overflow-x-auto">
               <table className="min-w-full border-collapse">
-                {/* ===== HEADER ===== */}
                 <thead className="border-y border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30">
                   <tr>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
@@ -138,7 +159,6 @@ export default function Home() {
                   </tr>
                 </thead>
 
-                {/* ===== BODY ===== */}
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {users?.mostFollowed?.length ? (
                     users.mostFollowed.map((user, idx) => (
@@ -180,25 +200,29 @@ export default function Home() {
             className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
             style={{ color: "#456FFF" }}
           >
-            <ChartBarIcon className="w-8 h-8 text-blue-600" />
+            <ChartBarIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             Media Statistics
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             <UsersMetrics
               UsersMetricsIcon={
-                <CalculatorIcon className="text-gray-800 size-6 dark:text-white/90" />
+                <CalculatorIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
               }
               UsersMetricsName="Total Media"
               UsersMetricsTotallyNum={media?.totalMedia?.toString() ?? "-"}
               UsersMetricsBadge={{
                 color: "info",
                 value: `${media?.totalSizeGB ?? 0} GB`,
-                icon: <ArrowUpIcon />,
+                icon: (
+                  <ArrowUpIcon className="text-cyan-500 dark:text-cyan-300 w-4 h-4" />
+                ),
               }}
             />
             <UsersMetrics
-              UsersMetricsIcon={<CalculatorIcon />}
+              UsersMetricsIcon={
+                <CalculatorIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
+              }
               UsersMetricsName="Most Liked Media"
               UsersMetricsTotallyNum={
                 media?.mostLiked?.[0]?.likesCount?.toString() ?? "-"
@@ -206,11 +230,15 @@ export default function Home() {
               UsersMetricsBadge={{
                 color: "success",
                 value: media?.mostLiked?.[0]?.title ?? "N/A",
-                icon: <ArrowUpIcon />,
+                icon: (
+                  <ArrowUpIcon className="text-green-500 dark:text-green-300 w-4 h-4" />
+                ),
               }}
             />
             <UsersMetrics
-              UsersMetricsIcon={<CalculatorIcon />}
+              UsersMetricsIcon={
+                <CalculatorIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
+              }
               UsersMetricsName="Top Creator"
               UsersMetricsTotallyNum={
                 media?.mostLiked?.[0]?.uploadedBy?.name ?? "N/A"
@@ -218,15 +246,17 @@ export default function Home() {
               UsersMetricsBadge={{
                 color: "warning",
                 value: media?.mostLiked?.[0]?.uploadedBy?.storeName ?? "—",
-                icon: <ArrowUpIcon />,
+                icon: (
+                  <ArrowUpIcon className="text-yellow-500 dark:text-yellow-300 w-4 h-4" />
+                ),
               }}
             />
-            {/* --- MOST LIKED MEDIA TABLE --- */}
           </div>
+
+          {/* --- MEDIA TABLE --- */}
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
             <div className="max-w-full overflow-x-auto">
               <table className="min-w-full border-collapse">
-                {/* ===== HEADER ===== */}
                 <thead className="border-y border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30">
                   <tr>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -263,7 +293,6 @@ export default function Home() {
                   </tr>
                 </thead>
 
-                {/* ===== BODY ===== */}
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {media?.mostLiked?.length ? (
                     media.mostLiked.map((item, idx) => (
@@ -274,7 +303,6 @@ export default function Home() {
                         <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
                           {idx + 1}
                         </td>
-
                         <td className="py-3 px-4">
                           <div className="h-12 w-12 overflow-hidden rounded-md ring-1 ring-gray-200 dark:ring-gray-700">
                             <img
@@ -287,19 +315,15 @@ export default function Home() {
                             />
                           </div>
                         </td>
-
                         <td className="py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90">
                           {item.title}
                         </td>
-
                         <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
                           {item.uploadedBy?.name ?? "—"}
                         </td>
-
                         <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
                           {item.uploadedBy?.storeName ?? "—"}
                         </td>
-
                         <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
                           ❤️ {item.likesCount.toLocaleString()}
                         </td>
@@ -325,23 +349,29 @@ export default function Home() {
             className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
             style={{ color: "#456FFF" }}
           >
-            <SignalIcon className="w-8 h-8 text-blue-600" />
+            <SignalIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             Broadcast Statistics
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             <UsersMetrics
-              UsersMetricsIcon={<CalculatorIcon />}
+              UsersMetricsIcon={
+                <CalculatorIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
+              }
               UsersMetricsName="Total Streams"
               UsersMetricsTotallyNum={streams?.totalStreams?.toString() ?? "-"}
               UsersMetricsBadge={{
                 color: "info",
                 value: `${streams?.activeStreams ?? 0} Active`,
-                icon: <ArrowUpIcon />,
+                icon: (
+                  <ArrowUpIcon className="text-cyan-500 dark:text-cyan-300 w-4 h-4" />
+                ),
               }}
             />
             <UsersMetrics
-              UsersMetricsIcon={<CalculatorIcon />}
+              UsersMetricsIcon={
+                <CalculatorIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
+              }
               UsersMetricsName="Total Viewers"
               UsersMetricsTotallyNum={streams?.totalViewers?.toString() ?? "-"}
               UsersMetricsBadge={{
@@ -349,12 +379,15 @@ export default function Home() {
                 value: `${(
                   (streams?.totalViewers ?? 0) / (streams?.totalStreams ?? 1)
                 ).toFixed(2)} Avg per Stream`,
-                icon: <ArrowUpIcon />,
+                icon: (
+                  <ArrowUpIcon className="text-green-500 dark:text-green-300 w-4 h-4" />
+                ),
               }}
             />
-
             <UsersMetrics
-              UsersMetricsIcon={<CalculatorIcon />}
+              UsersMetricsIcon={
+                <CalculatorIcon className="text-gray-800 dark:text-white/90 w-6 h-6" />
+              }
               UsersMetricsName="Top Stream"
               UsersMetricsTotallyNum={
                 streams?.mostViewed?.[0]?.viewersCount?.toString() ?? "-"
@@ -362,15 +395,17 @@ export default function Home() {
               UsersMetricsBadge={{
                 color: "warning",
                 value: streams?.mostViewed?.[0]?.title ?? "N/A",
-                icon: <ArrowUpIcon />,
+                icon: (
+                  <ArrowUpIcon className="text-yellow-500 dark:text-yellow-300 w-4 h-4" />
+                ),
               }}
             />
-            {/* --- MOST VIEWED STREAMS TABLE --- */}
           </div>
+
+          {/* --- STREAM TABLE --- */}
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
             <div className="max-w-full overflow-x-auto">
               <table className="min-w-full border-collapse">
-                {/* ===== HEADER ===== */}
                 <thead className="border-y border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30">
                   <tr>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -390,61 +425,30 @@ export default function Home() {
                     </th>
                     <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1">
-                        <BuildingStorefrontIcon className="h-4 w-4" /> Store
-                      </div>
-                    </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
-                      <div className="flex items-center gap-1">
-                        <EyeIcon className="h-4 w-4 text-blue-500 dark:text-blue-400" />{" "}
-                        Viewers
+                        <EyeIcon className="h-4 w-4" /> Viewers
                       </div>
                     </th>
                   </tr>
                 </thead>
 
-                {/* ===== BODY ===== */}
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {streams?.mostViewed?.length ? (
                     streams.mostViewed.map((stream, idx) => (
                       <tr
-                        key={stream.streamId}
+                        key={idx}
                         className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
                       >
-                        {/* Index */}
                         <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
                           {idx + 1}
                         </td>
-
-                        {/* Title */}
                         <td className="py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90">
                           {stream.title}
                         </td>
-
-                        {/* Streamer (with avatar) */}
-                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={
-                                stream.streamedBy?.profileImg ||
-                                "https://via.placeholder.com/30"
-                              }
-                              alt={stream.streamedBy?.storeName || "Streamer"}
-                              className="h-8 w-8 rounded-full object-cover border border-gray-200 dark:border-gray-700"
-                            />
-                            <span className="font-medium text-gray-800 dark:text-white/90">
-                              {stream.streamedBy?.role ?? "—"}
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* Store */}
                         <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
                           {stream.streamedBy?.storeName ?? "—"}
                         </td>
-
-                        {/* Viewers */}
                         <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
-                          👁️ {stream.viewersCount.toLocaleString()}
+                          {stream.viewersCount.toLocaleString()}
                         </td>
                       </tr>
                     ))
@@ -452,7 +456,7 @@ export default function Home() {
                     <tr>
                       <td
                         className="py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400"
-                        colSpan={5}
+                        colSpan={4}
                       >
                         No data available
                       </td>
@@ -463,13 +467,15 @@ export default function Home() {
             </div>
           </div>
 
-          <MonthlySalesChart />
-        </div>
-
-        <div className="col-span-12">
-          <StatisticsChart />
+          {/* --- CHARTS --- */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
+            <MonthlySalesChart />
+          </div>
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
+            <StatisticsChart />
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

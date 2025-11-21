@@ -142,12 +142,13 @@ const Media = () => {
     );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 dark:bg-[#0a0a0a]">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <ToastContainer
         position="top-right"
         autoClose={5000}
         toastClassName="!z-[9999]"
       />
+
       <h2
         className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
         style={{ color: "#456FFF" }}
@@ -158,17 +159,12 @@ const Media = () => {
 
       {/* FILTERS */}
       <div className="flex justify-end mb-6">
-        <div
-          className="
-            flex items-center gap-4
-            rounded-xl px-5 py-3
-          "
-        >
+        <div className="flex items-center gap-4 rounded-xl px-5 py-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 space-y-2 sm:space-y-0">
             {/* Type Filter */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 w-full sm:w-auto">
               <div className="flex items-center gap-2 mb-2 sm:mb-0">
-                <PhotoIcon className="w-5 h-5 text-blue-500" />
+                <PhotoIcon className="w-5 h-5 text-blue-500 dark:text-blue-400" />
                 <span className="font-medium text-gray-700 dark:text-gray-300">
                   Filter by type:
                 </span>
@@ -184,9 +180,9 @@ const Media = () => {
             </div>
 
             {/* Department Filter */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 w-full sm:w-auto">
               <div className="flex items-center gap-2 mb-2 sm:mb-0">
-                <BuildingOffice2Icon className="w-5 h-5 text-purple-500" />
+                <BuildingOffice2Icon className="w-5 h-5 text-purple-500 dark:text-purple-400" />
                 <span className="font-medium text-gray-700 dark:text-gray-300">
                   Filter by department:
                 </span>
@@ -208,11 +204,12 @@ const Media = () => {
         </div>
       </div>
 
+      {/* Media Grid */}
       <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {media.map((item) => (
           <div
             key={item._id}
-            className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md transition-all hover:shadow-lg dark:border-gray-800 dark:bg-white/[0.03]"
+            className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md transition-all hover:shadow-lg dark:border-gray-700 dark:bg-white/[0.03]"
           >
             <img
               src={item.thumbnailUrl}
@@ -222,7 +219,7 @@ const Media = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             <div className="absolute bottom-3 left-3 right-3 text-white opacity-0 transition-all duration-300 group-hover:opacity-100">
               <h3 className="truncate text-lg font-semibold">{item.title}</h3>
-              <p className="truncate text-sm text-gray-200">
+              <p className="truncate group-hover:whitespace-normal text-sm text-gray-200 dark:text-gray-300">
                 {item.description}
               </p>
               <div className="mt-2 flex items-center justify-between text-sm">

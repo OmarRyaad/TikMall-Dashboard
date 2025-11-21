@@ -139,7 +139,7 @@ const StoreOwners = () => {
         {/* 🔍 Search */}
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <input
-            className="px-4 py-2 border rounded-lg dark:bg-gray-800 w-full sm:w-auto"
+            className="px-4 py-2 border rounded-lg dark:bg-gray-800 w-full sm:w-auto dark:text-gray-300"
             placeholder="Search for a store owner..."
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
@@ -186,11 +186,13 @@ const StoreOwners = () => {
                     key={owner._id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
-                    <td className="px-4 md:px-6 py-3 text-sm">{idx + 1}</td>
-                    <td className="px-4 md:px-6 py-3 font-medium">
+                    <td className="px-4 md:px-6 py-3 text-sm dark:text-gray-300">
+                      {idx + 1}
+                    </td>
+                    <td className="px-4 md:px-6 py-3 font-medium dark:text-gray-300">
                       {owner.name}
                     </td>
-                    <td className="px-4 md:px-6 py-3 text-sm text-gray-600">
+                    <td className="px-4 md:px-6 py-3 text-sm text-gray-600 dark:text-gray-300">
                       {owner.phone?.number}
                     </td>
                     <td className="px-4 md:px-6 py-3">

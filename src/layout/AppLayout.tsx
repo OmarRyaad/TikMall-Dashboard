@@ -3,16 +3,24 @@ import { Outlet } from "react-router";
 import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
+import { LanguageProvider, useLanguage } from "../context/LanguageContext";
 
 const LayoutContent: React.FC = () => {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const { lang } = useLanguage();
+
+  const isRTL = lang === "ar";
 
   return (
-    <div className="min-h-screen xl:flex">
+    <div
+      dir={isRTL ? "rtl" : "ltr"}
+      className={`min-h-screen xl:flex ${isRTL ? "rtl" : "ltr"}`}
+    >
       <div>
         <AppSidebar />
         <Backdrop />
       </div>
+
       <div
         className={`flex-1 transition-all duration-300 ease-in-out ${
           isExpanded || isHovered ? "lg:ml-[290px]" : "lg:ml-[90px]"
@@ -29,9 +37,11 @@ const LayoutContent: React.FC = () => {
 
 const AppLayout: React.FC = () => {
   return (
-    <SidebarProvider>
-      <LayoutContent />
-    </SidebarProvider>
+    <LanguageProvider>
+      <SidebarProvider>
+        <LayoutContent />
+      </SidebarProvider>
+    </LanguageProvider>
   );
 };
 
