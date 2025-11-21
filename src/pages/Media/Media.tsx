@@ -50,7 +50,6 @@ const Media = () => {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
-  // Fetch media
   useEffect(() => {
     const fetchMedia = async () => {
       setLoading(true);
@@ -62,7 +61,27 @@ const Media = () => {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         const data = await res.json();
-        setMedia(data.items || []);
+        const items = data.items || [];
+        setMedia(items);
+
+        // Extract Store Departments.....
+        const uniqueDepartmentsMap: Record<string, string> = {};
+        items.forEach((item: MediaItem) => {
+          if (
+            item.storeDepartment?._id &&
+            !uniqueDepartmentsMap[item.storeDepartment._id]
+          ) {
+            uniqueDepartmentsMap[item.storeDepartment._id] =
+              lang === "ar"
+                ? item.storeDepartment.name.ar
+                : item.storeDepartment.name.en;
+          }
+        });
+
+        const uniqueDepartments = Object.entries(uniqueDepartmentsMap).map(
+          ([id, name]) => ({ _id: id, name })
+        );
+        setDepartments(uniqueDepartments);
       } catch (error) {
         console.error("Error fetching media:", error);
       } finally {
@@ -70,7 +89,7 @@ const Media = () => {
       }
     };
     fetchMedia();
-  }, [filterType, filterDepartment, token]);
+  }, [filterType, filterDepartment, token, lang]);
 
   useEffect(() => {
     const fetchDepartments = async () => {
