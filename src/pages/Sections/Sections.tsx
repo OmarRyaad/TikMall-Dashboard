@@ -727,7 +727,7 @@ const Sections = () => {
         ${deleteModalOpen ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
         >
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-            {lang === "ar" ? "حذف الق401" : "Delete Section"}
+            {lang === "ar" ? "حذف القسم" : "Delete Section"}
           </h3>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
             {lang === "ar"
