@@ -343,7 +343,7 @@ const AppSidebar: React.FC = () => {
     fixed mt-16 flex flex-col lg:mt-0 top-0
     ${lang === "ar" ? "right-0" : "left-0"}  // <-- dynamic
     px-5 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900
-    h-screen transition-all duration-300 ease-in-out border-r border-gray-200
+    h-screen transition-all duration-300 ease-in-out border-r border-gray-200 z-9999
     ${
       isExpanded || isMobileOpen
         ? "w-[290px]"
