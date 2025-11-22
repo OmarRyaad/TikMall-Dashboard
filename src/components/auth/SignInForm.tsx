@@ -144,7 +144,6 @@ export default function SignInForm() {
                       isRTL ? "placeholder:text-right" : "placeholder:text-left"
                     }`}
                   />
-                  {/* أيقونة العين تتحرك حسب اللغة */}
                   <span
                     onClick={() => setShowPassword(!showPassword)}
                     className={`absolute z-30 -translate-y-1/2 cursor-pointer top-1/2 ${

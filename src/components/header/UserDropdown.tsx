@@ -31,6 +31,7 @@ export default function UserDropdown() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
+    localStorage.removeItem("lang");
     sessionStorage.clear();
     closeDropdown();
     window.location.href = "/signin";

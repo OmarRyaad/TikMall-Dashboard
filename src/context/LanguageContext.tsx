@@ -19,13 +19,20 @@ const LanguageContext = createContext<LanguageContextType>({
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [lang, setLang] = useState<Language>("en");
+  const [lang, setLang] = useState<Language>(() => {
+    if (typeof window !== "undefined") {
+      const storedLang = localStorage.getItem("lang") as Language | null;
+      if (storedLang) return storedLang;
+      localStorage.setItem("lang", "ar");
+      return "ar";
+    }
+    return "ar";
+  });
 
   useEffect(() => {
-    const storedLang = localStorage.getItem("lang") as Language;
-    if (storedLang) setLang(storedLang);
-    document.documentElement.dir = storedLang === "ar" ? "rtl" : "ltr";
-  }, []);
+    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    localStorage.setItem("lang", lang);
+  }, [lang]);
 
   const toggleLanguage = () => {
     setLang((prev) => {
