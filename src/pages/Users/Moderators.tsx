@@ -417,7 +417,10 @@ const Moderators = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
             >
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg md:max-w-2xl p-6 md:p-8">
+              <div
+                className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg md:max-w-1xl p-6 md:p-7
+                max-h-[72vh] overflow-y-auto"
+              >
                 <h3 className="text-2xl font-bold mb-6">
                   {isEditMode
                     ? lang === "ar"
@@ -459,18 +462,6 @@ const Moderators = () => {
                       className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
                     />
                   )}
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      name="active"
-                      checked={formData.active ?? true}
-                      onChange={handleChange}
-                      className="w-5 h-5"
-                    />
-                    <span className="font-medium">
-                      {lang === "ar" ? "الحساب مفعل" : "Active Account"}
-                    </span>
-                  </label>
                 </div>
 
                 {/* Permissions */}
