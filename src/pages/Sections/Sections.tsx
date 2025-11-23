@@ -96,6 +96,7 @@ const Sections = () => {
 
   const handleConfirmDelete = async () => {
     if (!deleteId) return;
+
     try {
       const res = await fetch(
         `https://api.tik-mall.com/admin/api/department/${deleteId}`,
@@ -104,7 +105,26 @@ const Sections = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+
       const data = await res.json();
+
+      if (!res.ok) {
+        const backendError = data.error;
+
+        const translated =
+          lang === "ar" &&
+          backendError ===
+            "Cannot delete department assigned to store owners. Reassign or remove the department from all store owners first."
+            ? "لا يمكن حذف القسم لأنه مُسند إلى أصحاب المتاجر. يرجى إعادة تعيينه أو إزالته من جميع أصحاب المتاجر أولاً."
+            : backendError;
+
+        toast.error(
+          translated ||
+            (lang === "ar" ? "فشل حذف القسم" : "Failed to delete department")
+        );
+        return;
+      }
+
       if (!res.ok) {
         toast.error(
           data.error ||
