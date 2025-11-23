@@ -102,7 +102,7 @@ const Moderators = () => {
       setModerators(formatted);
     } catch (err) {
       toast.error(
-        lang === "ar" ? "فشل تحميل المدراء" : "Failed to load moderators"
+        lang === "ar" ? "فشل تحميل المشرفون" : "Failed to load moderators"
       );
       console.error(err);
     } finally {
@@ -267,7 +267,7 @@ const Moderators = () => {
           <p className="mt-6 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
             {lang === "ar" ? "جاري تحميل" : "Loading"}{" "}
             <span className="text-blue-500">
-              {lang === "ar" ? "المدراء" : "Moderators"}
+              {lang === "ar" ? "المشرفون" : "Moderators"}
             </span>
             ...
           </p>
@@ -291,7 +291,7 @@ const Moderators = () => {
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
         <h2 className="flex items-center gap-2 text-2xl md:text-3xl font-bold text-[#456FFF]">
           <UserGroupIcon className="w-8 h-8 text-blue-600" />
-          {lang === "ar" ? "المدراء" : "Moderators"}
+          {lang === "ar" ? "المشرفون" : "Moderators"}
         </h2>
 
         <button

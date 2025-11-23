@@ -485,60 +485,6 @@ const Sections = () => {
                 </tr>
               )}
             </tbody>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {departments.length ? (
-                departments.map((dept, idx) => (
-                  <tr
-                    key={dept._id}
-                    className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
-                  >
-                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                      {idx + 1}
-                    </td>
-                    <td className="py-3 px-4">
-                      <img
-                        src={dept?.icon || "/placeholder.jpg"}
-                        alt={dept?.name?.en}
-                        className="h-12 w-12 rounded-md object-cover"
-                      />
-                    </td>
-                    <td className="py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90">
-                      {dept?.name?.ar} / {dept?.name?.en}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
-                      {lang === "ar"
-                        ? dept?.description?.ar
-                        : dept?.description?.en}
-                    </td>
-                    <td className="py-3 px-4 flex gap-2">
-                      <button
-                        onClick={() => handleEdit(dept)}
-                        className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-                      >
-                        {lang === "ar" ? "تعديل" : "Edit"}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(dept._id)}
-                        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-                      >
-                        {lang === "ar" ? "حذف" : "Delete"}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    className="py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400"
-                    colSpan={5}
-                  >
-                    {lang === "ar"
-                      ? "لا توجد أقسام متاحة"
-                      : "No departments available"}
-                  </td>
-                </tr>
-              )}
-            </tbody>
           </table>
         </div>
 
