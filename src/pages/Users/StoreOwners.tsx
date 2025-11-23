@@ -37,7 +37,7 @@ const StoreOwners = () => {
     try {
       setLoading(true);
       const res = await fetch(
-        "https://api.tik-mall.com/admin/api/users/store_owner/all",
+        "https://api.tik-mall.com/admin/api/users/store_owner/all?page=1&limit=10",
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }

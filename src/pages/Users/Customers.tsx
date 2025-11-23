@@ -34,7 +34,7 @@ const Customers = () => {
     try {
       setLoading(true);
       const res = await fetch(
-        "https://api.tik-mall.com/admin/api/users/customer/all",
+        "https://api.tik-mall.com/admin/api/users/customer/all?page=1&limit=10",
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
