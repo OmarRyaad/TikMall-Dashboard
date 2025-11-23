@@ -98,7 +98,7 @@ const Sections = () => {
     if (!deleteId) return;
     try {
       const res = await fetch(
-        `https://api.tikimall.com/admin/api/department/${deleteId}`,
+        `https://api.tik-mall.com/admin/api/department/${deleteId}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },

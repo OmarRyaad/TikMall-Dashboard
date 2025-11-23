@@ -181,8 +181,8 @@ const Moderators = () => {
       };
 
       const url = isEditMode
-        ? `https://api.tik-mall.com/admin/api/modify-permissions/${formData._id}`
-        : "https://api.tik-mall.com/admin/api/modify-permissions";
+        ? `https://api.tik-mall.com/admin/api/child/${formData._id}`
+        : "https://api.tik-mall.com/admin/api/child";
 
       const res = await fetch(url, {
         method: isEditMode ? "PUT" : "POST",
