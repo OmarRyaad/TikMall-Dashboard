@@ -185,7 +185,7 @@ const Moderators = () => {
         : "https://api.tik-mall.com/admin/api/child";
 
       const res = await fetch(url, {
-        method: isEditMode ? "PUT" : "POST",
+        method: isEditMode ? "PATCH" : "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
