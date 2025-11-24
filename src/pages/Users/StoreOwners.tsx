@@ -13,7 +13,12 @@ import { useLanguage } from "../../context/LanguageContext";
 interface StoreOwner {
   _id: string;
   name: string;
-  phone: { number: string };
+  phone?: { number: string };
+  storeName?: string;
+  typeOfStore?: { ar: string; en: string }[];
+  commercialRecordImg?: string;
+  personaIdentityImg?: string;
+  profileImg?: string;
   isActive: boolean;
 }
 
@@ -257,6 +262,33 @@ const StoreOwners = () => {
                         isRTL ? "text-right" : "text-left"
                       }`}
                     >
+                      {lang === "ar" ? "اسم المتجر" : "Store Name"}
+                    </th>
+                    <th
+                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
+                      {lang === "ar" ? "نوع المتجر" : "Type of Store"}
+                    </th>
+                    <th
+                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center`}
+                    >
+                      {lang === "ar" ? "السجل التجاري" : "Commercial Record"}
+                    </th>
+                    <th
+                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center`}
+                    >
+                      {lang === "ar" ? "الهوية" : "Identity"}
+                    </th>
+                    <th
+                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center`}
+                    >
+                      {lang === "ar" ? "صورة الملف الشخصي" : "Profile Image"}
+                    </th>
+                    <th
+                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center`}
+                    >
                       {lang === "ar" ? "الحالة" : "Status"}
                     </th>
                     <th
@@ -280,7 +312,6 @@ const StoreOwners = () => {
                       >
                         {idx + 1 + (page - 1) * 10}
                       </td>
-
                       <td
                         className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
                           isRTL ? "text-right" : "text-left"
@@ -288,7 +319,6 @@ const StoreOwners = () => {
                       >
                         {owner.name}
                       </td>
-
                       <td
                         className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
                           isRTL ? "text-right" : "text-left"
@@ -296,7 +326,78 @@ const StoreOwners = () => {
                       >
                         {owner.phone?.number || "—"}
                       </td>
-
+                      <td
+                        className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
+                          isRTL ? "text-right" : "text-left"
+                        }`}
+                      >
+                        {owner.storeName || "—"}
+                      </td>
+                      <td
+                        className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
+                          isRTL ? "text-right" : "text-left"
+                        }`}
+                      >
+                        {owner.typeOfStore?.length
+                          ? owner.typeOfStore
+                              .map(
+                                (t: { ar: string; en: string }) =>
+                                  t[lang === "ar" ? "ar" : "en"]
+                              )
+                              .join(", ")
+                          : "—"}
+                      </td>
+                      <td className="px-4 md:px-6 py-3 text-center">
+                        {owner.commercialRecordImg ? (
+                          <a
+                            href={owner.commercialRecordImg}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <img
+                              src={owner.commercialRecordImg}
+                              className="w-10 h-10 object-cover rounded"
+                              alt="CR"
+                            />
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-4 md:px-6 py-3 text-center">
+                        {owner.personaIdentityImg ? (
+                          <a
+                            href={owner.personaIdentityImg}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <img
+                              src={owner.personaIdentityImg}
+                              className="w-10 h-10 object-cover rounded"
+                              alt="ID"
+                            />
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-4 md:px-6 py-3 text-center">
+                        {owner.profileImg ? (
+                          <a
+                            href={owner.profileImg}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <img
+                              src={owner.profileImg}
+                              className="w-10 h-10 object-cover rounded"
+                              alt="Profile"
+                            />
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td className="px-4 md:px-6 py-3">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -502,7 +603,7 @@ const StoreOwners = () => {
                 </p>
                 <p>
                   <strong>{lang === "ar" ? "الهاتف:" : "Phone:"}</strong>{" "}
-                  {viewUser.phone.number}
+                  {viewUser?.phone?.number}
                 </p>
                 <p>
                   <strong>{lang === "ar" ? "الحالة:" : "Status:"}</strong>{" "}
