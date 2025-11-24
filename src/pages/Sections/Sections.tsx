@@ -537,52 +537,108 @@ const Sections = () => {
                       : "Add New Section"}
                   </h2>
 
-                  <div className="space-y-3">
-                    <label htmlFor="">Name Arabic</label>
-                    <input
-                      type="text"
-                      name="nameAr"
-                      placeholder={
-                        lang === "ar" ? "الاسم (العربية)" : "Name (Arabic)"
-                      }
-                      value={formData.nameAr}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded text-gray-800 dark:text-white"
-                    />
-                    <input
-                      type="text"
-                      name="nameEn"
-                      placeholder={
-                        lang === "ar" ? "الاسم (الإنجليزية)" : "Name (English)"
-                      }
-                      value={formData.nameEn}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded text-gray-800 dark:text-white"
-                    />
-                    <textarea
-                      name="descAr"
-                      placeholder={
-                        lang === "ar"
-                          ? "الوصف (العربية)"
-                          : "Description (Arabic)"
-                      }
-                      value={formData.descAr}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20 text-gray-800 dark:text-white"
-                    />
-                    <textarea
-                      name="descEn"
-                      placeholder={
-                        lang === "ar"
-                          ? "الوصف (الإنجليزية)"
-                          : "Description (English)"
-                      }
-                      value={formData.descEn}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20 text-gray-800 dark:text-white"
-                    />
+                  <div className="space-y-6">
+                    {/* Names Row - Arabic & English side by side */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Name Arabic */}
+                      <div className="flex flex-col">
+                        <label
+                          htmlFor="nameAr"
+                          className="text-sm text-gray-700 dark:text-gray-300 mb-1"
+                        >
+                          {lang === "ar" ? "الاسم (العربية)" : "Name (Arabic)"}
+                        </label>
+                        <input
+                          id="nameAr"
+                          type="text"
+                          name="nameAr"
+                          placeholder={
+                            lang === "ar" ? "الاسم (العربية)" : "Name (Arabic)"
+                          }
+                          value={formData.nameAr}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded text-gray-800 dark:text-white"
+                        />
+                      </div>
 
-                    <div className="mt-3 flex items-center gap-2">
+                      {/* Name English */}
+                      <div className="flex flex-col">
+                        <label
+                          htmlFor="nameEn"
+                          className="text-sm text-gray-700 dark:text-gray-300 mb-1"
+                        >
+                          {lang === "ar"
+                            ? "الاسم (الإنجليزية)"
+                            : "Name (English)"}
+                        </label>
+                        <input
+                          id="nameEn"
+                          type="text"
+                          name="nameEn"
+                          placeholder={
+                            lang === "ar"
+                              ? "الاسم (الإنجليزية)"
+                              : "Name (English)"
+                          }
+                          value={formData.nameEn}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded text-gray-800 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Descriptions Row - Arabic & English side by side */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Description Arabic */}
+                      <div className="flex flex-col">
+                        <label
+                          htmlFor="descAr"
+                          className="text-sm text-gray-700 dark:text-gray-300 mb-1"
+                        >
+                          {lang === "ar"
+                            ? "الوصف (العربية)"
+                            : "Description (Arabic)"}
+                        </label>
+                        <textarea
+                          id="descAr"
+                          name="descAr"
+                          placeholder={
+                            lang === "ar"
+                              ? "الوصف (العربية)"
+                              : "Description (Arabic)"
+                          }
+                          value={formData.descAr}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20 text-gray-800 dark:text-white resize-none"
+                        />
+                      </div>
+
+                      {/* Description English */}
+                      <div className="flex flex-col">
+                        <label
+                          htmlFor="descEn"
+                          className="text-sm text-gray-700 dark:text-gray-300 mb-1"
+                        >
+                          {lang === "ar"
+                            ? "الوصف (الإنجليزية)"
+                            : "Description (English)"}
+                        </label>
+                        <textarea
+                          id="descEn"
+                          name="descEn"
+                          placeholder={
+                            lang === "ar"
+                              ? "الوصف (الإنجليزية)"
+                              : "Description (English)"
+                          }
+                          value={formData.descEn}
+                          onChange={handleChange}
+                          className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20 text-gray-800 dark:text-white resize-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-2 flex items-center gap-2">
                       <input
                         type="checkbox"
                         id="keepOpen"
@@ -601,7 +657,7 @@ const Sections = () => {
                     </div>
 
                     <div className="flex items-center space-x-4 flex-wrap mt-2">
-                      <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                      <label className="cursor-pointer bg-blue-600 text-white px.4 p-2 rounded-md hover:bg-blue-700 transition">
                         {lang === "ar" ? "اختر الأيقونات" : "Choose Icons"}
                         <input
                           type="file"
