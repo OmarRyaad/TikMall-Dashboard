@@ -22,6 +22,10 @@ const Customers = () => {
   const [loading, setLoading] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
+  // PAGINATION
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   /* DELETE MODAL */
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<string | null>(null);
@@ -30,20 +34,21 @@ const Customers = () => {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = async (pageNumber = 1, searchTerm = "") => {
     try {
       setLoading(true);
-      const res = await fetch(
-        "https://api.tik-mall.com/admin/api/users/customer/all?page=1&limit=10",
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
-      );
+      const url = searchTerm
+        ? `https://api.tik-mall.com/admin/api/users/customers/${searchTerm}`
+        : `https://api.tik-mall.com/admin/api/users/customer/all?page=${pageNumber}&limit=10`;
+
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
 
       if (!res.ok) throw new Error("Failed to fetch customers!");
-
       const data = await res.json();
       setCustomers(data.users || []);
+      setTotalPages(data.pagination?.pages || 1);
     } catch {
       toast.error(
         lang === "ar" ? "فشل جلب العملاء!" : "Failed to fetch customers!"
@@ -112,8 +117,8 @@ const Customers = () => {
   };
 
   useEffect(() => {
-    fetchCustomers();
-  }, []);
+    fetchCustomers(page);
+  }, [page]);
 
   if (loading) {
     return (
@@ -178,108 +183,158 @@ const Customers = () => {
       {/* Table */}
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow overflow-hidden w-full">
         {customers.length > 0 ? (
-          <div className="overflow-x-auto w-full">
-            <table className="w-full min-w-[600px] md:min-w-full">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th
-                    className={`px-4 md:px-6 py-3 text-xs font-medium text-gray-500 uppercase ${
-                      isRTL ? "text-right" : "text-left"
-                    }`}
-                  >
-                    #
-                  </th>
-                  <th
-                    className={`px-4 md:px-6 py-3 text-xs font-medium text-gray-500 uppercase ${
-                      isRTL ? "text-right" : "text-left"
-                    }`}
-                  >
-                    {lang === "ar" ? "الاسم" : "Name"}
-                  </th>
-                  <th
-                    className={`px-4 md:px-6 py-3 text-xs font-medium text-gray-500 uppercase ${
-                      isRTL ? "text-right" : "text-left"
-                    }`}
-                  >
-                    {lang === "ar" ? "رقم الهاتف" : "Phone"}
-                  </th>
-                  <th
-                    className={`px-4 md:px-6 py-3 text-xs font-medium text-gray-500 uppercase ${
-                      isRTL ? "text-right" : "text-left"
-                    }`}
-                  >
-                    {lang === "ar" ? "الحالة" : "Status"}
-                  </th>
-                  <th
-                    className={`px-4 md:px-6 py-3 text-xs font-medium text-gray-500 uppercase ${
-                      isRTL ? "text-right" : "text-left"
-                    }`}
-                  >
-                    {lang === "ar" ? "الإجراءات" : "Actions"}
-                  </th>
-                </tr>
-              </thead>
+          <>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full min-w-[600px] md:min-w-full">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th
+                      className={`px-4 md:px-6 py-3 text-xs font-medium text-gray-500 uppercase ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
+                      #
+                    </th>
+                    <th
+                      className={`px-4 md:px-6 py-3 text-xs font-medium text-gray-500 uppercase ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
+                      {lang === "ar" ? "الاسم" : "Name"}
+                    </th>
+                    <th
+                      className={`px-4 md:px-6 py-3 text-xs font-medium text-gray-500 uppercase ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
+                      {lang === "ar" ? "رقم الهاتف" : "Phone"}
+                    </th>
+                    <th
+                      className={`px-4 md:px-6 py-3 text-xs font-medium text-gray-500 uppercase ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
+                      {lang === "ar" ? "الحالة" : "Status"}
+                    </th>
+                    <th
+                      className={`px-4 md:px-6 py-3 text-xs font-medium text-gray-500 uppercase ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
+                      {lang === "ar" ? "الإجراءات" : "Actions"}
+                    </th>
+                  </tr>
+                </thead>
 
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {customers.map((cust, idx) => (
-                  <tr
-                    key={cust._id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  >
-                    <td
-                      className={`px-4 md:px-6 py-3 font-medium dark:text-gray-300 ${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {customers.map((cust, idx) => (
+                    <tr
+                      key={cust._id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
-                      {idx + 1}
-                    </td>
-                    <td
-                      className={`px-4 md:px-6 py-3 font-medium dark:text-gray-300 ${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
-                      {cust.name}
-                    </td>
-                    <td
-                      className={`px-4 md:px-6 py-3 font-medium dark:text-gray-300 ${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
-                      {cust.phone?.number || "—"}
-                    </td>
-                    <td className="px-4 md:px-6 py-3">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          cust.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
+                      <td
+                        className={`px-4 md:px-6 py-3 font-medium dark:text-gray-300 ${
+                          isRTL ? "text-right" : "text-left"
                         }`}
                       >
-                        {cust.isActive
-                          ? lang === "ar"
-                            ? "نشط"
-                            : "Active"
-                          : lang === "ar"
-                          ? "غير نشط"
-                          : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-4 md:px-6 py-3">
-                      <button
-                        onClick={() => {
-                          setCustomerToDelete(cust._id);
-                          setDeleteModalOpen(true);
-                        }}
-                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+                        {idx + 1}
+                      </td>
+                      <td
+                        className={`px-4 md:px-6 py-3 font-medium dark:text-gray-300 ${
+                          isRTL ? "text-right" : "text-left"
+                        }`}
                       >
-                        {lang === "ar" ? "حذف" : "Delete"}
+                        {cust.name}
+                      </td>
+                      <td
+                        className={`px-4 md:px-6 py-3 font-medium dark:text-gray-300 ${
+                          isRTL ? "text-right" : "text-left"
+                        }`}
+                      >
+                        {cust.phone?.number || "—"}
+                      </td>
+                      <td className="px-4 md:px-6 py-3">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            cust.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {cust.isActive
+                            ? lang === "ar"
+                              ? "نشط"
+                              : "Active"
+                            : lang === "ar"
+                            ? "غير نشط"
+                            : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-4 md:px-6 py-3">
+                        <button
+                          onClick={() => {
+                            setCustomerToDelete(cust._id);
+                            setDeleteModalOpen(true);
+                          }}
+                          className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+                        >
+                          {lang === "ar" ? "حذف" : "Delete"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* PAGINATION */}
+            {totalPages > 1 && (
+              <div
+                className={`pb-2 flex gap-2 ${
+                  isRTL ? "justify-end" : "justify-center"
+                }`}
+              >
+                {(() => {
+                  const visibleCount = 5;
+                  const half = Math.floor(visibleCount / 2);
+
+                  let start = page - half;
+                  let end = page + half;
+
+                  if (start < 1) {
+                    start = 1;
+                    end = Math.min(totalPages, visibleCount);
+                  }
+
+                  if (end > totalPages) {
+                    end = totalPages;
+                    start = Math.max(1, totalPages - visibleCount + 1);
+                  }
+
+                  if (totalPages <= visibleCount) {
+                    start = 1;
+                    end = totalPages;
+                  }
+
+                  return Array.from({ length: end - start + 1 }, (_, i) => {
+                    const p = start + i;
+                    return (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className={`px-3 py-0.5 rounded min-w-[36px] text-sm font-medium transition-all ${
+                          p === page
+                            ? "bg-blue-600 text-white shadow-md"
+                            : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                        }`}
+                      >
+                        {p}
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    );
+                  });
+                })()}
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-20 text-gray-500 dark:text-gray-400">
             {lang === "ar" ? "لا يوجد عملاء" : "No customers found."}

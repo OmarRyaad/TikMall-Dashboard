@@ -538,6 +538,7 @@ const Sections = () => {
                   </h2>
 
                   <div className="space-y-3">
+                    <label htmlFor="">Name Arabic</label>
                     <input
                       type="text"
                       name="nameAr"

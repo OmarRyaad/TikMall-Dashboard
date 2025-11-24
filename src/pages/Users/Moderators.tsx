@@ -55,6 +55,18 @@ interface Moderator {
   contentManagement?: boolean;
 }
 
+interface Pagination {
+  total: number;
+  limit: number;
+  page: number;
+  pages: number;
+}
+
+interface FetchModeratorsResponse {
+  users: ApiModerator[];
+  pagination?: Pagination;
+}
+
 const Moderators = () => {
   const { lang } = useLanguage();
   const isRTL = lang === "ar";
@@ -67,6 +79,11 @@ const Moderators = () => {
     active: true,
   });
 
+  // PAGINATION
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  /* DELETE MODAL */
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [moderatorToDelete, setModeratorToDelete] = useState<Moderator | null>(
@@ -76,17 +93,17 @@ const Moderators = () => {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
-  const fetchModerators = async () => {
+  const fetchModerators = async (pageNumber = 1) => {
     try {
       setLoading(true);
       const res = await fetch(
-        "https://api.tik-mall.com/admin/api/users/admin/all?page=1&limit=10",
+        `https://api.tik-mall.com/admin/api/users/admin/all?page=${pageNumber}&limit=10`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
       );
       if (!res.ok) throw new Error("Failed to fetch moderators");
-      const data = (await res.json()) as { users: ApiModerator[] };
+      const data = (await res.json()) as FetchModeratorsResponse;
       const formatted: Moderator[] = data.users
         .filter((u) => !u.isSuperAdmin)
         .map((u) => ({
@@ -100,6 +117,7 @@ const Moderators = () => {
           contentManagement: u.permissions.manageDepartmentsAndFaqs ?? false,
         }));
       setModerators(formatted);
+      setTotalPages(data.pagination?.pages || 1);
     } catch (err) {
       toast.error(
         lang === "ar" ? "فشل تحميل المشرفون" : "Failed to load moderators"
@@ -111,8 +129,8 @@ const Moderators = () => {
   };
 
   useEffect(() => {
-    fetchModerators();
-  }, []);
+    fetchModerators(page);
+  }, [page]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -305,95 +323,146 @@ const Moderators = () => {
       {/* Table */}
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow overflow-hidden">
         {moderators.length > 0 ? (
-          <div className="overflow-x-auto w-full">
-            <table className="w-full min-w-[650px]">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  {[
-                    "#",
-                    lang === "ar" ? "الاسم" : "Name",
-                    lang === "ar" ? "رقم الهاتف" : "Phone",
-                    lang === "ar" ? "الحالة" : "Status",
-                    lang === "ar" ? "الإجراءات" : "Actions",
-                  ].map((title, i) => (
-                    <th
-                      key={i}
-                      className={`px-4 md:px-6 py-3 ${
-                        isRTL ? "text-right" : "text-left"
-                      } text-xs font-medium text-gray-500 uppercase`}
+          <>
+            <div className="overflow-x-auto w-full">
+              <table className="w-full min-w-[650px]">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    {[
+                      "#",
+                      lang === "ar" ? "الاسم" : "Name",
+                      lang === "ar" ? "رقم الهاتف" : "Phone",
+                      lang === "ar" ? "الحالة" : "Status",
+                      lang === "ar" ? "الإجراءات" : "Actions",
+                    ].map((title, i) => (
+                      <th
+                        key={i}
+                        className={`px-4 md:px-6 py-3 ${
+                          isRTL ? "text-right" : "text-left"
+                        } text-xs font-medium text-gray-500 uppercase`}
+                      >
+                        {title}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {moderators.map((mod, idx) => (
+                    <tr
+                      key={mod._id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
-                      {title}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {moderators.map((mod, idx) => (
-                  <tr
-                    key={mod._id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    <td
-                      className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
-                      {idx + 1}
-                    </td>
-                    <td
-                      className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
-                      {mod.name}
-                    </td>
-                    <td
-                      className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
-                      {mod.phone}
-                    </td>
-                    <td
-                      className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          mod.active
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
+                      <td
+                        className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
+                          isRTL ? "text-right" : "text-left"
                         }`}
                       >
-                        {mod.active
-                          ? lang === "ar"
-                            ? "نشط"
-                            : "Active"
-                          : lang === "ar"
-                          ? "غير نشط"
-                          : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-4 md:px-6 py-3 flex flex-wrap gap-2">
-                      <button
-                        onClick={() => handleEdit(mod)}
-                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700"
+                        {idx + 1}
+                      </td>
+                      <td
+                        className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
+                          isRTL ? "text-right" : "text-left"
+                        }`}
                       >
-                        {lang === "ar" ? "تعديل" : "Edit"}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(mod)}
-                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700"
+                        {mod.name}
+                      </td>
+                      <td
+                        className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
+                          isRTL ? "text-right" : "text-left"
+                        }`}
                       >
-                        {lang === "ar" ? "حذف" : "Delete"}
+                        {mod.phone}
+                      </td>
+                      <td
+                        className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
+                          isRTL ? "text-right" : "text-left"
+                        }`}
+                      >
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            mod.active
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {mod.active
+                            ? lang === "ar"
+                              ? "نشط"
+                              : "Active"
+                            : lang === "ar"
+                            ? "غير نشط"
+                            : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-4 md:px-6 py-3 flex flex-wrap gap-2">
+                        <button
+                          onClick={() => handleEdit(mod)}
+                          className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700"
+                        >
+                          {lang === "ar" ? "تعديل" : "Edit"}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(mod)}
+                          className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700"
+                        >
+                          {lang === "ar" ? "حذف" : "Delete"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* PAGINATION */}
+            {totalPages > 1 && (
+              <div
+                className={`pb-2 flex gap-2 ${
+                  isRTL ? "justify-end" : "justify-center"
+                }`}
+              >
+                {(() => {
+                  const visibleCount = 5;
+                  const half = Math.floor(visibleCount / 2);
+
+                  let start = page - half;
+                  let end = page + half;
+
+                  if (start < 1) {
+                    start = 1;
+                    end = Math.min(totalPages, visibleCount);
+                  }
+
+                  if (end > totalPages) {
+                    end = totalPages;
+                    start = Math.max(1, totalPages - visibleCount + 1);
+                  }
+
+                  if (totalPages <= visibleCount) {
+                    start = 1;
+                    end = totalPages;
+                  }
+
+                  return Array.from({ length: end - start + 1 }, (_, i) => {
+                    const p = start + i;
+                    return (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className={`px-3 py-0.5 rounded min-w-[36px] text-sm font-medium transition-all ${
+                          p === page
+                            ? "bg-blue-600 text-white shadow-md"
+                            : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                        }`}
+                      >
+                        {p}
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    );
+                  });
+                })()}
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-20 text-gray-500">
             {lang === "ar" ? "لا يوجد مدراء" : "No moderators found."}
