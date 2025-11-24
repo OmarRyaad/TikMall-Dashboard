@@ -49,10 +49,14 @@ interface Moderator {
   phone: string;
   password?: string;
   active: boolean;
-  userManagement?: boolean;
-  storeManagement?: boolean;
-  liveBroadcast?: boolean;
-  contentManagement?: boolean;
+  manageAdmins?: boolean;
+  manageStoreOwners?: boolean;
+  manageMediaAndStreams?: boolean;
+  manageDepartmentsAndFaqs?: boolean;
+  manageCustomers?: boolean;
+  manageComplains?: boolean;
+  manageSendNotifications?: boolean;
+  manageStatistics?: boolean;
 }
 
 interface Pagination {
@@ -111,10 +115,16 @@ const Moderators = () => {
           name: u.name,
           phone: u.phone.number,
           active: u.isActive,
-          userManagement: u.permissions.manageAdmins ?? false,
-          storeManagement: u.permissions.manageStoreOwners ?? false,
-          liveBroadcast: u.permissions.manageMediaAndStreams ?? false,
-          contentManagement: u.permissions.manageDepartmentsAndFaqs ?? false,
+          manageAdmins: u.permissions.manageAdmins ?? false,
+          manageStoreOwners: u.permissions.manageStoreOwners ?? false,
+          manageMediaAndStreams: u.permissions.manageMediaAndStreams ?? false,
+          manageDepartmentsAndFaqs:
+            u.permissions.manageDepartmentsAndFaqs ?? false,
+          manageCustomers: u.permissions.manageCustomers ?? false,
+          manageComplains: u.permissions.manageComplains ?? false,
+          manageSendNotifications:
+            u.permissions.manageSendNotifications ?? false,
+          manageStatistics: u.permissions.manageStatistics ?? false,
         }));
       setModerators(formatted);
       setTotalPages(data.pagination?.pages || 1);
@@ -152,10 +162,14 @@ const Moderators = () => {
       phone: "",
       password: "",
       active: true,
-      userManagement: false,
-      storeManagement: false,
-      liveBroadcast: false,
-      contentManagement: false,
+      manageAdmins: false,
+      manageStoreOwners: false,
+      manageMediaAndStreams: false,
+      manageDepartmentsAndFaqs: false,
+      manageCustomers: false,
+      manageComplains: false,
+      manageSendNotifications: false,
+      manageStatistics: false,
     });
     setIsEditMode(false);
     setIsOpen(true);
@@ -187,14 +201,14 @@ const Moderators = () => {
         ...(formData.password && { password: formData.password }),
         isActive: formData.active ?? true,
         permissions: {
-          manageAdmins: !!formData.userManagement,
-          manageStoreOwners: !!formData.storeManagement,
-          manageMediaAndStreams: !!formData.liveBroadcast,
-          manageDepartmentsAndFaqs: !!formData.contentManagement,
-          manageCustomers: false,
-          manageComplains: false,
-          manageSendNotifications: false,
-          manageStatistics: false,
+          manageAdmins: !!formData.manageAdmins,
+          manageStoreOwners: !!formData.manageStoreOwners,
+          manageMediaAndStreams: !!formData.manageMediaAndStreams,
+          manageDepartmentsAndFaqs: !!formData.manageDepartmentsAndFaqs,
+          manageCustomers: !!formData.manageCustomers,
+          manageComplains: !!formData.manageComplains,
+          manageSendNotifications: !!formData.manageSendNotifications,
+          manageStatistics: !!formData.manageStatistics,
         },
       };
 
@@ -547,32 +561,58 @@ const Moderators = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
                       {
-                        key: "userManagement" as const,
+                        key: "manageAdmins",
                         label:
-                          lang === "ar"
-                            ? "إدارة المستخدمين"
-                            : "User Management",
+                          lang === "ar" ? "إدارة المديرين" : "Manage Admins",
                         Icon: UserIcon,
                       },
                       {
-                        key: "liveBroadcast" as const,
+                        key: "manageStoreOwners",
                         label:
-                          lang === "ar" ? "البث المباشر" : "Live Broadcast",
-                        Icon: VideoCameraIcon,
-                      },
-                      {
-                        key: "storeManagement" as const,
-                        label:
-                          lang === "ar" ? "إدارة المتاجر" : "Store Management",
+                          lang === "ar"
+                            ? "إدارة المتاجر"
+                            : "Manage Store Owners",
                         Icon: ShoppingBagIcon,
                       },
                       {
-                        key: "contentManagement" as const,
+                        key: "manageMediaAndStreams",
                         label:
                           lang === "ar"
-                            ? "إدارة المحتوى"
-                            : "Content Management",
+                            ? "البث ووسائط الإعلام"
+                            : "Media & Streams",
+                        Icon: VideoCameraIcon,
+                      },
+                      {
+                        key: "manageDepartmentsAndFaqs",
+                        label:
+                          lang === "ar"
+                            ? "الأقسام و الأسئلة الشائعة"
+                            : "Departments & FAQs",
                         Icon: DocumentTextIcon,
+                      },
+                      {
+                        key: "manageCustomers",
+                        label:
+                          lang === "ar" ? "إدارة العملاء" : "Manage Customers",
+                        Icon: UserGroupIcon,
+                      },
+                      {
+                        key: "manageComplains",
+                        label: lang === "ar" ? "الشكاوى" : "Complains",
+                        Icon: UserGroupIcon,
+                      },
+                      {
+                        key: "manageSendNotifications",
+                        label:
+                          lang === "ar"
+                            ? "إرسال الإشعارات"
+                            : "Send Notifications",
+                        Icon: LockClosedIcon,
+                      },
+                      {
+                        key: "manageStatistics",
+                        label: lang === "ar" ? "الإحصائيات" : "Statistics",
+                        Icon: LockClosedIcon,
                       },
                     ].map(({ key, label, Icon }) => (
                       <label
@@ -586,7 +626,7 @@ const Moderators = () => {
                         <input
                           type="checkbox"
                           name={key}
-                          checked={!!formData[key]}
+                          checked={!!formData[key as keyof Moderator]}
                           onChange={handleChange}
                           className="w-5 h-5"
                         />

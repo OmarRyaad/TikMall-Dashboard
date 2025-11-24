@@ -36,6 +36,8 @@ interface Broadcast {
     };
     icon: string;
   };
+
+  streamUrl?: string; // Add stream URL for iframe
 }
 
 const LiveBroadcasts = () => {
@@ -45,6 +47,8 @@ const LiveBroadcasts = () => {
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+  const [iframeUrl, setIframeUrl] = useState<string | null>(null);
+
   const totalActive = broadcasts.length;
 
   const fetchBroadcasts = async () => {
@@ -274,9 +278,46 @@ const LiveBroadcasts = () => {
                 </span>
               </div>
             </div>
+
+            {/* Action Buttons */}
+            <div className="mt-4 flex gap-3">
+              <button
+                onClick={() => setIframeUrl(broadcast.streamUrl ?? "")}
+                className="flex-1 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm font-semibold"
+              >
+                {lang === "ar" ? "مشاهدة" : "Watch"}
+              </button>
+              <button
+                onClick={() =>
+                  alert(lang === "ar" ? "تم إنهاء البث" : "Broadcast Ended")
+                }
+                className="flex-1 px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition text-sm font-semibold"
+              >
+                {lang === "ar" ? "إنهاء" : "End"}
+              </button>
+            </div>
           </div>
         ))}
       </div>
+
+      {/* Iframe Modal */}
+      {iframeUrl && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[10000] p-4">
+          <div className="relative w-full max-w-4xl bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+            <button
+              onClick={() => setIframeUrl(null)}
+              className="absolute top-2 right-2 text-white bg-red-600 hover:bg-red-700 rounded-full w-8 h-8 flex items-center justify-center font-bold z-10"
+            >
+              ×
+            </button>
+            <iframe
+              src={iframeUrl}
+              className="w-full h-[80vh]"
+              title="Live Broadcast"
+            ></iframe>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
