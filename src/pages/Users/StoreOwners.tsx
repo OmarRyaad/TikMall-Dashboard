@@ -29,6 +29,11 @@ const StoreOwners = () => {
   const [loading, setLoading] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
+  // View Popup //
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewUser, setViewUser] = useState<StoreOwner | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
   /* DELETE MODAL */
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [ownerToDelete, setOwnerToDelete] = useState<string | null>(null);
@@ -80,6 +85,41 @@ const StoreOwners = () => {
       setStoreOwners([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleActivation = async (id: string, current: boolean) => {
+    try {
+      setActionLoading(true);
+
+      const res = await fetch(
+        `https://api.tik-mall.com/admin/api/users/store_owner/activate/${id}`,
+        {
+          method: "PATCH",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: JSON.stringify({ isActive: !current }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed");
+
+      toast.success(
+        current
+          ? lang === "ar"
+            ? "تم إلغاء التفعيل"
+            : "Deactivated"
+          : lang === "ar"
+          ? "تم التفعيل"
+          : "Activated"
+      );
+
+      fetchStoreOwners(page);
+    } catch {
+      toast.error(
+        lang === "ar" ? "خطأ أثناء تغيير الحالة" : "Error updating status"
+      );
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -187,7 +227,6 @@ const StoreOwners = () => {
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow overflow-hidden w-full">
         {storeOwners.length > 0 ? (
           <>
-            {/* Table Scroll Container */}
             <div className="overflow-x-auto w-full">
               <table className="w-full min-w-[600px] md:min-w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800">
@@ -241,9 +280,9 @@ const StoreOwners = () => {
                           isRTL ? "text-right" : "text-left"
                         }`}
                       >
-                        {idx + 1 + (page - 1) * 10}{" "}
-                        {/* Adjust index for pagination */}
+                        {idx + 1 + (page - 1) * 10}
                       </td>
+
                       <td
                         className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
                           isRTL ? "text-right" : "text-left"
@@ -251,6 +290,7 @@ const StoreOwners = () => {
                       >
                         {owner.name}
                       </td>
+
                       <td
                         className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
                           isRTL ? "text-right" : "text-left"
@@ -258,6 +298,7 @@ const StoreOwners = () => {
                       >
                         {owner.phone?.number || "—"}
                       </td>
+
                       <td className="px-4 md:px-6 py-3">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -276,13 +317,47 @@ const StoreOwners = () => {
                         </span>
                       </td>
 
-                      <td className="px-4 md:px-6 py-3">
+                      {/* ACTIONS */}
+                      <td className="px-4 md:px-6 py-3 flex gap-2 justify-start">
+                        {/* VIEW */}
+                        <button
+                          onClick={() => {
+                            setViewUser(owner);
+                            setViewModalOpen(true);
+                          }}
+                          className="px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-500 text-white hover:bg-cyan-600 transition-colors"
+                        >
+                          {lang === "ar" ? "عرض" : "View"}
+                        </button>
+
+                        {/* ACTIVATE / DEACTIVATE */}
+                        <button
+                          disabled={actionLoading}
+                          onClick={() =>
+                            toggleActivation(owner._id, owner.isActive)
+                          }
+                          className={`px-2 py-1 bg-red-500 text-white rounded text-sm ${
+                            owner.isActive
+                              ? "bg-yellow-500 hover:bg-yellow-600"
+                              : "bg-green-500 hover:bg-green-600"
+                          }`}
+                        >
+                          {owner.isActive
+                            ? lang === "ar"
+                              ? "إلغاء التفعيل"
+                              : "Deactivate"
+                            : lang === "ar"
+                            ? "تفعيل"
+                            : "Activate"}
+                        </button>
+
+                        {/* DELETE */}
                         <button
                           onClick={() => {
                             setOwnerToDelete(owner._id);
                             setDeleteModalOpen(true);
                           }}
-                          className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+                          className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
                         >
                           {lang === "ar" ? "حذف" : "Delete"}
                         </button>
@@ -401,6 +476,54 @@ const StoreOwners = () => {
                     : lang === "ar"
                     ? "حذف"
                     : "Delete"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* VIEW MODAL */}
+      <AnimatePresence>
+        {viewModalOpen && viewUser && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          >
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                {lang === "ar" ? "تفاصيل المستخدم" : "User Details"}
+              </h3>
+
+              <div className="space-y-3 text-gray-700 dark:text-gray-300">
+                <p>
+                  <strong>{lang === "ar" ? "الاسم:" : "Name:"}</strong>{" "}
+                  {viewUser.name}
+                </p>
+                <p>
+                  <strong>{lang === "ar" ? "الهاتف:" : "Phone:"}</strong>{" "}
+                  {viewUser.phone.number}
+                </p>
+                <p>
+                  <strong>{lang === "ar" ? "الحالة:" : "Status:"}</strong>{" "}
+                  {viewUser.isActive
+                    ? lang === "ar"
+                      ? "نشط"
+                      : "Active"
+                    : lang === "ar"
+                    ? "غير نشط"
+                    : "Inactive"}
+                </p>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setViewModalOpen(false)}
+                  className="rounded-md border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
+                >
+                  {lang === "ar" ? "إغلاق" : "Close"}
                 </button>
               </div>
             </div>
