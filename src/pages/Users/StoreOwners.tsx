@@ -260,9 +260,7 @@ const StoreOwners = () => {
                       {lang === "ar" ? "الحالة" : "Status"}
                     </th>
                     <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase ${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
+                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center`}
                     >
                       {lang === "ar" ? "الإجراءات" : "Actions"}
                     </th>
