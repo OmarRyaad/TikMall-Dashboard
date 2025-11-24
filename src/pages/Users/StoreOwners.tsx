@@ -44,18 +44,30 @@ const StoreOwners = () => {
   const [ownerToDelete, setOwnerToDelete] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Track current filter
+  const [currentFilter, setCurrentFilter] = useState<string>("all");
+
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
   const fetchStoreOwners = async (pageNumber = 1) => {
     try {
       setLoading(true);
-      const res = await fetch(
-        `https://api.tik-mall.com/admin/api/users/store_owner/all?page=${pageNumber}&limit=10`,
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
-      );
+
+      const baseUrl =
+        "https://api.tik-mall.com/admin/api/users/store_owner/all";
+      const params = new URLSearchParams({
+        page: pageNumber.toString(),
+        limit: "10",
+      });
+
+      if (currentFilter && currentFilter !== "all") {
+        params.append("filter", currentFilter);
+      }
+
+      const res = await fetch(`${baseUrl}?${params.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
 
       const data = await res.json();
 
@@ -68,9 +80,15 @@ const StoreOwners = () => {
 
   const searchStoreOwner = async () => {
     if (!searchValue.trim()) {
-      fetchStoreOwners();
+      setCurrentFilter("all");
+      setPage(1);
+      fetchStoreOwners(1);
       return;
     }
+
+    setCurrentFilter("");
+    setPage(1);
+    setTotalPages(1);
 
     try {
       setLoading(true);
@@ -84,7 +102,9 @@ const StoreOwners = () => {
       if (!res.ok) throw new Error("Store owner not found");
 
       const data = await res.json();
-      setStoreOwners(data.users || []);
+
+      const results = data.users || data.user || data || [];
+      setStoreOwners(Array.isArray(results) ? results : [results]);
     } catch {
       toast.error(lang === "ar" ? "فشل في البحث!" : "Failed to search!");
       setStoreOwners([]);
@@ -133,6 +153,30 @@ const StoreOwners = () => {
     }
   };
 
+  const handleFilter = async (value: string) => {
+    setCurrentFilter(value);
+    setPage(1);
+
+    try {
+      setLoading(true);
+      const res = await fetch(
+        `https://api.tik-mall.com/admin/api/users/store_owner/${value}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+
+      const data = await res.json();
+      setStoreOwners(data.users || data.data?.results || []);
+      setTotalPages(data.pagination?.pages || 1);
+    } catch (err) {
+      console.error("Filter error:", err);
+      toast.error("Failed to apply filter");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     setDeleteLoading(true);
 
@@ -169,7 +213,7 @@ const StoreOwners = () => {
 
   useEffect(() => {
     fetchStoreOwners(page);
-  }, [page]);
+  }, [page, currentFilter]);
 
   if (loading)
     return (
@@ -203,102 +247,116 @@ const StoreOwners = () => {
       />
 
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8">
+        {/* Title */}
         <h2 className="flex items-center gap-2 text-2xl md:text-3xl font-bold text-[#456FFF]">
           <BuildingStorefrontIcon className="w-8 h-8 text-blue-600" />
           {lang === "ar" ? "أصحاب المتاجر" : "Store Owners"}
         </h2>
 
-        {/* Search */}
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <input
-            className="px-4 py-2 border rounded-lg dark:bg-gray-800 w-full sm:w-auto dark:text-gray-300"
-            placeholder={
-              lang === "ar"
-                ? "ابحث عن صاحب متجر..."
-                : "Search for a store owner..."
-            }
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && searchStoreOwner()}
-          />
+        {/* Search + Filter */}
+        <div className="flex flex-col gap-3 w-full sm:w-auto">
+          {/* Search */}
+          <div className="flex gap-3 w-full sm:w-auto">
+            <input
+              className="px-4 py-2 border rounded-lg dark:bg-gray-800 w-full sm:w-auto dark:text-gray-300"
+              placeholder={
+                lang === "ar"
+                  ? "ابحث عن صاحب متجر..."
+                  : "Search for a store owner..."
+              }
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && searchStoreOwner()}
+            />
+            <button
+              onClick={searchStoreOwner}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 w-full sm:w-auto transition-colors"
+            >
+              <MagnifyingGlassIcon className="w-5 h-5" />
+              {lang === "ar" ? "بحث" : "Search"}
+            </button>
+          </div>
 
-          <button
-            onClick={searchStoreOwner}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 w-full sm:w-auto transition-colors"
-          >
-            <MagnifyingGlassIcon className="w-5 h-5" />
-            {lang === "ar" ? "بحث" : "Search"}
-          </button>
+          {/* Filter (under search) */}
+          <div className="flex items-center gap-2 mt-2">
+            {/* Icon */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-5 h-5 text-gray-500 dark:text-gray-400"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10.5 6h3m-6 4.5h6m-4.5 4.5H15M4.5 6h.008v.008H4.5V6zm0 4.5h.008v.008H4.5v-.008zm0 4.5h.008v.008H4.5v-.008z"
+              />
+            </svg>
+
+            {/* Label */}
+            <label className="font-medium text-gray-700 dark:text-gray-300">
+              {lang === "ar" ? "تصفية حسب النوع:" : "Filter by type:"}
+            </label>
+
+            {/* SELECT */}
+            <select
+              value={currentFilter}
+              onChange={(e) => handleFilter(e.target.value)}
+              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 px-2 py-1 rounded text-gray-900 dark:text-gray-100"
+            >
+              <option value="all">{lang === "ar" ? "الكل" : "All"}</option>
+              <option value="active">{lang === "ar" ? "نشط" : "Active"}</option>
+              <option value="suspended">
+                {lang === "ar" ? "غير نشط" : "Suspended"}
+              </option>
+              <option value="electronics">
+                {lang === "ar" ? "إلكترونيات" : "Electronics"}
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* TABLE */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow overflow-hidden w-full">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow w-full overflow-hidden">
         {storeOwners.length > 0 ? (
           <>
-            <div className="w-full overflow-x-auto">
-              <table className="table-auto min-w-[800px] md:min-w-full">
+            {/* Scroll container */}
+            <div className="w-full max-w-full overflow-x-auto">
+              <table className="table-auto w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
-                    <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
+                    <th className="px-4 py-3 text-xs text-gray-500 uppercase text-center">
                       #
                     </th>
-                    <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
+                    <th className="px-4 py-3 text-xs text-gray-500 uppercase text-center">
                       {lang === "ar" ? "الاسم" : "Name"}
                     </th>
-                    <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
+                    <th className="px-4 py-3 text-xs text-gray-500 uppercase text-center">
                       {lang === "ar" ? "رقم الهاتف" : "Phone"}
                     </th>
-                    <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center ${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
+                    <th className="px-4 py-3 text-xs text-gray-500 uppercase text-center">
                       {lang === "ar" ? "اسم المتجر" : "Store Name"}
                     </th>
-                    <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center ${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
+                    <th className="px-4 py-3 text-xs text-gray-500 uppercase text-center">
                       {lang === "ar" ? "نوع المتجر" : "Store Type"}
                     </th>
-                    <th
-                      className={`text-xs text-gray-500 uppercase text-center`}
-                    >
+                    <th className="px-4 py-3 text-xs text-gray-500 uppercase text-center">
                       {lang === "ar" ? "السجل التجاري" : "Commercial"}
                     </th>
-                    <th
-                      className={`text-xs text-gray-500 uppercase text-center`}
-                    >
+                    <th className="px-4 py-3 text-xs text-gray-500 uppercase text-center">
                       {lang === "ar" ? "الهوية" : "Identity"}
                     </th>
-                    <th
-                      className={`text-xs text-gray-500 uppercase text-center`}
-                    >
+                    <th className="px-4 py-3 text-xs text-gray-500 uppercase text-center">
                       {lang === "ar" ? "صورة الملف الشخصي" : "Image"}
                     </th>
-                    <th
-                      className={`text-xs text-gray-500 uppercase text-center`}
-                    >
+                    <th className="px-4 py-3 text-xs text-gray-500 uppercase text-center">
                       {lang === "ar" ? "الحالة" : "Status"}
                     </th>
-                    <th
-                      className={`text-xs text-gray-500 uppercase text-center`}
-                    >
+                    <th className="px-4 py-3 text-xs text-gray-500 uppercase text-center">
                       {lang === "ar" ? "الإجراءات" : "Actions"}
                     </th>
                   </tr>
@@ -310,100 +368,59 @@ const StoreOwners = () => {
                       key={owner._id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
-                      <td
-                        className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
-                          isRTL ? "text-right" : "text-left"
-                        }`}
-                      >
+                      <td className="px-4 py-3 text-sm dark:text-gray-300">
                         {idx + 1 + (page - 1) * 10}
                       </td>
-                      <td
-                        className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
-                          isRTL ? "text-right" : "text-left"
-                        }`}
-                      >
+                      <td className="px-4 py-3 text-sm dark:text-gray-300">
                         {owner.name}
                       </td>
-                      <td
-                        className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
-                          isRTL ? "text-right" : "text-left"
-                        }`}
-                      >
+                      <td className="px-4 py-3 text-sm dark:text-gray-300">
                         {owner.phone?.number || "—"}
                       </td>
-                      <td
-                        className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
-                          isRTL ? "text-right" : "text-left"
-                        }`}
-                      >
+                      <td className="px-4 py-3 text-sm dark:text-gray-300">
                         {owner.storeName || "—"}
                       </td>
-                      <td
-                        className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
-                          isRTL ? "text-right" : "text-left"
-                        }`}
-                      >
+                      <td className="px-4 py-3 text-sm dark:text-gray-300">
                         {owner.typeOfStore?.length
                           ? owner.typeOfStore
-                              .map(
-                                (t: { ar: string; en: string }) =>
-                                  t[lang === "ar" ? "ar" : "en"]
-                              )
+                              .map((t) => t[lang === "ar" ? "ar" : "en"])
                               .join(", ")
                           : "—"}
                       </td>
-                      <td className="px-4 md:px-6 py-3 text-center">
+                      <td className="px-4 py-3 text-center">
                         {owner.commercialRecordImg ? (
-                          <a
-                            href={owner.commercialRecordImg}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <img
-                              src={owner.commercialRecordImg}
-                              className="w-10 h-10 object-cover rounded"
-                              alt="CR"
-                            />
-                          </a>
+                          <img
+                            src={owner.commercialRecordImg}
+                            className="w-8 h-8 object-cover rounded"
+                            alt="CR"
+                          />
                         ) : (
                           "—"
                         )}
                       </td>
-                      <td className="px-4 md:px-6 py-3 text-center">
+                      <td className="px-4 py-3 text-center">
                         {owner.personaIdentityImg ? (
-                          <a
-                            href={owner.personaIdentityImg}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <img
-                              src={owner.personaIdentityImg}
-                              className="w-10 h-10 object-cover rounded"
-                              alt="ID"
-                            />
-                          </a>
+                          <img
+                            src={owner.personaIdentityImg}
+                            className="w-8 h-8 object-cover rounded"
+                            alt="ID"
+                          />
                         ) : (
                           "—"
                         )}
                       </td>
-                      <td className="px-4 md:px-6 py-3 text-center">
+                      <td className="px-4 py-3 text-center">
                         {owner.profileImg ? (
-                          <a
-                            href={owner.profileImg}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <img
-                              src={owner.profileImg}
-                              className="w-10 h-10 object-cover rounded"
-                              alt="Profile"
-                            />
-                          </a>
+                          <img
+                            src={owner.profileImg}
+                            className="w-8 h-8 object-cover rounded"
+                            alt="Profile"
+                          />
                         ) : (
                           "—"
                         )}
                       </td>
-                      <td className="px-4 md:px-6 py-3">
+                      <td className="px-4 py-3">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${
                             owner.isActive
@@ -420,11 +437,8 @@ const StoreOwners = () => {
                             : "Inactive"}
                         </span>
                       </td>
-
-                      {/* ACTIONS */}
-                      <td className="px-4 md:px-6 py-3 text-center">
+                      <td className="px-4 py-3 text-center">
                         <div className="flex flex-col md:flex-row gap-2 justify-center">
-                          {/* VIEW */}
                           <button
                             onClick={() => {
                               setViewUser(owner);
@@ -434,14 +448,12 @@ const StoreOwners = () => {
                           >
                             {lang === "ar" ? "عرض" : "View"}
                           </button>
-
-                          {/* ACTIVATE / DEACTIVATE */}
                           <button
                             disabled={actionLoading}
                             onClick={() =>
                               toggleActivation(owner._id, owner.isActive)
                             }
-                            className={`px-2 py-1 bg-green-500 text-white rounded text-sm ${
+                            className={`px-2 py-1 text-sm rounded text-white ${
                               owner.isActive
                                 ? "bg-yellow-500 hover:bg-yellow-600"
                                 : "bg-green-500 hover:bg-green-600"
@@ -455,8 +467,6 @@ const StoreOwners = () => {
                               ? "تفعيل"
                               : "Activate"}
                           </button>
-
-                          {/* DELETE */}
                           <button
                             onClick={() => {
                               setOwnerToDelete(owner._id);
@@ -477,54 +487,19 @@ const StoreOwners = () => {
             {/* PAGINATION */}
             {totalPages > 1 && (
               <div className="pb-2 flex gap-2 justify-center">
-                {(() => {
-                  const pages: (number | string)[] = [];
-
-                  const addPage = (p: number | string) => {
-                    if (!pages.includes(p)) pages.push(p);
-                  };
-
-                  const visible = 2;
-
-                  addPage(1);
-
-                  if (page > visible + 2) addPage("dots-start");
-
-                  for (
-                    let i = Math.max(2, page - visible);
-                    i <= Math.min(totalPages - 1, page + visible);
-                    i++
-                  ) {
-                    addPage(i);
-                  }
-
-                  if (page < totalPages - (visible + 1)) addPage("dots-end");
-
-                  addPage(totalPages);
-
-                  return pages.map((p, idx) =>
-                    typeof p === "string" ? (
-                      <span
-                        key={idx}
-                        className="px-2 text-gray-500 dark:text-gray-300"
-                      >
-                        ...
-                      </span>
-                    ) : (
-                      <button
-                        key={p}
-                        onClick={() => setPage(p)}
-                        className={`px-3 py-0.5 rounded min-w-[32px] text-sm font-medium transition-all ${
-                          p === page
-                            ? "bg-blue-600 text-white shadow-md"
-                            : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    )
-                  );
-                })()}
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button
+                    key={i + 1}
+                    onClick={() => setPage(i + 1)}
+                    className={`px-3 py-0.5 rounded min-w-[32px] text-sm font-medium transition-all ${
+                      page === i + 1
+                        ? "bg-blue-600 text-white shadow-md"
+                        : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
               </div>
             )}
           </>
