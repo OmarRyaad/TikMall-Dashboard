@@ -416,52 +416,41 @@ const Moderators = () => {
 
             {/* PAGINATION */}
             {totalPages > 1 && (
-              <div
-                className={`pb-2 flex gap-2 ${
-                  isRTL ? "justify-center" : "justify-center"
-                }`}
-              >
+              <div className="pb-2 flex gap-2 justify-center">
                 {(() => {
                   const pages: (number | string)[] = [];
-                  const visible = 3;
 
-                  const add = (p: number | string) => pages.push(p);
+                  const addPage = (p: number | string) => {
+                    if (!pages.includes(p)) pages.push(p);
+                  };
 
-                  if (page > visible + 2) {
-                    add(1);
-                    add("dots-start");
-                  } else {
-                    for (let i = 1; i < page; i++) add(i);
-                  }
+                  const visible = 2;
+
+                  addPage(1);
+
+                  if (page > visible + 2) addPage("dots-start");
 
                   for (
-                    let i = Math.max(1, page - visible);
-                    i <= Math.min(totalPages, page + visible);
+                    let i = Math.max(2, page - visible);
+                    i <= Math.min(totalPages - 1, page + visible);
                     i++
                   ) {
-                    add(i);
+                    addPage(i);
                   }
 
-                  if (page < totalPages - (visible + 1)) {
-                    add("dots-end");
-                    add(totalPages);
-                  } else {
-                    for (let i = page + 1; i <= totalPages; i++) add(i);
-                  }
+                  if (page < totalPages - (visible + 1)) addPage("dots-end");
 
-                  return pages.map((p, idx) => {
-                    if (typeof p === "string") {
-                      return (
-                        <span
-                          key={idx}
-                          className="px-3 py-0.5 text-gray-500 dark:text-gray-300"
-                        >
-                          ...
-                        </span>
-                      );
-                    }
+                  addPage(totalPages);
 
-                    return (
+                  return pages.map((p, idx) =>
+                    typeof p === "string" ? (
+                      <span
+                        key={idx}
+                        className="px-2 text-gray-500 dark:text-gray-300"
+                      >
+                        ...
+                      </span>
+                    ) : (
                       <button
                         key={p}
                         onClick={() => setPage(p)}
@@ -473,8 +462,8 @@ const Moderators = () => {
                       >
                         {p}
                       </button>
-                    );
-                  });
+                    )
+                  );
                 })()}
               </div>
             )}
