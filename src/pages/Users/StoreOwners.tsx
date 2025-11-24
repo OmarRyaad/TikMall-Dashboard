@@ -297,38 +297,54 @@ const StoreOwners = () => {
             {totalPages > 1 && (
               <div
                 className={`pb-2 flex gap-2 ${
-                  isRTL ? "justify-end" : "justify-center"
+                  isRTL ? "justify-center" : "justify-center"
                 }`}
               >
                 {(() => {
-                  const visibleCount = 5;
-                  const half = Math.floor(visibleCount / 2);
+                  const pages: (number | string)[] = [];
+                  const visible = 3;
 
-                  let start = page - half;
-                  let end = page + half;
+                  const add = (p: number | string) => pages.push(p);
 
-                  if (start < 1) {
-                    start = 1;
-                    end = Math.min(totalPages, visibleCount);
+                  if (page > visible + 2) {
+                    add(1);
+                    add("dots-start");
+                  } else {
+                    for (let i = 1; i < page; i++) add(i);
                   }
 
-                  if (end > totalPages) {
-                    end = totalPages;
-                    start = Math.max(1, totalPages - visibleCount + 1);
+                  for (
+                    let i = Math.max(1, page - visible);
+                    i <= Math.min(totalPages, page + visible);
+                    i++
+                  ) {
+                    add(i);
                   }
 
-                  if (totalPages <= visibleCount) {
-                    start = 1;
-                    end = totalPages;
+                  if (page < totalPages - (visible + 1)) {
+                    add("dots-end");
+                    add(totalPages);
+                  } else {
+                    for (let i = page + 1; i <= totalPages; i++) add(i);
                   }
 
-                  return Array.from({ length: end - start + 1 }, (_, i) => {
-                    const p = start + i;
+                  return pages.map((p, idx) => {
+                    if (typeof p === "string") {
+                      return (
+                        <span
+                          key={idx}
+                          className="px-3 py-0.5 text-gray-500 dark:text-gray-300"
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+
                     return (
                       <button
                         key={p}
                         onClick={() => setPage(p)}
-                        className={`px-3 py-0.5 rounded min-w-[36px] text-sm font-medium transition-all ${
+                        className={`px-3 py-0.5 rounded min-w-[32px] text-sm font-medium transition-all ${
                           p === page
                             ? "bg-blue-600 text-white shadow-md"
                             : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
