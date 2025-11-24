@@ -9,6 +9,7 @@ import {
 import { useLanguage } from "../../context/LanguageContext";
 
 interface FAQ {
+  updatedAt: number;
   _id: string;
   question: { en: string; ar: string };
   answer: { en: string; ar: string };
@@ -267,7 +268,20 @@ const AskedQuestions = () => {
                     {lang === "ar" ? "سؤال من الإدارة" : "Asked by Admin"}
                   </h4>
                   <span className="text-xs text-gray-400">
-                    {lang === "ar" ? "الآن" : "Just now"}
+                    {faq.updatedAt
+                      ? new Date(faq.updatedAt).toLocaleString(
+                          lang === "ar" ? "ar-EG" : "en-US",
+                          {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )
+                      : lang === "ar"
+                      ? "الآن"
+                      : "Just now"}
                   </span>
                 </div>
 
@@ -295,9 +309,6 @@ const AskedQuestions = () => {
                   >
                     {lang === "ar" ? "حذف" : "Delete"}
                   </button>
-                  <button className="text-gray-400 cursor-not-allowed">
-                    {lang === "ar" ? "رد" : "Reply"}
-                  </button>
                 </div>
               </div>
             </div>
@@ -314,7 +325,7 @@ const AskedQuestions = () => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           >
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-lg dark:bg-gray-900">
+            <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-lg dark:bg-gray-900">
               <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
                 {editingFaqId
                   ? lang === "ar"
@@ -324,52 +335,101 @@ const AskedQuestions = () => {
                   ? "إضافة سؤال جديد"
                   : "Add New FAQ"}
               </h3>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder={
-                    lang === "ar" ? "السؤال (الإنجليزية)" : "Question (English)"
-                  }
-                  value={formData.question_en}
-                  onChange={(e) =>
-                    setFormData({ ...formData, question_en: e.target.value })
-                  }
-                  className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                />
-                <input
-                  type="text"
-                  placeholder={
-                    lang === "ar" ? "السؤال (العربية)" : "Question (Arabic)"
-                  }
-                  value={formData.question_ar}
-                  onChange={(e) =>
-                    setFormData({ ...formData, question_ar: e.target.value })
-                  }
-                  className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                />
-                <textarea
-                  placeholder={
-                    lang === "ar" ? "الإجابة (الإنجليزية)" : "Answer (English)"
-                  }
-                  value={formData.answer_en}
-                  onChange={(e) =>
-                    setFormData({ ...formData, answer_en: e.target.value })
-                  }
-                  rows={3}
-                  className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                />
-                <textarea
-                  placeholder={
-                    lang === "ar" ? "الإجابة (العربية)" : "Answer (Arabic)"
-                  }
-                  value={formData.answer_ar}
-                  onChange={(e) =>
-                    setFormData({ ...formData, answer_ar: e.target.value })
-                  }
-                  rows={3}
-                  className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Question English */}
+                <div className="flex flex-col">
+                  <label
+                    htmlFor="question_en"
+                    className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {lang === "ar" ? "السؤال (إنجليزية)" : "Question (English)"}
+                  </label>
+                  <input
+                    id="question_en"
+                    type="text"
+                    placeholder={
+                      lang === "ar"
+                        ? "السؤال (الإنجليزية)"
+                        : "Question (English)"
+                    }
+                    value={formData.question_en}
+                    onChange={(e) =>
+                      setFormData({ ...formData, question_en: e.target.value })
+                    }
+                    className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  />
+                </div>
+
+                {/* Question Arabic */}
+                <div className="flex flex-col">
+                  <label
+                    htmlFor="question_ar"
+                    className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {lang === "ar" ? "السؤال (عربية)" : "Question (Arabic)"}
+                  </label>
+                  <input
+                    id="question_ar"
+                    type="text"
+                    placeholder={
+                      lang === "ar" ? "السؤال (العربية)" : "Question (Arabic)"
+                    }
+                    value={formData.question_ar}
+                    onChange={(e) =>
+                      setFormData({ ...formData, question_ar: e.target.value })
+                    }
+                    className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  />
+                </div>
+
+                {/* Answer English */}
+                <div className="flex flex-col">
+                  <label
+                    htmlFor="answer_en"
+                    className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {lang === "ar" ? "الإجابة (إنجليزية)" : "Answer (English)"}
+                  </label>
+                  <textarea
+                    id="answer_en"
+                    placeholder={
+                      lang === "ar"
+                        ? "الإجابة (الإنجليزية)"
+                        : "Answer (English)"
+                    }
+                    value={formData.answer_en}
+                    onChange={(e) =>
+                      setFormData({ ...formData, answer_en: e.target.value })
+                    }
+                    rows={3}
+                    className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  />
+                </div>
+
+                {/* Answer Arabic */}
+                <div className="flex flex-col">
+                  <label
+                    htmlFor="answer_ar"
+                    className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {lang === "ar" ? "الإجابة (عربية)" : "Answer (Arabic)"}
+                  </label>
+                  <textarea
+                    id="answer_ar"
+                    placeholder={
+                      lang === "ar" ? "الإجابة (العربية)" : "Answer (Arabic)"
+                    }
+                    value={formData.answer_ar}
+                    onChange={(e) =>
+                      setFormData({ ...formData, answer_ar: e.target.value })
+                    }
+                    rows={3}
+                    className="w-full rounded-md border border-gray-300 p-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  />
+                </div>
               </div>
+
               <div className="mt-5 flex justify-end gap-3">
                 <button
                   onClick={() => setModalOpen(false)}
