@@ -97,14 +97,19 @@ const StoreOwners = () => {
     try {
       setActionLoading(true);
 
-      const res = await fetch(
-        `https://api.tik-mall.com/admin/api/users/store_owner/activate/${id}`,
-        {
-          method: "PATCH",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          body: JSON.stringify({ isActive: !current }),
-        }
-      );
+      const endpoint = current
+        ? `https://api.tik-mall.com/admin/api/suspend/${id}` // Suspend if currently active
+        : `https://api.tik-mall.com/admin/api/reactivate/${id}`; // Reactivate if currently inactive
+
+      const res = await fetch(endpoint, {
+        method: "PATCH",
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            }
+          : { "Content-Type": "application/json" },
+      });
 
       if (!res.ok) throw new Error("Failed");
 
@@ -232,67 +237,67 @@ const StoreOwners = () => {
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow overflow-hidden w-full">
         {storeOwners.length > 0 ? (
           <>
-            <div className="overflow-x-auto w-full">
-              <table className="w-full min-w-[600px] md:min-w-full">
+            <div className="w-full overflow-x-auto">
+              <table className="table-auto min-w-[800px] md:min-w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase ${
+                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center${
                         isRTL ? "text-right" : "text-left"
                       }`}
                     >
                       #
                     </th>
                     <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase ${
+                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center${
                         isRTL ? "text-right" : "text-left"
                       }`}
                     >
                       {lang === "ar" ? "الاسم" : "Name"}
                     </th>
                     <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase ${
+                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center${
                         isRTL ? "text-right" : "text-left"
                       }`}
                     >
                       {lang === "ar" ? "رقم الهاتف" : "Phone"}
                     </th>
                     <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase ${
+                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center ${
                         isRTL ? "text-right" : "text-left"
                       }`}
                     >
                       {lang === "ar" ? "اسم المتجر" : "Store Name"}
                     </th>
                     <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase ${
+                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center ${
                         isRTL ? "text-right" : "text-left"
                       }`}
                     >
-                      {lang === "ar" ? "نوع المتجر" : "Type of Store"}
+                      {lang === "ar" ? "نوع المتجر" : "Store Type"}
                     </th>
                     <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center`}
+                      className={`text-xs text-gray-500 uppercase text-center`}
                     >
-                      {lang === "ar" ? "السجل التجاري" : "Commercial Record"}
+                      {lang === "ar" ? "السجل التجاري" : "Commercial"}
                     </th>
                     <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center`}
+                      className={`text-xs text-gray-500 uppercase text-center`}
                     >
                       {lang === "ar" ? "الهوية" : "Identity"}
                     </th>
                     <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center`}
+                      className={`text-xs text-gray-500 uppercase text-center`}
                     >
-                      {lang === "ar" ? "صورة الملف الشخصي" : "Profile Image"}
+                      {lang === "ar" ? "صورة الملف الشخصي" : "Image"}
                     </th>
                     <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center`}
+                      className={`text-xs text-gray-500 uppercase text-center`}
                     >
                       {lang === "ar" ? "الحالة" : "Status"}
                     </th>
                     <th
-                      className={`px-4 md:px-6 py-3 text-xs text-gray-500 uppercase text-center`}
+                      className={`text-xs text-gray-500 uppercase text-center`}
                     >
                       {lang === "ar" ? "الإجراءات" : "Actions"}
                     </th>
@@ -417,49 +422,51 @@ const StoreOwners = () => {
                       </td>
 
                       {/* ACTIONS */}
-                      <td className="px-4 md:px-6 py-3 flex gap-2 justify-start">
-                        {/* VIEW */}
-                        <button
-                          onClick={() => {
-                            setViewUser(owner);
-                            setViewModalOpen(true);
-                          }}
-                          className="px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-500 text-white hover:bg-cyan-600 transition-colors"
-                        >
-                          {lang === "ar" ? "عرض" : "View"}
-                        </button>
+                      <td className="px-4 md:px-6 py-3 text-center">
+                        <div className="flex flex-col md:flex-row gap-2 justify-center">
+                          {/* VIEW */}
+                          <button
+                            onClick={() => {
+                              setViewUser(owner);
+                              setViewModalOpen(true);
+                            }}
+                            className="px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-500 text-white hover:bg-cyan-600 transition-colors"
+                          >
+                            {lang === "ar" ? "عرض" : "View"}
+                          </button>
 
-                        {/* ACTIVATE / DEACTIVATE */}
-                        <button
-                          disabled={actionLoading}
-                          onClick={() =>
-                            toggleActivation(owner._id, owner.isActive)
-                          }
-                          className={`px-2 py-1 bg-red-500 text-white rounded text-sm ${
-                            owner.isActive
-                              ? "bg-yellow-500 hover:bg-yellow-600"
-                              : "bg-green-500 hover:bg-green-600"
-                          }`}
-                        >
-                          {owner.isActive
-                            ? lang === "ar"
-                              ? "إلغاء التفعيل"
-                              : "Deactivate"
-                            : lang === "ar"
-                            ? "تفعيل"
-                            : "Activate"}
-                        </button>
+                          {/* ACTIVATE / DEACTIVATE */}
+                          <button
+                            disabled={actionLoading}
+                            onClick={() =>
+                              toggleActivation(owner._id, owner.isActive)
+                            }
+                            className={`px-2 py-1 bg-green-500 text-white rounded text-sm ${
+                              owner.isActive
+                                ? "bg-yellow-500 hover:bg-yellow-600"
+                                : "bg-green-500 hover:bg-green-600"
+                            }`}
+                          >
+                            {owner.isActive
+                              ? lang === "ar"
+                                ? "إلغاء التفعيل"
+                                : "Deactivate"
+                              : lang === "ar"
+                              ? "تفعيل"
+                              : "Activate"}
+                          </button>
 
-                        {/* DELETE */}
-                        <button
-                          onClick={() => {
-                            setOwnerToDelete(owner._id);
-                            setDeleteModalOpen(true);
-                          }}
-                          className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-                        >
-                          {lang === "ar" ? "حذف" : "Delete"}
-                        </button>
+                          {/* DELETE */}
+                          <button
+                            onClick={() => {
+                              setOwnerToDelete(owner._id);
+                              setDeleteModalOpen(true);
+                            }}
+                            className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                          >
+                            {lang === "ar" ? "حذف" : "Delete"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
