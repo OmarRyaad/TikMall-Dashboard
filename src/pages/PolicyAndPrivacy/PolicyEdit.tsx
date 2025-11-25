@@ -218,8 +218,9 @@ const PolicyEdit = () => {
       </button>
 
       {/* Policy Title */}
+      {/* Policy Title */}
       <h1 className="text-3xl md:text-4xl font-bold text-blue-600 text-center">
-        {policy.name}
+        {lang === "ar" ? "الشروط والاحكام" : "Terms and Conditions"}
       </h1>
 
       {/* Language Toggle */}
@@ -244,22 +245,6 @@ const PolicyEdit = () => {
         >
           العربية
         </button>
-      </div>
-
-      {/* Policy Name Input */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {lang === "ar" ? "اسم السياسة" : "Policy Name"}
-        </label>
-        <input
-          type="text"
-          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-lg font-medium bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder={
-            lang === "ar" ? "اكتب اسم السياسة هنا..." : "Enter policy name..."
-          }
-        />
       </div>
 
       {/* Editor */}
