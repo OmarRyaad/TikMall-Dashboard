@@ -4,6 +4,7 @@ import {
   BuildingOffice2Icon,
   HeartIcon,
   PhotoIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -35,6 +36,15 @@ interface Department {
   name: { en: string; ar: string };
 }
 
+interface Comment {
+  repliesCount: number;
+  _id: string;
+  user: { _id: string; name: string };
+  comment: string;
+  replies: Comment[];
+  createdAt: string;
+}
+
 const Media = () => {
   const { lang } = useLanguage();
   const isRTL = lang === "ar";
@@ -51,22 +61,46 @@ const Media = () => {
 
   const [selectedComment, setSelectedComment] = useState<{
     mediaId: string;
-    comment: string;
+    description: string;
   } | null>(null);
+
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
-  const openCommentPopup = (mediaId: string, description: string) => {
-    setSelectedComment({ mediaId, comment: description });
-  };
-
-  const closeCommentPopup = () => setSelectedComment(null);
-
-  const handleDeleteComment = async (mediaId: string) => {
+  const openCommentPopup = async (mediaId: string, description: string) => {
+    setSelectedComment({ mediaId, description });
+    setLoadingComments(true);
     try {
       const res = await fetch(
-        `https://api.tik-mall.com/admin/api/media/${mediaId}/comment/${mediaId}`, // replace commentId if available
+        `https://api.tik-mall.com/admin/api/media/${mediaId}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      const data = await res.json();
+      setComments(data.comments || []);
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        lang === "ar"
+          ? "حدث خطأ أثناء جلب التعليقات"
+          : "Failed to load comments"
+      );
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const closeCommentPopup = () => {
+    setSelectedComment(null);
+    setComments([]);
+  };
+
+  const handleDeleteComment = async (mediaId: string, commentId: string) => {
+    try {
+      const res = await fetch(
+        `https://api.tik-mall.com/admin/api/media/${mediaId}/comment/${commentId}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -74,12 +108,41 @@ const Media = () => {
       );
       if (!res.ok) throw new Error("Failed to delete comment");
       toast.success(lang === "ar" ? "تم حذف التعليق" : "Comment deleted");
-      closeCommentPopup();
-      // No media removal here
+      setComments((prev) => prev.filter((c) => c._id !== commentId));
     } catch (err) {
       console.error(err);
       toast.error(
         lang === "ar" ? "حدث خطأ أثناء الحذف" : "Error deleting comment"
+      );
+    }
+  };
+
+  const handleDeleteReply = async (
+    mediaId: string,
+    commentId: string,
+    replyId: string
+  ) => {
+    try {
+      const res = await fetch(
+        `https://api.tik-mall.com/admin/api/media/${mediaId}/comment/${commentId}/reply/${replyId}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to delete reply");
+      setComments((prev) =>
+        prev.map((c) =>
+          c._id === commentId
+            ? { ...c, replies: c.replies.filter((r) => r._id !== replyId) }
+            : c
+        )
+      );
+      toast.success(lang === "ar" ? "تم حذف الرد" : "Reply deleted");
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        lang === "ar" ? "حدث خطأ أثناء الحذف" : "Error deleting reply"
       );
     }
   };
@@ -90,7 +153,6 @@ const Media = () => {
       try {
         let url = `https://api.tik-mall.com/admin/api/list/media?type=${filterType}&skip=0&limit=10`;
         if (filterDepartment) url += `&storeDepartment=${filterDepartment}`;
-
         const res = await fetch(url, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
@@ -98,7 +160,6 @@ const Media = () => {
         const items = data.items || [];
         setMedia(items);
 
-        // Extract Store Departments
         const uniqueDepartmentsMap: Record<string, string> = {};
         items.forEach((item: MediaItem) => {
           if (
@@ -111,7 +172,6 @@ const Media = () => {
                 : item.storeDepartment.name.en;
           }
         });
-
         const uniqueDepartments = Object.entries(uniqueDepartmentsMap).map(
           ([id, name]) => ({ _id: id, name })
         );
@@ -285,25 +345,118 @@ const Media = () => {
 
       {/* Comment Popup */}
       {selectedComment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl w-11/12 max-w-lg">
-            <h3 className="text-lg font-bold mb-4">
-              {lang === "ar" ? "التعليق بالكامل" : "Full Comment"}
-            </h3>
-            <p className="mb-6">{selectedComment.comment}</p>
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={closeCommentPopup}
-                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600"
-              >
-                {lang === "ar" ? "إلغاء" : "Cancel"}
-              </button>
-              <button
-                onClick={() => handleDeleteComment(selectedComment.mediaId)}
-                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
-              >
-                {lang === "ar" ? "حذف" : "Delete"}
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-2">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-xl w-full max-w-md max-h-[80vh] overflow-y-auto relative shadow-lg">
+            {/* Close Button */}
+            <button
+              onClick={closeCommentPopup}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+
+            {/* Media Description */}
+            <p className="mb-4 text-gray-700 dark:text-gray-200">
+              {selectedComment.description}
+            </p>
+
+            {/* Comments List */}
+            <div className="space-y-3">
+              {loadingComments ? (
+                <div className="flex items-center justify-center h-40 bg-transparent">
+                  <div className="relative flex flex-col items-center">
+                    <div className="relative w-12 h-12">
+                      <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-blue-500 animate-spin" />
+                      <div className="absolute inset-1 rounded-full border-4 border-t-transparent border-cyan-400 animate-[spin_1.5s_linear_infinite]" />
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-bounce" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.15s]" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
+                    </div>
+                    <p className="mt-2 text-sm font-semibold text-gray-700 dark:text-gray-300 animate-pulse text-center">
+                      {lang === "ar" ? "جاري تحميل " : "Loading "}
+                      <span className="text-blue-500">
+                        {lang === "ar" ? "التعليقات" : "Comments"}
+                      </span>
+                      ...
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                comments.map((c) => (
+                  <div
+                    key={c._id}
+                    className="flex flex-col bg-gray-50 dark:bg-gray-700 rounded-xl p-3 shadow-sm hover:shadow-md transition"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-2">
+                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold">
+                          {c.user.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800 dark:text-gray-100">
+                            {c.user.name}
+                          </p>
+                          <p className="text-gray-700 dark:text-gray-200 text-sm">
+                            {c.comment}
+                          </p>
+                          <small className="text-gray-400">
+                            {new Date(c.createdAt).toLocaleString()}
+                          </small>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() =>
+                          handleDeleteComment(selectedComment.mediaId, c._id)
+                        }
+                        className="text-red-500 hover:text-red-600 text-sm"
+                      >
+                        {lang === "ar" ? "حذف" : "Delete"}
+                      </button>
+                    </div>
+
+                    {/* Replies */}
+                    <div className="pl-10 mt-2 space-y-2">
+                      {c.replies.map((r) => (
+                        <div
+                          key={r._id}
+                          className="flex items-start justify-between"
+                        >
+                          <div className="flex gap-2">
+                            <div className="w-6 h-6 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs font-bold">
+                              {r.user.name.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-800 dark:text-gray-100">
+                                {r.user.name}
+                              </p>
+                              <p className="text-gray-700 dark:text-gray-200 text-sm">
+                                {r.comment}
+                              </p>
+                              <small className="text-gray-400">
+                                {new Date(r.createdAt).toLocaleString()}
+                              </small>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() =>
+                              handleDeleteReply(
+                                selectedComment.mediaId,
+                                c._id,
+                                r._id
+                              )
+                            }
+                            className="text-red-500 hover:text-red-600 text-sm"
+                          >
+                            {lang === "ar" ? "حذف" : "Delete"}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

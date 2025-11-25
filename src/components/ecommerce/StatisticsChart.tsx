@@ -58,16 +58,12 @@ export default function StatisticsChart() {
       try {
         const [usersRes, streamsRes] = await Promise.all([
           fetch(
-            `https://api.tik-mall.com/admin/api/stats/charts/monthly-users`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
+            "https://api.tik-mall.com/admin/api/stats/charts/monthly-users",
+            { headers: { Authorization: `Bearer ${token}` } }
           ),
           fetch(
-            `https://api.tik-mall.com/admin/api/stats/charts/monthly-streams`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
+            "https://api.tik-mall.com/admin/api/stats/charts/monthly-streams",
+            { headers: { Authorization: `Bearer ${token}` } }
           ),
         ]);
 
@@ -94,19 +90,24 @@ export default function StatisticsChart() {
   }, []);
 
   const options: ApexOptions = {
-    legend: { show: false },
+    legend: {
+      show: true,
+      position: "top",
+      horizontalAlign: "right",
+      labels: { useSeriesColors: true },
+    },
     colors: ["#465FFF", "#9CB9FF"],
     chart: {
-      fontFamily: "Outfit, sans-serif",
+      type: "area",
       height: 310,
-      type: "line",
       toolbar: { show: false },
+      fontFamily: "Outfit, sans-serif",
       foreColor: "#9ca3af",
     },
-    stroke: { curve: "straight", width: [2, 2] },
-    fill: { type: "gradient", gradient: { opacityFrom: 0.55, opacityTo: 0 } },
+    stroke: { curve: "smooth", width: [3, 3] },
+    fill: { type: "gradient", gradient: { opacityFrom: 0.4, opacityTo: 0.05 } },
     markers: {
-      size: 0,
+      size: 4,
       strokeColors: "#fff",
       strokeWidth: 2,
       hover: { size: 6 },
@@ -118,36 +119,22 @@ export default function StatisticsChart() {
     dataLabels: { enabled: false },
     tooltip: {
       enabled: true,
-      x: { format: "dd MMM yyyy" },
       y: {
         formatter: (val: number) =>
-          `${val.toLocaleString()} ${
-            lang === "ar" ? (val === 1 ? "وحدة" : "وحدات") : ""
-          }`,
+          `${val.toLocaleString()} ${lang === "ar" ? "وحدة" : "unit"}`,
       },
     },
-    xaxis: {
-      type: "category",
-      categories: months,
-      axisBorder: { show: false },
-      axisTicks: { show: false },
-      tooltip: { enabled: false },
-      labels: { style: { fontSize: "12px" } },
-    },
+    xaxis: { categories: months, labels: { style: { fontSize: "12px" } } },
     yaxis: {
       labels: {
         style: { fontSize: "12px", colors: ["#6B7280"] },
         formatter: (val) => val.toLocaleString(),
       },
-      title: { text: "", style: { fontSize: "0px" } },
     },
   };
 
   const series = [
-    {
-      name: lang === "ar" ? "المستخدمون الجدد" : "New Users",
-      data: userData,
-    },
+    { name: lang === "ar" ? "المستخدمون الجدد" : "New Users", data: userData },
     {
       name: lang === "ar" ? "البثوث المباشرة" : "Live Streams",
       data: streamData,
@@ -162,12 +149,14 @@ export default function StatisticsChart() {
       <div className="flex flex-col gap-5 mb-6 sm:flex-row sm:justify-between">
         <div className="w-full">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            {lang === "ar" ? "الإحصائيات" : "Statistics"}
+            {lang === "ar"
+              ? "مقارنة المستخدمون مقابل البثوث المباشرة"
+              : "Users vs Live Streams"}
           </h3>
           <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
             {lang === "ar"
-              ? "الأهداف التي حددتها لكل شهر"
-              : "Target you’ve set for each month"}
+              ? "مقارنة بين عدد المستخدمين والبثوث المباشرة لكل شهر"
+              : "Comparison of users and live streams per month"}
           </p>
         </div>
       </div>
