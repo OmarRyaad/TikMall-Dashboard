@@ -63,16 +63,29 @@ const AppSidebar: React.FC = () => {
 
   const handleAnnounceSeen = (path: string | undefined) => {
     if (!path) return;
-    const type = path as "complaints" | "media" | "live-broad-casts";
-    if (!["complaints", "media", "live-broad-casts"].includes(type)) return;
-    if (!announces[type]) return;
+
+    const cleanPath = path.replace("/", "");
+
+    const pathToFlagKey: { [key: string]: "complaints" | "media" | "streams" } =
+      {
+        complaints: "complaints",
+        media: "media",
+        "live-broad-casts": "streams",
+      };
+
+    const flag = pathToFlagKey[cleanPath];
+    if (!flag) return;
+    if (!announces[flag]) return;
 
     fetch("https://api.tik-mall.com/admin/api/seen/announce", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type }),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ flag }),
     })
-      .then(() => setAnnounces((prev) => ({ ...prev, [type]: false })))
+      .then(() => setAnnounces((prev) => ({ ...prev, [flag]: false })))
       .catch(console.error);
   };
 
@@ -223,13 +236,21 @@ const AppSidebar: React.FC = () => {
                   {nav.name}
                   {(() => {
                     const cleanPath = nav.path?.replace("/", "") || "";
+
+                    // map nav.path to API announce key
+                    const pathToFlagKey: { [key: string]: string } = {
+                      complaints: "complaints",
+                      media: "media",
+                      "live-broad-casts": "streams",
+                    };
+
+                    const flagKey = pathToFlagKey[cleanPath];
+
                     return (
-                      ["complaints", "media", "live-broad-casts"].includes(
-                        cleanPath
-                      ) &&
-                      announces[cleanPath] && (
-                        <span className="absolute right-0 top-0.5 h-2 w-2 bg-orange-400">
-                          <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
+                      flagKey &&
+                      announces[flagKey] && (
+                        <span className="absolute right-2 top-0.3 h-2 w-2 rounded-full bg-orange-400">
+                          <span className="absolute inline-flex w-full h-full rounded-full bg-orange-400 opacity-75 animate-ping"></span>
                         </span>
                       )
                     );
@@ -270,13 +291,21 @@ const AppSidebar: React.FC = () => {
                 )}
                 {(() => {
                   const cleanPath = nav.path?.replace("/", "") || "";
+
+                  // map nav.path to API announce key
+                  const pathToFlagKey: { [key: string]: string } = {
+                    complaints: "complaints",
+                    media: "media",
+                    "live-broad-casts": "streams",
+                  };
+
+                  const flagKey = pathToFlagKey[cleanPath];
+
                   return (
-                    ["complaints", "media", "live-broad-casts"].includes(
-                      cleanPath
-                    ) &&
-                    announces[cleanPath] && (
-                      <span className="absolute right-0 top-0.5 h-2 w-2 bg-orange-400">
-                        <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
+                    flagKey &&
+                    announces[flagKey] && (
+                      <span className="absolute right-2 top-0.3 h-2 w-2 rounded-full bg-orange-400">
+                        <span className="absolute inline-flex w-full h-full rounded-full bg-orange-400 opacity-75 animate-ping"></span>
                       </span>
                     )
                   );

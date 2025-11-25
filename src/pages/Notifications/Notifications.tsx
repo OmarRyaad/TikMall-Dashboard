@@ -46,25 +46,36 @@ const Notifications = () => {
     return phone.number || "";
   };
 
+  // Fetch both store owners and customers
   const fetchSelectedUsers = async () => {
     try {
-      const res = await fetch(
+      const endpoints = [
         "https://api.tik-mall.com/admin/api/bulk/store_owner/ids",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const data = await res.json();
+        "https://api.tik-mall.com/admin/api/bulk/customers/ids",
+      ];
 
-      const normalized = (data.users || []).map(
-        (u: { phone: string | { number: string; isVerified: boolean } }) => ({
-          ...u,
-          phone: normalizePhone(u.phone),
-        })
+      const requests = endpoints.map((url) =>
+        fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       );
 
-      setSelectedUsers(normalized);
-      setOriginalUsers(normalized);
+      const responses = await Promise.all(requests);
+      const dataArray = await Promise.all(responses.map((res) => res.json()));
+
+      let combinedUsers: User[] = [];
+      dataArray.forEach((data) => {
+        const users = data.users || [];
+        combinedUsers = [
+          ...combinedUsers,
+          ...users.map(
+            (u: {
+              phone: string | { number: string; isVerified: boolean };
+            }) => ({ ...u, phone: normalizePhone(u.phone) })
+          ),
+        ];
+      });
+
+      setSelectedUsers(combinedUsers);
+      setOriginalUsers(combinedUsers);
     } catch (error) {
       toast.error(
         lang === "ar"
