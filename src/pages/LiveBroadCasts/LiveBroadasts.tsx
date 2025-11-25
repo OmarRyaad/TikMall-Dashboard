@@ -13,31 +13,23 @@ import { useLanguage } from "../../context/LanguageContext";
 
 interface Broadcast {
   _id: string;
+  uid: string;
   title?: string;
   status?: string;
   createdAt: string;
   viewersCount?: number;
-
   streamedBy?: {
     _id: string;
     role: string;
     storeName: string;
   };
-
   storeDepartment?: {
     _id: string;
-    name: {
-      en: string;
-      ar: string;
-    };
-    description: {
-      en: string;
-      ar: string;
-    };
+    name: { en: string; ar: string };
+    description: { en: string; ar: string };
     icon: string;
   };
-
-  streamUrl?: string; // Add stream URL for iframe
+  streamUrl?: string;
 }
 
 const LiveBroadcasts = () => {
@@ -79,6 +71,73 @@ const LiveBroadcasts = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const startZigoBroadcast = async (uid: string) => {
+    try {
+      const token = localStorage.getItem("accessToken");
+      // Start the broadcast
+      const startRes = await fetch(
+        `https://api.zigo.cloud/broadcasts/${uid}/start`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.ZIGO_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (!startRes.ok) throw new Error("Failed to start broadcast");
+
+      // Fetch updated broadcast to get streamUrl
+      const updateRes = await fetch(
+        `https://api.tik-mall.com/admin/api/live-streams/${uid}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (updateRes.ok) {
+        const updatedBroadcast = await updateRes.json();
+        // Update local state
+        setBroadcasts((prev) =>
+          prev.map((b) =>
+            b.uid === uid
+              ? {
+                  ...b,
+                  streamUrl: updatedBroadcast.streamUrl,
+                  status: "active",
+                }
+              : b
+          )
+        );
+        // Set iframe for preview
+        setIframeUrl(updatedBroadcast.streamUrl); // Assuming it's HLS/m3u8 for iframe
+        alert("Broadcast started and preview opened!");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to start broadcast");
+    }
+  };
+
+  const endZigoBroadcast = async (uid: string) => {
+    try {
+      const res = await fetch(`https://api.zigo.cloud/broadcasts/${uid}/end`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.ZIGO_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!res.ok) throw new Error("Failed to end broadcast");
+      alert("Broadcast ended!");
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -282,15 +341,14 @@ const LiveBroadcasts = () => {
             {/* Action Buttons */}
             <div className="mt-4 flex gap-3">
               <button
-                onClick={() => setIframeUrl(broadcast.streamUrl ?? "")}
-                className="flex-1 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm font-semibold"
+                onClick={() => startZigoBroadcast(broadcast.uid)}
+                className="flex-1 px-3 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition text-sm font-semibold"
               >
-                {lang === "ar" ? "مشاهدة" : "Watch"}
+                {lang === "ar" ? "بدء البث" : "Start"}
               </button>
+
               <button
-                onClick={() =>
-                  alert(lang === "ar" ? "تم إنهاء البث" : "Broadcast Ended")
-                }
+                onClick={() => endZigoBroadcast(broadcast.uid)}
                 className="flex-1 px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition text-sm font-semibold"
               >
                 {lang === "ar" ? "إنهاء" : "End"}

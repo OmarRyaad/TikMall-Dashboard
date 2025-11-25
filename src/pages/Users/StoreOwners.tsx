@@ -11,6 +11,7 @@ import {
 import { useLanguage } from "../../context/LanguageContext";
 
 interface StoreOwner {
+  isApproved: boolean;
   _id: string;
   name: string;
   phone?: { number: string };
@@ -35,8 +36,6 @@ const StoreOwners = () => {
   const [searchValue, setSearchValue] = useState("");
 
   // View Popup //
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [viewUser, setViewUser] = useState<StoreOwner | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   /* DELETE MODAL */
@@ -70,8 +69,20 @@ const StoreOwners = () => {
       });
 
       const data = await res.json();
+      let owners = data.users || data.data?.results || [];
 
-      setStoreOwners(data.users || data.data?.results || []);
+      // Apply filter locally (not from API)
+      if (currentFilter !== "all" && currentFilter !== "") {
+        owners = owners.filter((owner: StoreOwner) =>
+          owner.typeOfStore?.some(
+            (t) => t[lang === "ar" ? "ar" : "en"] === currentFilter
+          )
+        );
+      }
+
+      setStoreOwners(owners);
+      // setStoreOwners(data.users || data.data?.results || []);
+
       setTotalPages(data.pagination?.pages || 1);
     } finally {
       setLoading(false);
@@ -153,29 +164,43 @@ const StoreOwners = () => {
     }
   };
 
-  const handleFilter = async (value: string) => {
-    setCurrentFilter(value);
-    setPage(1);
-
+  const handleApprove = async (id: string) => {
     try {
-      setLoading(true);
+      setActionLoading(true);
+
       const res = await fetch(
-        `https://api.tik-mall.com/admin/api/users/store_owner/${value}`,
+        `https://api.tik-mall.com/admin/api/approve/${id}`,
         {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          method: "PATCH",
+          headers: token
+            ? {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              }
+            : { "Content-Type": "application/json" },
         }
       );
 
-      const data = await res.json();
-      setStoreOwners(data.users || data.data?.results || []);
-      setTotalPages(data.pagination?.pages || 1);
-    } catch (err) {
-      console.error("Filter error:", err);
-      toast.error("Failed to apply filter");
+      if (!res.ok) throw new Error("Approval failed");
+
+      toast.success(
+        lang === "ar" ? "تم الموافقة على المتجر" : "Store approved successfully"
+      );
+
+      fetchStoreOwners(page);
+    } catch {
+      toast.error(
+        lang === "ar" ? "خطأ أثناء الموافقة" : "Error approving store"
+      );
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
+
+  // const handleFilterChange = (value: string) => {
+  //   setCurrentFilter(value);
+  //   setPage(1);
+  // };
 
   const handleDelete = async (id: string) => {
     setDeleteLoading(true);
@@ -281,7 +306,7 @@ const StoreOwners = () => {
           {/* Filter (under search) */}
           <div className="flex items-center gap-2 mt-2">
             {/* Icon */}
-            <svg
+            {/* <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -294,28 +319,27 @@ const StoreOwners = () => {
                 strokeLinejoin="round"
                 d="M10.5 6h3m-6 4.5h6m-4.5 4.5H15M4.5 6h.008v.008H4.5V6zm0 4.5h.008v.008H4.5v-.008zm0 4.5h.008v.008H4.5v-.008z"
               />
-            </svg>
+            </svg> */}
 
             {/* Label */}
-            <label className="font-medium text-gray-700 dark:text-gray-300">
-              {lang === "ar" ? "تصفية حسب النوع:" : "Filter by type:"}
-            </label>
+            {/* <label className="font-medium text-gray-700 dark:text-gray-300">
+              {lang === "ar" ? "تصفية حسب نوع المتجر:" : "Type of store:"}
+            </label> */}
 
             {/* SELECT */}
-            <select
+            {/* <select
+              className="px-3 py-2 border rounded-lg dark:bg-gray-800 dark:text-gray-300"
               value={currentFilter}
-              onChange={(e) => handleFilter(e.target.value)}
-              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 px-2 py-1 rounded text-gray-900 dark:text-gray-100"
+              onChange={(e) => handleFilterChange(e.target.value)}
             >
               <option value="all">{lang === "ar" ? "الكل" : "All"}</option>
-              <option value="active">{lang === "ar" ? "نشط" : "Active"}</option>
-              <option value="suspended">
-                {lang === "ar" ? "غير نشط" : "Suspended"}
-              </option>
-              <option value="electronics">
-                {lang === "ar" ? "إلكترونيات" : "Electronics"}
-              </option>
-            </select>
+
+              {storeTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select> */}
           </div>
         </div>
       </div>
@@ -440,15 +464,6 @@ const StoreOwners = () => {
                       <td className="px-4 py-3 text-center">
                         <div className="flex flex-col md:flex-row gap-2 justify-center">
                           <button
-                            onClick={() => {
-                              setViewUser(owner);
-                              setViewModalOpen(true);
-                            }}
-                            className="px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-500 text-white hover:bg-cyan-600 transition-colors"
-                          >
-                            {lang === "ar" ? "عرض" : "View"}
-                          </button>
-                          <button
                             disabled={actionLoading}
                             onClick={() =>
                               toggleActivation(owner._id, owner.isActive)
@@ -467,6 +482,7 @@ const StoreOwners = () => {
                               ? "تفعيل"
                               : "Activate"}
                           </button>
+
                           <button
                             onClick={() => {
                               setOwnerToDelete(owner._id);
@@ -476,6 +492,16 @@ const StoreOwners = () => {
                           >
                             {lang === "ar" ? "حذف" : "Delete"}
                           </button>
+
+                          {!owner.isApproved && (
+                            <button
+                              disabled={actionLoading}
+                              onClick={() => handleApprove(owner._id)}
+                              className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                            >
+                              {lang === "ar" ? "قبول" : "Accept"}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -557,54 +583,6 @@ const StoreOwners = () => {
                     : lang === "ar"
                     ? "حذف"
                     : "Delete"}
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* VIEW MODAL */}
-      <AnimatePresence>
-        {viewModalOpen && viewUser && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-          >
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
-              <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                {lang === "ar" ? "تفاصيل المستخدم" : "User Details"}
-              </h3>
-
-              <div className="space-y-3 text-gray-700 dark:text-gray-300">
-                <p>
-                  <strong>{lang === "ar" ? "الاسم:" : "Name:"}</strong>{" "}
-                  {viewUser.name}
-                </p>
-                <p>
-                  <strong>{lang === "ar" ? "الهاتف:" : "Phone:"}</strong>{" "}
-                  {viewUser?.phone?.number}
-                </p>
-                <p>
-                  <strong>{lang === "ar" ? "الحالة:" : "Status:"}</strong>{" "}
-                  {viewUser.isActive
-                    ? lang === "ar"
-                      ? "نشط"
-                      : "Active"
-                    : lang === "ar"
-                    ? "غير نشط"
-                    : "Inactive"}
-                </p>
-              </div>
-
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setViewModalOpen(false)}
-                  className="rounded-md border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
-                >
-                  {lang === "ar" ? "إغلاق" : "Close"}
                 </button>
               </div>
             </div>
