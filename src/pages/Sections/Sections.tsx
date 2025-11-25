@@ -3,7 +3,11 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Modal } from "../../components/ui/modal";
 import { toast, ToastContainer } from "react-toastify";
-import { Squares2X2Icon } from "@heroicons/react/24/outline";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  Squares2X2Icon,
+} from "@heroicons/react/24/outline";
 import { useLanguage } from "../../context/LanguageContext";
 
 interface Department {
@@ -125,13 +129,6 @@ const Sections = () => {
         return;
       }
 
-      if (!res.ok) {
-        toast.error(
-          data.error ||
-            (lang === "ar" ? "فشل حذف القسم" : "Failed to delete department")
-        );
-        return;
-      }
       setDepartments((prev) => prev.filter((d) => d._id !== deleteId));
       setDeleteModalOpen(false);
       setDeleteId(null);
@@ -336,6 +333,56 @@ const Sections = () => {
     }
   };
 
+  const swapDepartmentPositions = async (firstId: string, secondId: string) => {
+    if (!token) return;
+
+    try {
+      const res = await fetch(
+        "https://api.tik-mall.com/admin/api/departments/reorder",
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstDepartmentId: firstId,
+            secondDepartmentId: secondId,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.error || "Failed to reorder departments");
+
+      setDepartments((prev) => {
+        const index1 = prev.findIndex((d) => d._id === firstId);
+        const index2 = prev.findIndex((d) => d._id === secondId);
+        if (index1 === -1 || index2 === -1) return prev;
+
+        const newDepartments = [...prev];
+        [newDepartments[index1], newDepartments[index2]] = [
+          newDepartments[index2],
+          newDepartments[index1],
+        ];
+        return newDepartments;
+      });
+
+      toast.success(
+        lang === "ar"
+          ? "تم تبديل مواقع الأقسام بنجاح"
+          : "Departments reordered successfully"
+      );
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        lang === "ar"
+          ? "حدث خطأ أثناء تبديل الأقسام"
+          : "Error swapping departments"
+      );
+    }
+  };
+
   if (loading)
     return (
       <div className="flex items-center justify-center h-[80vh] bg-transparent">
@@ -489,6 +536,37 @@ const Sections = () => {
                       >
                         {lang === "ar" ? "حذف" : "Delete"}
                       </button>
+                      {/* Swap Up */}
+                      {idx > 0 && (
+                        <button
+                          onClick={() =>
+                            swapDepartmentPositions(
+                              departments[idx]._id,
+                              departments[idx - 1]._id
+                            )
+                          }
+                          className="px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm flex items-center gap-1"
+                        >
+                          <ArrowUpIcon className="w-4 h-4" />{" "}
+                          {lang === "ar" ? "أعلى" : "Up"}
+                        </button>
+                      )}
+
+                      {/* Swap Down */}
+                      {idx < departments.length - 1 && (
+                        <button
+                          onClick={() =>
+                            swapDepartmentPositions(
+                              departments[idx]._id,
+                              departments[idx + 1]._id
+                            )
+                          }
+                          className="px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm flex items-center gap-1"
+                        >
+                          <ArrowDownIcon className="w-4 h-4" />{" "}
+                          {lang === "ar" ? "أسفل" : "Down"}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
