@@ -9,13 +9,20 @@ export default defineConfig({
     svgr({
       svgrOptions: {
         icon: true,
-        // This will transform your SVG to a React component
+        // Transform SVGs to React components
         exportType: "named",
         namedExport: "ReactComponent",
       },
     }),
   ],
   server: {
-    port: 3000, // desired port
+    port: 3000,
+  },
+  build: {
+    outDir: "dist", // ensure Netlify publishes the correct folder
+    rollupOptions: {
+      // optional: keep paths relative for SPA routing
+      input: "/index.html",
+    },
   },
 });

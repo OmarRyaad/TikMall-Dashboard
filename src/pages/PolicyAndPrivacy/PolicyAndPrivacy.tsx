@@ -237,7 +237,7 @@ const PolicyAndPrivacy = () => {
               <div className="mt-5 flex justify-between items-center">
                 <button
                   onClick={() => openViewPage(p.name)}
-                  className="px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="px-4 py-4 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   {lang === "ar" ? "عرض" : "View"}
                 </button>
@@ -250,7 +250,7 @@ const PolicyAndPrivacy = () => {
                       )}`
                     )
                   }
-                  className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                  className="px-4 py-4 rounded-md text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
                 >
                   {lang === "ar" ? "تعديل" : "Edit"}
                 </button>
