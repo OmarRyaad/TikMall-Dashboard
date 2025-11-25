@@ -221,13 +221,19 @@ const AppSidebar: React.FC = () => {
               {(isExpanded || isHovered || isMobileOpen) && (
                 <span className="relative">
                   {nav.name}
-                  {["complaints", "media", "live-broad-casts"].includes(
-                    nav.path || ""
-                  ) && (
-                    <span className="absolute right-0 top-0.5 z-10 h-2 w-2 rounded-full bg-orange-400">
-                      <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
-                    </span>
-                  )}
+                  {(() => {
+                    const cleanPath = nav.path?.replace("/", "") || "";
+                    return (
+                      ["complaints", "media", "live-broad-casts"].includes(
+                        cleanPath
+                      ) &&
+                      announces[cleanPath] && (
+                        <span className="absolute right-0 top-0.5 h-2 w-2 bg-orange-400">
+                          <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
+                        </span>
+                      )
+                    );
+                  })()}
                 </span>
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
@@ -262,13 +268,19 @@ const AppSidebar: React.FC = () => {
                 {(isExpanded || isHovered || isMobileOpen) && (
                   <span className="menu-item-text">{nav.name}</span>
                 )}
-                {["complaints", "media", "live-broad-casts"].includes(
-                  nav.path || ""
-                ) && (
-                  <span className="absolute right-0 top-0.5 z-10 h-2 w-2 rounded-full bg-orange-400">
-                    <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
-                  </span>
-                )}
+                {(() => {
+                  const cleanPath = nav.path?.replace("/", "") || "";
+                  return (
+                    ["complaints", "media", "live-broad-casts"].includes(
+                      cleanPath
+                    ) &&
+                    announces[cleanPath] && (
+                      <span className="absolute right-0 top-0.5 h-2 w-2 bg-orange-400">
+                        <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
+                      </span>
+                    )
+                  );
+                })()}
               </Link>
             )
           )}
