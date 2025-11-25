@@ -212,63 +212,51 @@ const PolicyAndPrivacy = () => {
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {policies.map((p, index) => {
-            // Replace policy names
-            const displayName =
-              index === 0
-                ? lang === "ar"
-                  ? "الشروط والاحكام"
-                  : "Terms and Conditions"
-                : lang === "ar"
-                ? "السياسة والخصوصية"
-                : "Privacy and Policy";
-
-            return (
-              <div
-                key={p._id}
-                className="relative flex flex-col justify-between rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg transition-shadow p-5"
-              >
-                {/* Icon + Title */}
-                <div className="flex items-start gap-3">
-                  <DocumentTextIcon className="w-7 h-7 text-purple-600" />
-                  <h2 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 leading-tight">
-                    {displayName}
-                  </h2>
-                </div>
-
-                {/* Policy Preview */}
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 line-clamp-3">
-                  {(lang === "ar" ? p.policy.ar : p.policy.en)
-                    .replace(/<[^>]*>?/gm, "")
-                    .slice(0, 140)}
-                  ...
-                </p>
-
-                {/* Actions */}
-                <div className="mt-5 flex justify-between items-center">
-                  <button
-                    onClick={() => openViewPage(displayName)}
-                    className="px-4 py-4 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    {lang === "ar" ? "عرض" : "View"}
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      navigate(
-                        `/policy-and-Privacy/edit?name=${encodeURIComponent(
-                          p.name
-                        )}`
-                      )
-                    }
-                    className="px-4 py-4 rounded-md text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-                  >
-                    {lang === "ar" ? "تعديل" : "Edit"}
-                  </button>
-                </div>
+          {policies.map((p) => (
+            <div
+              key={p._id}
+              className="relative flex flex-col justify-between rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg transition-shadow p-5"
+            >
+              {/* Icon + Title */}
+              <div className="flex items-start gap-3">
+                <DocumentTextIcon className="w-7 h-7 text-purple-600" />
+                <h2 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 leading-tight">
+                  {p.name}
+                </h2>
               </div>
-            );
-          })}
+
+              {/* Policy Preview */}
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 line-clamp-3">
+                {(lang === "ar" ? p.policy.ar : p.policy.en)
+                  .replace(/<[^>]*>?/gm, "")
+                  .slice(0, 140)}
+                ...
+              </p>
+
+              {/* Actions */}
+              <div className="mt-5 flex justify-between items-center">
+                <button
+                  onClick={() => openViewPage(p.name)}
+                  className="px-4 py-4 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  {lang === "ar" ? "عرض" : "View"}
+                </button>
+
+                <button
+                  onClick={() =>
+                    navigate(
+                      `/policy-and-Privacy/edit?name=${encodeURIComponent(
+                        p.name
+                      )}`
+                    )
+                  }
+                  className="px-4 py-4 rounded-md text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                >
+                  {lang === "ar" ? "تعديل" : "Edit"}
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
