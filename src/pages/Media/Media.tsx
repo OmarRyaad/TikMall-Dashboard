@@ -1,10 +1,11 @@
+"use client";
 import { useEffect, useState } from "react";
 import {
   BuildingOffice2Icon,
   HeartIcon,
   PhotoIcon,
 } from "@heroicons/react/24/outline";
-import { ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -28,6 +29,7 @@ interface MediaItem {
   uploadedBy: UploadedBy;
   storeDepartment: StoreDepartment;
 }
+
 interface Department {
   _id: string;
   name: { en: string; ar: string };
@@ -47,8 +49,40 @@ const Media = () => {
     { _id: string; name: string }[]
   >([]);
 
+  const [selectedComment, setSelectedComment] = useState<{
+    mediaId: string;
+    comment: string;
+  } | null>(null);
+
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+
+  const openCommentPopup = (mediaId: string, description: string) => {
+    setSelectedComment({ mediaId, comment: description });
+  };
+
+  const closeCommentPopup = () => setSelectedComment(null);
+
+  const handleDeleteComment = async (mediaId: string) => {
+    try {
+      const res = await fetch(
+        `https://api.tik-mall.com/admin/api/media/${mediaId}/comment/${mediaId}`, // replace commentId if available
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to delete comment");
+      toast.success(lang === "ar" ? "تم حذف التعليق" : "Comment deleted");
+      closeCommentPopup();
+      // No media removal here
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        lang === "ar" ? "حدث خطأ أثناء الحذف" : "Error deleting comment"
+      );
+    }
+  };
 
   useEffect(() => {
     const fetchMedia = async () => {
@@ -64,7 +98,7 @@ const Media = () => {
         const items = data.items || [];
         setMedia(items);
 
-        // Extract Store Departments.....
+        // Extract Store Departments
         const uniqueDepartmentsMap: Record<string, string> = {};
         items.forEach((item: MediaItem) => {
           if (
@@ -224,9 +258,6 @@ const Media = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             <div className="absolute bottom-3 left-3 right-3 text-white opacity-0 transition-all duration-300 group-hover:opacity-100">
               <h3 className="truncate text-lg font-semibold">{item.title}</h3>
-              <p className="truncate group-hover:whitespace-normal text-sm text-gray-200 dark:text-gray-300">
-                {item.description}
-              </p>
               <div className="mt-2 flex items-center justify-between text-sm">
                 <span>{item.uploadedBy.storeName}</span>
                 <div className="flex items-center gap-3">
@@ -234,6 +265,12 @@ const Media = () => {
                     <HeartIcon className="h-4 w-4 text-red-400" />
                     <span>{item.likesCount}</span>
                   </div>
+                  <button
+                    onClick={() => openCommentPopup(item._id, item.description)}
+                    className="px-2 py-1 bg-blue-500 rounded text-white text-xs hover:bg-blue-600"
+                  >
+                    {lang === "ar" ? "عرض التعليق" : "View Comment"}
+                  </button>
                 </div>
               </div>
             </div>
@@ -245,6 +282,32 @@ const Media = () => {
           </div>
         )}
       </div>
+
+      {/* Comment Popup */}
+      {selectedComment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl w-11/12 max-w-lg">
+            <h3 className="text-lg font-bold mb-4">
+              {lang === "ar" ? "التعليق بالكامل" : "Full Comment"}
+            </h3>
+            <p className="mb-6">{selectedComment.comment}</p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={closeCommentPopup}
+                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600"
+              >
+                {lang === "ar" ? "إلغاء" : "Cancel"}
+              </button>
+              <button
+                onClick={() => handleDeleteComment(selectedComment.mediaId)}
+                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
+              >
+                {lang === "ar" ? "حذف" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
