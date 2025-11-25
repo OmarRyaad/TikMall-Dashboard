@@ -218,9 +218,8 @@ const PolicyEdit = () => {
       </button>
 
       {/* Policy Title */}
-      {/* Policy Title */}
       <h1 className="text-3xl md:text-4xl font-bold text-blue-600 text-center">
-        {lang === "ar" ? "الشروط والاحكام" : "Terms and Conditions"}
+        {policy.name}
       </h1>
 
       {/* Language Toggle */}
