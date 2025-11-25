@@ -18,7 +18,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { ArrowUpIcon } from "../../icons";
 import { ToastContainer } from "react-toastify";
-import MonthlySalesChart from "../../components/ecommerce/MonthlySalesChart";
 import StatisticsChart from "../../components/ecommerce/StatisticsChart";
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -517,10 +516,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* --- CHARTS --- */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-            <MonthlySalesChart />
-          </div>
           <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
             <StatisticsChart />
           </div>

@@ -1,15 +1,22 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
-import ChartTab from "../common/ChartTab";
 import { useLanguage } from "../../context/LanguageContext";
+
+interface StatsResponse {
+  data: {
+    monthLabels: string[];
+    customers?: { month: string; count: number }[];
+    streams?: { month: string; count: number }[];
+  };
+}
 
 export default function StatisticsChart() {
   const { lang } = useLanguage();
   const isRTL = lang === "ar";
 
-  // ترجمة الأشهر
   const months =
     lang === "ar"
       ? [
@@ -41,6 +48,51 @@ export default function StatisticsChart() {
           "Dec",
         ];
 
+  const [userData, setUserData] = useState<number[]>(new Array(12).fill(0));
+  const [streamData, setStreamData] = useState<number[]>(new Array(12).fill(0));
+
+  const token = localStorage.getItem("accessToken");
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const [usersRes, streamsRes] = await Promise.all([
+          fetch(
+            `https://api.tik-mall.com/admin/api/stats/charts/monthly-users`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          ),
+          fetch(
+            `https://api.tik-mall.com/admin/api/stats/charts/monthly-streams`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          ),
+        ]);
+
+        if (!usersRes.ok || !streamsRes.ok) {
+          console.error("API error:", usersRes.status, streamsRes.status);
+          return;
+        }
+
+        const usersJson: StatsResponse = await usersRes.json();
+        const streamsJson: StatsResponse = await streamsRes.json();
+
+        setUserData(
+          usersJson.data.customers?.map((c) => c.count) || new Array(12).fill(0)
+        );
+        setStreamData(
+          streamsJson.data.streams?.map((s) => s.count) || new Array(12).fill(0)
+        );
+      } catch (err) {
+        console.error("Failed to fetch statistics", err);
+      }
+    }
+
+    fetchStats();
+  }, []);
+
   const options: ApexOptions = {
     legend: { show: false },
     colors: ["#465FFF", "#9CB9FF"],
@@ -51,17 +103,8 @@ export default function StatisticsChart() {
       toolbar: { show: false },
       foreColor: "#9ca3af",
     },
-    stroke: {
-      curve: "straight",
-      width: [2, 2],
-    },
-    fill: {
-      type: "gradient",
-      gradient: {
-        opacityFrom: 0.55,
-        opacityTo: 0,
-      },
-    },
+    stroke: { curve: "straight", width: [2, 2] },
+    fill: { type: "gradient", gradient: { opacityFrom: 0.55, opacityTo: 0 } },
     markers: {
       size: 0,
       strokeColors: "#fff",
@@ -89,9 +132,7 @@ export default function StatisticsChart() {
       axisBorder: { show: false },
       axisTicks: { show: false },
       tooltip: { enabled: false },
-      labels: {
-        style: { fontSize: "12px" },
-      },
+      labels: { style: { fontSize: "12px" } },
     },
     yaxis: {
       labels: {
@@ -104,12 +145,12 @@ export default function StatisticsChart() {
 
   const series = [
     {
-      name: lang === "ar" ? "المبيعات" : "Sales",
-      data: [180, 190, 170, 160, 175, 165, 170, 205, 230, 210, 240, 235],
+      name: lang === "ar" ? "المستخدمون الجدد" : "New Users",
+      data: userData,
     },
     {
-      name: lang === "ar" ? "الإيرادات" : "Revenue",
-      data: [40, 30, 50, 40, 55, 40, 70, 100, 110, 120, 150, 140],
+      name: lang === "ar" ? "البثوث المباشرة" : "Live Streams",
+      data: streamData,
     },
   ];
 
@@ -128,9 +169,6 @@ export default function StatisticsChart() {
               ? "الأهداف التي حددتها لكل شهر"
               : "Target you’ve set for each month"}
           </p>
-        </div>
-        <div className="flex items-start w-full gap-3 sm:justify-end">
-          <ChartTab />
         </div>
       </div>
 
