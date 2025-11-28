@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   ArrowPathIcon,
   BuildingOffice2Icon,
+  ChatBubbleOvalLeftIcon,
   HeartIcon,
   PhotoIcon,
   XMarkIcon,
@@ -381,7 +382,8 @@ const Media = () => {
                   onClick={() => openCommentPopup(item._id, item.description)}
                   className="flex items-center gap-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded w-full justify-center text-xs transition"
                 >
-                  💬 {lang === "ar" ? "التعليقات" : "Comments"}
+                  <ChatBubbleOvalLeftIcon className="w-4 h-4" />
+                  {lang === "ar" ? "التعليقات" : "Comments"}
                 </button>
               </div>
             </div>
