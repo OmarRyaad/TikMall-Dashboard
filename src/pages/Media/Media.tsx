@@ -318,40 +318,78 @@ const Media = () => {
       </div>
 
       {/* Media Grid */}
-      <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      {/* Facebook Style Feed - Compact Admin View */}
+      <div className="max-w-2xl mx-auto space-y-4">
         {media.map((item) => (
           <div
             key={item._id}
-            className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md transition-all hover:shadow-lg dark:border-gray-700 dark:bg-white/[0.03]"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden"
           >
-            <img
-              src={item.thumbnailUrl}
-              alt={item.title}
-              className="h-56 w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-            <div className="absolute bottom-3 left-3 right-3 text-white opacity-0 transition-all duration-300 group-hover:opacity-100">
-              <h3 className="truncate text-lg font-semibold">{item.title}</h3>
-              <div className="mt-2 flex items-center justify-between text-sm">
-                <span>{item.uploadedBy.storeName}</span>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <HeartIcon className="h-4 w-4 text-red-400" />
-                    <span>{item.likesCount}</span>
-                  </div>
-                  <button
-                    onClick={() => openCommentPopup(item._id, item.description)}
-                    className="px-2 py-1 bg-blue-500 rounded text-white text-xs hover:bg-blue-600"
-                  >
-                    {lang === "ar" ? "عرض التعليق" : "View Comment"}
-                  </button>
-                </div>
+            {/* Header */}
+            <div className="flex items-center gap-2 px-3 py-2">
+              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold">
+                {item.uploadedBy?.name?.charAt(0)}
+              </div>
+
+              <div className="flex-1">
+                <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                  {item.uploadedBy?.name}
+                </p>
+
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {item.storeDepartment?.name?.[lang]}
+                </p>
+              </div>
+            </div>
+
+            {/* Description */}
+            {item.description && (
+              <p className="px-3 pb-2 text-gray-800 dark:text-gray-200 text-xs leading-relaxed">
+                {item.description}
+              </p>
+            )}
+
+            {/* Media */}
+            <div className="w-full max-h-[280px] overflow-hidden">
+              {item.thumbnailUrl.includes("mp4") ? (
+                <video controls className="w-full rounded-none">
+                  <source src={item.thumbnailUrl} />
+                </video>
+              ) : (
+                <img
+                  src={item.thumbnailUrl}
+                  alt={item.title}
+                  className="w-full object-cover"
+                />
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="px-3 py-2">
+              {/* Likes Count */}
+              <div className="flex items-center gap-1 mb-2">
+                <HeartIcon className="w-4 h-4 text-red-500" />
+                <span className="text-gray-600 dark:text-gray-300 text-xs">
+                  {item.likesCount} {lang === "ar" ? "إعجاب" : "Likes"}
+                </span>
+              </div>
+
+              {/* Buttons Row */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex items-center justify-around">
+                {/* Comment Button */}
+                <button
+                  onClick={() => openCommentPopup(item._id, item.description)}
+                  className="flex items-center gap-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded w-full justify-center text-xs transition"
+                >
+                  💬 {lang === "ar" ? "التعليقات" : "Comments"}
+                </button>
               </div>
             </div>
           </div>
         ))}
+
         {media.length === 0 && (
-          <div className="col-span-full text-center text-gray-500 dark:text-gray-400">
+          <div className="text-center text-gray-500 dark:text-gray-400 text-sm py-6">
             {lang === "ar" ? "لا توجد وسائط" : "No media found."}
           </div>
         )}

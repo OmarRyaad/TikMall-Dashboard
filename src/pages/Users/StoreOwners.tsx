@@ -34,10 +34,8 @@ const StoreOwners = () => {
 
   const [storeOwners, setStoreOwners] = useState<StoreOwner[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
-
-  // View Popup //
   const [actionLoading, setActionLoading] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
 
   /* DELETE MODAL */
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -499,7 +497,7 @@ const StoreOwners = () => {
                               setOwnerToDelete(owner._id);
                               setDeleteModalOpen(true);
                             }}
-                            className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                            className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
                           >
                             {lang === "ar" ? "حذف" : "Delete"}
                           </button>

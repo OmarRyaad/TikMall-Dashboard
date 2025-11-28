@@ -24,6 +24,7 @@ const Customers = () => {
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
   // PAGINATION
@@ -86,6 +87,46 @@ const Customers = () => {
       setCustomers([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleActivation = async (id: string, current: boolean) => {
+    try {
+      setActionLoading(true);
+
+      const endpoint = current
+        ? `https://api.tik-mall.com/admin/api/suspend/${id}` // Suspend if currently active
+        : `https://api.tik-mall.com/admin/api/reactivate/${id}`; // Reactivate if currently inactive
+
+      const res = await fetch(endpoint, {
+        method: "PATCH",
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            }
+          : { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) throw new Error("Failed");
+
+      toast.success(
+        current
+          ? lang === "ar"
+            ? "تم إلغاء التفعيل"
+            : "Deactivated"
+          : lang === "ar"
+          ? "تم التفعيل"
+          : "Activated"
+      );
+
+      fetchCustomers(page);
+    } catch {
+      toast.error(
+        lang === "ar" ? "خطأ أثناء تغيير الحالة" : "Error updating status"
+      );
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -284,7 +325,26 @@ const Customers = () => {
                             : "Inactive"}
                         </span>
                       </td>
-                      <td className="px-4 md:px-6 py-3">
+                      <td className="px-4 md:px-6 py-3 flex gap-2">
+                        <button
+                          disabled={actionLoading}
+                          onClick={() =>
+                            toggleActivation(cust._id, cust.isActive)
+                          }
+                          className={`px-2 py-1 text-sm rounded text-white ${
+                            cust.isActive
+                              ? "bg-yellow-500 hover:bg-yellow-600"
+                              : "bg-green-500 hover:bg-green-600"
+                          }`}
+                        >
+                          {cust.isActive
+                            ? lang === "ar"
+                              ? "إلغاء التفعيل"
+                              : "Deactivate"
+                            : lang === "ar"
+                            ? "تفعيل"
+                            : "Activate"}
+                        </button>
                         <button
                           onClick={() => {
                             setCustomerToDelete(cust._id);
