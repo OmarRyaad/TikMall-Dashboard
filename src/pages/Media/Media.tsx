@@ -397,7 +397,7 @@ const Media = () => {
 
       {/* Comment Popup */}
       {selectedComment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-2">
+        <div className="fixed inset-0 mt-15 z-50 flex items-center justify-center bg-black/40 p-2">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-xl w-full max-w-md max-h-[80vh] overflow-y-auto relative shadow-lg">
             {/* Close Button */}
             <button
