@@ -37,7 +37,7 @@ const Complaints = () => {
       const params = new URLSearchParams({
         status: status === "all" ? "" : status,
         page: page.toString(),
-        limit: "10",
+        limit: "15",
       });
 
       const res = await fetch(

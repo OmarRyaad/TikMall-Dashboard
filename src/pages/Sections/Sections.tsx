@@ -3,12 +3,28 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Modal } from "../../components/ui/modal";
 import { toast, ToastContainer } from "react-toastify";
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  Squares2X2Icon,
-} from "@heroicons/react/24/outline";
+import { Squares2X2Icon, Bars3Icon } from "@heroicons/react/24/outline";
 import { useLanguage } from "../../context/LanguageContext";
+
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Department {
   _id: string;
@@ -42,8 +58,19 @@ const Sections = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [keepOpen, setKeepOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : "";
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Fetch departments
   useEffect(() => {
@@ -114,7 +141,6 @@ const Sections = () => {
 
       if (!res.ok) {
         const backendError = data.error;
-
         const translated =
           lang === "ar" &&
           backendError ===
@@ -333,8 +359,23 @@ const Sections = () => {
     }
   };
 
-  const swapDepartmentPositions = async (firstId: string, secondId: string) => {
-    if (!token) return;
+  // Drag & Drop Handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      setActiveDragId(null);
+      return;
+    }
+
+    const oldIndex = departments.findIndex((d) => d._id === active.id);
+    const newIndex = departments.findIndex((d) => d._id === over.id);
+
+    const newOrder = arrayMove(departments, oldIndex, newIndex);
+    setDepartments(newOrder);
 
     try {
       const res = await fetch(
@@ -346,41 +387,107 @@ const Sections = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            firstDepartmentId: firstId,
-            secondDepartmentId: secondId,
+            firstDepartmentId: active.id,
+            secondDepartmentId: over.id,
           }),
         }
       );
-      const data = await res.json();
-      if (!res.ok)
-        throw new Error(data.error || "Failed to reorder departments");
 
-      setDepartments((prev) => {
-        const index1 = prev.findIndex((d) => d._id === firstId);
-        const index2 = prev.findIndex((d) => d._id === secondId);
-        if (index1 === -1 || index2 === -1) return prev;
-
-        const newDepartments = [...prev];
-        [newDepartments[index1], newDepartments[index2]] = [
-          newDepartments[index2],
-          newDepartments[index1],
-        ];
-        return newDepartments;
-      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to save order");
+      }
 
       toast.success(
-        lang === "ar"
-          ? "تم تبديل مواقع الأقسام بنجاح"
-          : "Departments reordered successfully"
+        lang === "ar" ? "تم تحديث الترتيب بنجاح" : "Order updated successfully"
       );
-    } catch (err) {
-      console.error(err);
-      toast.error(
-        lang === "ar"
-          ? "حدث خطأ أثناء تبديل الأقسام"
-          : "Error swapping departments"
-      );
+    } catch {
+      toast.error(lang === "ar" ? "فشل حفظ الترتيب" : "Failed to save order");
+      setDepartments(departments); // revert
+    } finally {
+      setActiveDragId(null);
     }
+  };
+
+  // Sortable Row Component
+  const SortableRow = ({
+    dept,
+    index,
+  }: {
+    dept: Department;
+    index: number;
+  }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: dept._id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+    };
+
+    return (
+      <tr
+        ref={setNodeRef}
+        style={style}
+        className={`bg-white dark:bg-gray-900 ${
+          isDragging ? "opacity-50" : ""
+        }`}
+      >
+        <td className="py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90">
+          <div className="flex items-center gap-3">
+            <button
+              {...listeners}
+              {...attributes}
+              className="cursor-grab active:cursor-grabbing touch-none"
+            >
+              <Bars3Icon className="w-6 h-6 text-gray-400 hover:text-gray-600" />
+            </button>
+            <span>{index + 1}</span>
+          </div>
+        </td>
+        <td className="py-3 px-4">
+          <img
+            src={dept.icon || "/placeholder.jpg"}
+            alt={dept.name.en}
+            className="h-12 w-12 rounded-md object-cover"
+          />
+        </td>
+        <td
+          className={`py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90 ${
+            isRTL ? "text-right" : "text-left"
+          }`}
+        >
+          {lang === "ar" ? dept.name.ar : dept.name.en}
+        </td>
+        <td
+          className={`py-3 px-4 text-sm text-gray-600 dark:text-gray-300 ${
+            isRTL ? "text-right" : "text-left"
+          }`}
+        >
+          {lang === "ar" ? dept.description.ar : dept.description.en}
+        </td>
+        <td className="py-3 px-4 flex gap-2">
+          <button
+            onClick={() => handleEdit(dept)}
+            className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+          >
+            {lang === "ar" ? "تعديل" : "Edit"}
+          </button>
+          <button
+            onClick={() => handleDeleteClick(dept._id)}
+            className="px-3 py-1.5 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+          >
+            {lang === "ar" ? "حذف" : "Delete"}
+          </button>
+        </td>
+      </tr>
+    );
   };
 
   if (loading)
@@ -419,6 +526,10 @@ const Sections = () => {
       </div>
     );
 
+  const activeDept = activeDragId
+    ? departments.find((d) => d._id === activeDragId)
+    : null;
+
   return (
     <div dir={isRTL ? "rtl" : "ltr"}>
       <ToastContainer
@@ -426,6 +537,7 @@ const Sections = () => {
         autoClose={5000}
         toastClassName="!z-[9999]"
       />
+
       <h2
         className="flex items-center gap-2 text-2xl md:text-3xl font-bold mb-4"
         style={{ color: "#456FFF" }}
@@ -434,423 +546,385 @@ const Sections = () => {
         {lang === "ar" ? "الأقسام" : "Sections"}
       </h2>
 
-      {/* Add Button */}
       <div className="mb-4 flex justify-end">
         <button
           onClick={handleAdd}
-          className="mb-4 px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300"
+          className="px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300"
         >
           + {lang === "ar" ? "إضافة قسم" : "Add Section"}
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/3 sm:px-6">
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3">
         <div className="max-w-full overflow-x-auto">
-          <table className="min-w-full border-collapse">
-            <thead className="border-y border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30">
-              <tr>
-                <th
-                  className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
-                    isRTL ? "text-right" : "text-left"
-                  }`}
-                >
-                  #
-                </th>
-                <th
-                  className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
-                    isRTL ? "text-right" : "text-left"
-                  }`}
-                >
-                  {lang === "ar" ? "الأيقونة" : "Icon"}
-                </th>
-                <th
-                  className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
-                    isRTL ? "text-right" : "text-left"
-                  }`}
-                >
-                  {lang === "ar" ? "الاسم" : "Name"}
-                </th>
-                <th
-                  className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
-                    isRTL ? "text-right" : "text-left"
-                  }`}
-                >
-                  {lang === "ar" ? "الوصف" : "Description"}
-                </th>
-                <th
-                  className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
-                    isRTL ? "text-right" : "text-left"
-                  }`}
-                >
-                  {lang === "ar" ? "الإجراءات" : "Actions"}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {departments.length ? (
-                departments.map((dept, idx) => (
-                  <tr
-                    key={dept._id}
-                    className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60"
-                  >
-                    <td
-                      className={`py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90 ${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
-                      {idx + 1}
-                    </td>
-                    <td className="py-3 px-4">
-                      <img
-                        src={dept?.icon || "/placeholder.jpg"}
-                        alt={dept?.name?.en}
-                        className="h-12 w-12 rounded-md object-cover"
-                      />
-                    </td>
-                    <td
-                      className={`py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90 ${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
-                      {lang === "ar" ? dept.name.ar : dept.name.en}
-                    </td>
-                    <td
-                      className={`py-3 px-4 text-sm font-medium text-gray-800 dark:text-white/90 ${
-                        isRTL ? "text-right" : "text-left"
-                      }`}
-                    >
-                      {lang === "ar"
-                        ? dept.description.ar
-                        : dept.description.en}
-                    </td>
-                    <td className="py-3 px-4 flex gap-2">
-                      <button
-                        onClick={() => handleEdit(dept)}
-                        className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-                      >
-                        {lang === "ar" ? "تعديل" : "Edit"}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(dept._id)}
-                        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-                      >
-                        {lang === "ar" ? "حذف" : "Delete"}
-                      </button>
-                      {/* Swap Up */}
-                      {idx > 0 && (
-                        <button
-                          onClick={() =>
-                            swapDepartmentPositions(
-                              departments[idx]._id,
-                              departments[idx - 1]._id
-                            )
-                          }
-                          className="px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm flex items-center gap-1"
-                        >
-                          <ArrowUpIcon className="w-4 h-4" />{" "}
-                          {lang === "ar" ? "أعلى" : "Up"}
-                        </button>
-                      )}
-
-                      {/* Swap Down */}
-                      {idx < departments.length - 1 && (
-                        <button
-                          onClick={() =>
-                            swapDepartmentPositions(
-                              departments[idx]._id,
-                              departments[idx + 1]._id
-                            )
-                          }
-                          className="px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm flex items-center gap-1"
-                        >
-                          <ArrowDownIcon className="w-4 h-4" />{" "}
-                          {lang === "ar" ? "أسفل" : "Down"}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <table className="min-w-full border-collapse">
+              <thead className="border-y border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/30">
                 <tr>
-                  <td
-                    className="py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400"
-                    colSpan={5}
+                  <th
+                    className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
                   >
-                    {lang === "ar"
-                      ? "لا توجد أقسام متاحة"
-                      : "No departments available"}
-                  </td>
+                    #
+                  </th>
+                  <th
+                    className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
+                  >
+                    {lang === "ar" ? "الأيقونة" : "Icon"}
+                  </th>
+                  <th
+                    className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
+                  >
+                    {lang === "ar" ? "الاسم" : "Name"}
+                  </th>
+                  <th
+                    className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
+                  >
+                    {lang === "ar" ? "الوصف" : "Description"}
+                  </th>
+                  <th
+                    className={`py-3 px-4 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
+                      isRTL ? "text-right" : "text-left"
+                    }`}
+                  >
+                    {lang === "ar" ? "الإجراءات" : "Actions"}
+                  </th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
 
-        {/* Edit / Add Modal */}
-        <AnimatePresence>
-          {isOpen && (
-            <>
-              <motion.div
-                className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-40"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={handleCancel}
-              />
-              <motion.div
-                className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
+              <SortableContext
+                items={departments.map((d) => d._id)}
+                strategy={verticalListSortingStrategy}
               >
-                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-6">
-                  <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-                    {isEditMode
-                      ? lang === "ar"
-                        ? "تعديل القسم"
-                        : "Edit Section"
-                      : lang === "ar"
-                      ? "إضافة قسم جديد"
-                      : "Add New Section"}
-                  </h2>
-
-                  <div className="space-y-6">
-                    {/* Names Row - Arabic & English side by side */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Name Arabic */}
-                      <div className="flex flex-col">
-                        <label
-                          htmlFor="nameAr"
-                          className="text-sm text-gray-700 dark:text-gray-300 mb-1"
-                        >
-                          {lang === "ar" ? "الاسم (العربية)" : "Name (Arabic)"}
-                        </label>
-                        <input
-                          id="nameAr"
-                          type="text"
-                          name="nameAr"
-                          placeholder={
-                            lang === "ar" ? "الاسم (العربية)" : "Name (Arabic)"
-                          }
-                          value={formData.nameAr}
-                          onChange={handleChange}
-                          className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded text-gray-800 dark:text-white"
-                        />
-                      </div>
-
-                      {/* Name English */}
-                      <div className="flex flex-col">
-                        <label
-                          htmlFor="nameEn"
-                          className="text-sm text-gray-700 dark:text-gray-300 mb-1"
-                        >
-                          {lang === "ar"
-                            ? "الاسم (الإنجليزية)"
-                            : "Name (English)"}
-                        </label>
-                        <input
-                          id="nameEn"
-                          type="text"
-                          name="nameEn"
-                          placeholder={
-                            lang === "ar"
-                              ? "الاسم (الإنجليزية)"
-                              : "Name (English)"
-                          }
-                          value={formData.nameEn}
-                          onChange={handleChange}
-                          className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded text-gray-800 dark:text-white"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Descriptions Row - Arabic & English side by side */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Description Arabic */}
-                      <div className="flex flex-col">
-                        <label
-                          htmlFor="descAr"
-                          className="text-sm text-gray-700 dark:text-gray-300 mb-1"
-                        >
-                          {lang === "ar"
-                            ? "الوصف (العربية)"
-                            : "Description (Arabic)"}
-                        </label>
-                        <textarea
-                          id="descAr"
-                          name="descAr"
-                          placeholder={
-                            lang === "ar"
-                              ? "الوصف (العربية)"
-                              : "Description (Arabic)"
-                          }
-                          value={formData.descAr}
-                          onChange={handleChange}
-                          className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20 text-gray-800 dark:text-white resize-none"
-                        />
-                      </div>
-
-                      {/* Description English */}
-                      <div className="flex flex-col">
-                        <label
-                          htmlFor="descEn"
-                          className="text-sm text-gray-700 dark:text-gray-300 mb-1"
-                        >
-                          {lang === "ar"
-                            ? "الوصف (الإنجليزية)"
-                            : "Description (English)"}
-                        </label>
-                        <textarea
-                          id="descEn"
-                          name="descEn"
-                          placeholder={
-                            lang === "ar"
-                              ? "الوصف (الإنجليزية)"
-                              : "Description (English)"
-                          }
-                          value={formData.descEn}
-                          onChange={handleChange}
-                          className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20 text-gray-800 dark:text-white resize-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mt-2 flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="keepOpen"
-                        checked={keepOpen}
-                        onChange={() => setKeepOpen((prev) => !prev)}
-                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                      />
-                      <label
-                        htmlFor="keepOpen"
-                        className="text-sm text-gray-700 dark:text-gray-300"
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {departments.length > 0 ? (
+                    departments.map((dept, idx) => (
+                      <SortableRow key={dept._id} dept={dept} index={idx} />
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="py-12 text-center text-gray-500"
                       >
                         {lang === "ar"
-                          ? "إضافة عدة أقسام دون إغلاق النافذة"
-                          : "Add multiple sections without closing"}
-                      </label>
-                    </div>
+                          ? "لا توجد أقسام متاحة"
+                          : "No departments available"}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </SortableContext>
+            </table>
 
-                    <div className="flex items-center space-x-4 flex-wrap mt-2">
-                      <label className="cursor-pointer bg-blue-600 text-white px.4 p-2 rounded-md hover:bg-blue-700 transition">
-                        {lang === "ar" ? "اختر الأيقونات" : "Choose Icons"}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleIconChange}
-                          className="hidden"
+            <DragOverlay>
+              {activeDept ? (
+                <table className="w-full">
+                  <tbody>
+                    <tr className="bg-white dark:bg-gray-900 shadow-2xl border-2 border-blue-500 rounded-lg">
+                      <td className="py-3 px-4">
+                        <Bars3Icon className="w-6 h-6 text-gray-500" />
+                      </td>
+                      <td className="py-3 px-4">
+                        <img
+                          src={activeDept.icon || "/placeholder.jpg"}
+                          alt=""
+                          className="h-12 w-12 rounded-md object-cover"
                         />
+                      </td>
+                      <td
+                        className={`py-3 px-4 font-medium ${
+                          isRTL ? "text-right" : "text-left"
+                        }`}
+                      >
+                        {lang === "ar"
+                          ? activeDept.name.ar
+                          : activeDept.name.en}
+                      </td>
+                      <td
+                        className={`py-3 px-4 text-sm text-gray-600 ${
+                          isRTL ? "text-right" : "text-left"
+                        }`}
+                      >
+                        {lang === "ar"
+                          ? activeDept.description.ar
+                          : activeDept.description.en}
+                      </td>
+                      <td className="py-3 px-4"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </div>
+      </div>
+
+      {/* Your full modal code remains unchanged */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <motion.div
+              className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCancel}
+            />
+            <motion.div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+            >
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md p-6">
+                <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+                  {isEditMode
+                    ? lang === "ar"
+                      ? "تعديل القسم"
+                      : "Edit Section"
+                    : lang === "ar"
+                    ? "إضافة قسم جديد"
+                    : "Add New Section"}
+                </h2>
+
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col">
+                      <label
+                        htmlFor="nameAr"
+                        className="text-sm text-gray-700 dark:text-gray-300 mb-1"
+                      >
+                        {lang === "ar" ? "الاسم (العربية)" : "Name (Arabic)"}
                       </label>
-
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {formData.icons.length ? (
-                          formData.icons.map((icon, idx) => (
-                            <div
-                              key={idx}
-                              className="relative h-12 w-12 rounded-md border border-gray-300 dark:border-gray-700 overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800"
-                            >
-                              {icon.loading && (
-                                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                              )}
-
-                              {!icon.loading && icon.url && (
-                                <img
-                                  src={icon.url}
-                                  className="absolute inset-0 w-full h-full object-cover"
-                                />
-                              )}
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    icons: prev.icons.filter(
-                                      (_, i) => i !== idx
-                                    ),
-                                  }))
-                                }
-                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="h-12 w-12 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500">
-                            {lang === "ar" ? "لا توجد أيقونات" : "No Icons"}
-                          </div>
-                        )}
-                      </div>
+                      <input
+                        id="nameAr"
+                        type="text"
+                        name="nameAr"
+                        placeholder={
+                          lang === "ar" ? "الاسم (العربية)" : "Name (Arabic)"
+                        }
+                        value={formData.nameAr}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded text-gray-800 dark:text-white"
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <label
+                        htmlFor="nameEn"
+                        className="text-sm text-gray-700 dark:text-gray-300 mb-1"
+                      >
+                        {lang === "ar"
+                          ? "الاسم (الإنجليزية)"
+                          : "Name (English)"}
+                      </label>
+                      <input
+                        id="nameEn"
+                        type="text"
+                        name="nameEn"
+                        placeholder={
+                          lang === "ar"
+                            ? "الاسم (الإنجليزية)"
+                            : "Name (English)"
+                        }
+                        value={formData.nameEn}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded text-gray-800 dark:text-white"
+                      />
                     </div>
                   </div>
 
-                  <div className="mt-6 flex justify-end gap-3">
-                    <button
-                      onClick={handleCancel}
-                      className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white transition-all"
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col">
+                      <label
+                        htmlFor="descAr"
+                        className="text-sm text-gray-700 dark:text-gray-300 mb-1"
+                      >
+                        {lang === "ar"
+                          ? "الوصف (العربية)"
+                          : "Description (Arabic)"}
+                      </label>
+                      <textarea
+                        id="descAr"
+                        name="descAr"
+                        placeholder={
+                          lang === "ar"
+                            ? "الوصف (العربية)"
+                            : "Description (Arabic)"
+                        }
+                        value={formData.descAr}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20 text-gray-800 dark:text-white resize-none"
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <label
+                        htmlFor="descEn"
+                        className="text-sm text-gray-700 dark:text-gray-300 mb-1"
+                      >
+                        {lang === "ar"
+                          ? "الوصف (الإنجليزية)"
+                          : "Description (English)"}
+                      </label>
+                      <textarea
+                        id="descEn"
+                        name="descEn"
+                        placeholder={
+                          lang === "ar"
+                            ? "الوصف (الإنجليزية)"
+                            : "Description (English)"
+                        }
+                        value={formData.descEn}
+                        onChange={handleChange}
+                        className="w-full border border-gray-300 dark:border-gray-700 dark:bg-gray-800 p-2 rounded h-20 text-gray-800 dark:text-white resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="keepOpen"
+                      checked={keepOpen}
+                      onChange={() => setKeepOpen((prev) => !prev)}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor="keepOpen"
+                      className="text-sm text-gray-700 dark:text-gray-300"
                     >
-                      {lang === "ar" ? "إلغاء" : "Cancel"}
-                    </button>
-                    <button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className={`px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-all flex items-center justify-center gap-2 ${
-                        saving ? "opacity-70 cursor-not-allowed" : ""
-                      }`}
-                    >
-                      {saving && (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      {lang === "ar"
+                        ? "إضافة عدة أقسام دون إغلاق النافذة"
+                        : "Add multiple sections without closing"}
+                    </label>
+                  </div>
+
+                  <div className="flex items-center space-x-4 flex-wrap mt-2">
+                    <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                      {lang === "ar" ? "اختر الأيقونات" : "Choose Icons"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleIconChange}
+                        className="hidden"
+                      />
+                    </label>
+
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {formData.icons.length ? (
+                        formData.icons.map((icon, idx) => (
+                          <div
+                            key={idx}
+                            className="relative h-12 w-12 rounded-md border border-gray-300 dark:border-gray-700 overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800"
+                          >
+                            {icon.loading && (
+                              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                            )}
+                            {!icon.loading && icon.url && (
+                              <img
+                                src={icon.url}
+                                className="absolute inset-0 w-full h-full object-cover"
+                                alt="icon"
+                              />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  icons: prev.icons.filter((_, i) => i !== idx),
+                                }))
+                              }
+                              className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="h-12 w-12 rounded-md border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-500">
+                          {lang === "ar" ? "لا توجد أيقونات" : "No Icons"}
+                        </div>
                       )}
-                      {isEditMode
-                        ? lang === "ar"
-                          ? "حفظ"
-                          : "Save"
-                        : lang === "ar"
-                        ? "إنشاء"
-                        : "Create"}
-                    </button>
+                    </div>
                   </div>
                 </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
 
-        {/* DELETE MODAL */}
-        <Modal
-          isOpen={deleteModalOpen}
-          onClose={() => setDeleteModalOpen(false)}
-          className={`max-w-md p-6 transform transition-all duration-300
-        ${deleteModalOpen ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}
-        >
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-            {lang === "ar" ? "حذف القسم" : "Delete Section"}
-          </h3>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-            {lang === "ar"
-              ? "هل أنت متأكد من حذف هذا القسم نهائيًا؟"
-              : "Are you sure you want to delete this section?"}
-          </p>
-          <div className="mt-4 flex justify-end gap-3">
-            <button
-              onClick={() => setDeleteModalOpen(false)}
-              className="rounded-md px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
-            >
-              {lang === "ar" ? "إلغاء" : "Cancel"}
-            </button>
-            <button
-              onClick={handleConfirmDelete}
-              className="rounded-md px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700"
-            >
-              {lang === "ar" ? "حذف" : "Delete"}
-            </button>
-          </div>
-        </Modal>
-      </div>
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    onClick={handleCancel}
+                    className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white transition-all"
+                  >
+                    {lang === "ar" ? "إلغاء" : "Cancel"}
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className={`px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-all flex items-center justify-center gap-2 ${
+                      saving ? "opacity-70 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    {saving && (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    )}
+                    {isEditMode
+                      ? lang === "ar"
+                        ? "حفظ"
+                        : "Save"
+                      : lang === "ar"
+                      ? "إنشاء"
+                      : "Create"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        className={`max-w-md p-6 transform transition-all duration-300 ${
+          deleteModalOpen ? "opacity-100 scale-100" : "opacity-0 scale-95"
+        }`}
+      >
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+          {lang === "ar" ? "حذف القسم" : "Delete Section"}
+        </h3>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+          {lang === "ar"
+            ? "هل أنت متأكد من حذف هذا القسم نهائيًا؟"
+            : "Are you sure you want to delete this section?"}
+        </p>
+        <div className="mt-4 flex justify-end gap-3">
+          <button
+            onClick={() => setDeleteModalOpen(false)}
+            className="rounded-md px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            {lang === "ar" ? "إلغاء" : "Cancel"}
+          </button>
+          <button
+            onClick={handleConfirmDelete}
+            className="rounded-md px-4 py-2 text-sm font-medium bg-red-600 text-white hover:bg-red-700"
+          >
+            {lang === "ar" ? "حذف" : "Delete"}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 };
