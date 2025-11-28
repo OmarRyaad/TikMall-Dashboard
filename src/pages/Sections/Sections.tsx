@@ -3,7 +3,11 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Modal } from "../../components/ui/modal";
 import { toast, ToastContainer } from "react-toastify";
-import { Squares2X2Icon, Bars3Icon } from "@heroicons/react/24/outline";
+import {
+  Squares2X2Icon,
+  Bars3Icon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
 import { useLanguage } from "../../context/LanguageContext";
 
 import {
@@ -73,22 +77,37 @@ const Sections = () => {
   );
 
   // Fetch departments
-  useEffect(() => {
+  const fetchDepartments = async () => {
     if (!token) return;
-    fetch("https://api.tik-mall.com/admin/api/all/departments", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch departments");
-        return res.json();
-      })
-      .then((data) => {
-        if (data?.departments?.length) setDepartments(data.departments);
-        else
-          setError(lang === "ar" ? "لا توجد أقسام" : "No departments found.");
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(
+        "https://api.tik-mall.com/admin/api/all/departments",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch departments");
+
+      const data = await res.json();
+
+      if (data?.departments?.length) {
+        setDepartments(data.departments);
+      } else {
+        setError(lang === "ar" ? "لا توجد أقسام" : "No departments found.");
+        setDepartments([]);
+      }
+    } catch {
+      setError("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Then update useEffect to just call this:
+  useEffect(() => {
+    fetchDepartments();
   }, [token, lang]);
 
   // Open edit modal
@@ -172,7 +191,6 @@ const Sections = () => {
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
   // Handle icon upload
   const handleIconChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -546,13 +564,23 @@ const Sections = () => {
         {lang === "ar" ? "الأقسام" : "Sections"}
       </h2>
 
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex justify-end gap-2">
         <button
           onClick={handleAdd}
           className="px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300"
         >
           + {lang === "ar" ? "إضافة قسم" : "Add Section"}
         </button>
+        {/* Refresh Button */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => fetchDepartments()}
+            className="px-5 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 flex items-center gap-2"
+          >
+            <ArrowPathIcon className="w-5 h-5" />
+            {lang === "ar" ? "تحديث" : "Refresh"}
+          </button>
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3">

@@ -11,6 +11,7 @@ import {
   DocumentTextIcon,
   LockClosedIcon,
   UserGroupIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -326,12 +327,22 @@ const Moderators = () => {
           {lang === "ar" ? "المشرفون" : "Moderators"}
         </h2>
 
-        <button
-          onClick={handleAdd}
-          className="px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300 self-start md:self-auto"
-        >
-          + {lang === "ar" ? "إضافة مدير" : "Add Moderator"}
-        </button>
+        {/* Refresh Button */}
+        <div className="flex gap-2">
+          <button
+            onClick={handleAdd}
+            className="px-5 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all duration-300 self-start md:self-auto"
+          >
+            + {lang === "ar" ? "إضافة مدير" : "Add Moderator"}
+          </button>
+          <button
+            onClick={() => fetchModerators()}
+            className="px-5 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 flex items-center gap-2"
+          >
+            <ArrowPathIcon className="w-5 h-5" />
+            {lang === "ar" ? "تحديث" : "Refresh"}
+          </button>
+        </div>
       </div>
 
       {/* Table */}

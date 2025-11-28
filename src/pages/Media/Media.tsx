@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import {
+  ArrowPathIcon,
   BuildingOffice2Icon,
   HeartIcon,
   PhotoIcon,
@@ -147,41 +148,44 @@ const Media = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchMedia = async () => {
-      setLoading(true);
-      try {
-        let url = `https://api.tik-mall.com/admin/api/list/media?type=${filterType}&skip=0&limit=10`;
-        if (filterDepartment) url += `&storeDepartment=${filterDepartment}`;
-        const res = await fetch(url, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        const data = await res.json();
-        const items = data.items || [];
-        setMedia(items);
+  const fetchMedia = async () => {
+    setLoading(true);
+    try {
+      let url = `https://api.tik-mall.com/admin/api/list/media?type=${filterType}&skip=0&limit=10`;
+      if (filterDepartment) url += `&storeDepartment=${filterDepartment}`;
 
-        const uniqueDepartmentsMap: Record<string, string> = {};
-        items.forEach((item: MediaItem) => {
-          if (
-            item.storeDepartment?._id &&
-            !uniqueDepartmentsMap[item.storeDepartment._id]
-          ) {
-            uniqueDepartmentsMap[item.storeDepartment._id] =
-              lang === "ar"
-                ? item.storeDepartment.name.ar
-                : item.storeDepartment.name.en;
-          }
-        });
-        const uniqueDepartments = Object.entries(uniqueDepartmentsMap).map(
-          ([id, name]) => ({ _id: id, name })
-        );
-        setDepartments(uniqueDepartments);
-      } catch (error) {
-        console.error("Error fetching media:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await res.json();
+      const items = data.items || [];
+      setMedia(items);
+
+      // Update departments dynamically
+      const uniqueDepartmentsMap: Record<string, string> = {};
+      items.forEach((item: MediaItem) => {
+        if (
+          item.storeDepartment?._id &&
+          !uniqueDepartmentsMap[item.storeDepartment._id]
+        ) {
+          uniqueDepartmentsMap[item.storeDepartment._id] =
+            lang === "ar"
+              ? item.storeDepartment.name.ar
+              : item.storeDepartment.name.en;
+        }
+      });
+      const uniqueDepartments = Object.entries(uniqueDepartmentsMap).map(
+        ([id, name]) => ({ _id: id, name })
+      );
+      setDepartments(uniqueDepartments);
+    } catch (err) {
+      console.error("Error fetching media:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  // Call fetchMedia on mount or when filters change
+  useEffect(() => {
     fetchMedia();
   }, [filterType, filterDepartment, token, lang]);
 
@@ -299,6 +303,16 @@ const Media = () => {
                 ))}
               </select>
             </div>
+          </div>
+          {/* Refresh Button */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => fetchMedia()}
+              className="px-5 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 flex items-center gap-2"
+            >
+              <ArrowPathIcon className="w-5 h-5" />
+              {lang === "ar" ? "تحديث" : "Refresh"}
+            </button>
           </div>
         </div>
       </div>

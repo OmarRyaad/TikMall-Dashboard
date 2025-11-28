@@ -1,14 +1,14 @@
 "use client";
 import {
+  ArrowPathIcon,
   BuildingStorefrontIcon,
   CalendarDaysIcon,
   HashtagIcon,
-  PauseCircleIcon,
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
-import { CheckCircleIcon, EyeIcon, UserCircleIcon } from "../../icons";
+import { EyeIcon, UserCircleIcon } from "../../icons";
 import { useLanguage } from "../../context/LanguageContext";
 
 interface Broadcast {
@@ -52,6 +52,8 @@ const LiveBroadcasts = () => {
   const totalActive = broadcasts.length;
 
   const fetchBroadcasts = async () => {
+    setLoading(true);
+    setError("");
     try {
       const token = localStorage.getItem("accessToken");
 
@@ -170,6 +172,21 @@ const LiveBroadcasts = () => {
         </span>
       </h2>
 
+      {/* Refresh Button */}
+      <div
+        className={`flex gap-2 ${
+          lang === "ar" ? "justify-start flex-row-reverse" : "justify-end"
+        }`}
+      >
+        <button
+          onClick={fetchBroadcasts}
+          className="px-5 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 flex items-center gap-2"
+        >
+          <ArrowPathIcon className="w-5 h-5" />
+          {lang === "ar" ? "تحديث" : "Refresh"}
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {broadcasts.map((broadcast: Broadcast) => (
           <div
@@ -198,28 +215,6 @@ const LiveBroadcasts = () => {
 
             {/* Status */}
             <div className="flex items-center gap-2 mb-2">
-              <span
-                className={`flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full 
-            ${
-              broadcast.status === "active"
-                ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-400"
-                : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-            }`}
-              >
-                {broadcast.status === "active" ? (
-                  <CheckCircleIcon className="h-4 w-4" />
-                ) : (
-                  <PauseCircleIcon className="h-4 w-4" />
-                )}
-                {broadcast.status === "active"
-                  ? lang === "ar"
-                    ? "مباشر الآن"
-                    : "Live Now"
-                  : lang === "ar"
-                  ? "معلّق"
-                  : "Paused"}
-              </span>
-
               <span className="text-xs text-blue-500 dark:text-blue-400 group-hover:underline flex items-center gap-1">
                 <HashtagIcon className="h-4 w-4" />
                 ID: {broadcast._id.slice(-6)}

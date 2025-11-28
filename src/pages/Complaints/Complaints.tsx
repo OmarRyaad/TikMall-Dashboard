@@ -1,6 +1,10 @@
 "use client";
 
-import { CheckCircleIcon, MegaphoneIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowPathIcon,
+  CheckCircleIcon,
+  MegaphoneIcon,
+} from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import { useLanguage } from "../../context/LanguageContext";
@@ -149,7 +153,7 @@ const Complaints = () => {
       </h2>
 
       {/* Status Filter */}
-      <div className="mb-6 flex justify-end">
+      <div className="mb-6 flex justify-end gap-2">
         <div className="flex items-center gap-2">
           <CheckCircleIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           <label className="font-medium text-gray-700 dark:text-gray-300">
@@ -177,6 +181,16 @@ const Complaints = () => {
               {lang === "ar" ? "مرفوضة" : "Rejected"}
             </option>
           </select>
+        </div>
+        {/* Refresh Button */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => fetchComplaints(statusFilter, page)}
+            className="px-5 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 flex items-center gap-2"
+          >
+            <ArrowPathIcon className="w-5 h-5" />
+            {lang === "ar" ? "تحديث" : "Refresh"}
+          </button>
         </div>
       </div>
 
