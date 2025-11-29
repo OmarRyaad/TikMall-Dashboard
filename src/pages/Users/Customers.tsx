@@ -9,13 +9,18 @@ import {
   MagnifyingGlassIcon,
   UserIcon,
 } from "@heroicons/react/24/outline";
+import { FcGoogle } from "react-icons/fc";
 import { useLanguage } from "../../context/LanguageContext";
 
 interface Customer {
   _id: string;
   name: string;
-  phone: { number: string };
+  phone: { number: string; isVerified?: boolean };
   isActive: boolean;
+  isSocialLogin?: boolean;
+  email?: { mail: string; isVerified: boolean };
+  token?: string;
+  role?: string;
 }
 
 const Customers = () => {
@@ -269,6 +274,13 @@ const Customers = () => {
                         isRTL ? "text-right" : "text-left"
                       }`}
                     >
+                      Gmail
+                    </th>
+                    <th
+                      className={`px-4 md:px-6 py-3 text-xs font-medium text-gray-500 uppercase ${
+                        isRTL ? "text-right" : "text-left"
+                      }`}
+                    >
                       {lang === "ar" ? "الحالة" : "Status"}
                     </th>
                     <th
@@ -308,6 +320,22 @@ const Customers = () => {
                       >
                         {cust.phone?.number || "—"}
                       </td>
+                      <td className="px-4 md:px-6 py-3">
+                        {cust.email?.mail ? (
+                          <div
+                            className="flex items-center gap-1 cursor-pointer"
+                            title={cust.email.mail}
+                          >
+                            <FcGoogle className={`"w-5 h-5 text-blue-500"`} />
+                            {/* <span className="truncate max-w-[120px]">
+                              {cust.email.mail}
+                            </span> */}
+                          </div>
+                        ) : (
+                          <div className="text-gray-400">—</div>
+                        )}
+                      </td>
+
                       <td className="px-4 md:px-6 py-3">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${

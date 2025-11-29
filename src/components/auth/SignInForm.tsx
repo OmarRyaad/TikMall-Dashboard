@@ -28,12 +28,32 @@ export default function SignInForm() {
 
   const validate = () => {
     const errors: { phone?: string; password?: string } = {};
-    if (!phone.trim())
+
+    // Phone validation
+    if (!phone.trim()) {
       errors.phone =
         lang === "ar" ? "رقم الجوال مطلوب" : "Phone number is required";
-    if (!password.trim())
+    } else {
+      const phoneRegex = /^\+?\d{12,13}$/;
+      if (!phoneRegex.test(phone.trim())) {
+        errors.phone =
+          lang === "ar"
+            ? "رقم الجوال يجب أن يكون 12 أو 13 رقمًا، قد يبدأ بـ '+' ويحتوي على أرقام فقط"
+            : "Phone number must be 12 or 13 digits long, may start with '+' and contain only numbers";
+      }
+    }
+
+    // Password validation
+    if (!password.trim()) {
       errors.password =
         lang === "ar" ? "كلمة المرور مطلوبة" : "Password is required";
+    } else if (password.trim().length < 6) {
+      errors.password =
+        lang === "ar"
+          ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل"
+          : "Password must be at least 6 characters long";
+    }
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };

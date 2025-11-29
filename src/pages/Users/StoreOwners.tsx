@@ -44,6 +44,7 @@ const StoreOwners = () => {
 
   // Track current filter
   const [currentFilter, setCurrentFilter] = useState<string>("all");
+  const [storeTypes, setStoreTypes] = useState<string[]>([]);
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
@@ -70,7 +71,6 @@ const StoreOwners = () => {
       const data = await res.json();
       let owners = data.users || data.data?.results || [];
 
-      // Apply filter locally (not from API)
       if (currentFilter !== "all" && currentFilter !== "") {
         owners = owners.filter((owner: StoreOwner) =>
           owner.typeOfStore?.some(
@@ -80,8 +80,6 @@ const StoreOwners = () => {
       }
 
       setStoreOwners(owners);
-      // setStoreOwners(data.users || data.data?.results || []);
-
       setTotalPages(data.pagination?.pages || 1);
     } finally {
       setLoading(false);
@@ -121,6 +119,25 @@ const StoreOwners = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Populate store types after fetching owners
+  useEffect(() => {
+    if (storeOwners.length) {
+      const typesSet = new Set<string>();
+      storeOwners.forEach((owner) => {
+        owner.typeOfStore?.forEach((t) =>
+          typesSet.add(t[lang === "ar" ? "ar" : "en"])
+        );
+      });
+      setStoreTypes(Array.from(typesSet));
+    }
+  }, [storeOwners, lang]);
+
+  // Handle filter change
+  const handleFilterChange = (value: string) => {
+    setCurrentFilter(value);
+    setPage(1);
   };
 
   const toggleActivation = async (id: string, current: boolean) => {
@@ -195,11 +212,6 @@ const StoreOwners = () => {
       setActionLoading(false);
     }
   };
-
-  // const handleFilterChange = (value: string) => {
-  //   setCurrentFilter(value);
-  //   setPage(1);
-  // };
 
   const handleDelete = async (id: string) => {
     setDeleteLoading(true);
@@ -314,29 +326,11 @@ const StoreOwners = () => {
 
           {/* Filter (under search) */}
           <div className="flex items-center gap-2 mt-2">
-            {/* Icon */}
-            {/* <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-5 h-5 text-gray-500 dark:text-gray-400"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M10.5 6h3m-6 4.5h6m-4.5 4.5H15M4.5 6h.008v.008H4.5V6zm0 4.5h.008v.008H4.5v-.008zm0 4.5h.008v.008H4.5v-.008z"
-              />
-            </svg> */}
-
-            {/* Label */}
-            {/* <label className="font-medium text-gray-700 dark:text-gray-300">
+            <label className="font-medium text-gray-700 dark:text-gray-300">
               {lang === "ar" ? "تصفية حسب نوع المتجر:" : "Type of store:"}
-            </label> */}
+            </label>
 
-            {/* SELECT */}
-            {/* <select
+            <select
               className="px-3 py-2 border rounded-lg dark:bg-gray-800 dark:text-gray-300"
               value={currentFilter}
               onChange={(e) => handleFilterChange(e.target.value)}
@@ -348,7 +342,7 @@ const StoreOwners = () => {
                   {type}
                 </option>
               ))}
-            </select> */}
+            </select>
           </div>
         </div>
       </div>

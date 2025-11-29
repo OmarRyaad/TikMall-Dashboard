@@ -211,7 +211,7 @@ const PolicyAndPrivacy = () => {
             : "No policies yet. Click “Add Policy” to create your first policy."}
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
           {policies.map((p) => (
             <div
               key={p._id}
