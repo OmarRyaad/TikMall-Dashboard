@@ -6,11 +6,13 @@ import {
   ChatBubbleOvalLeftIcon,
   HeartIcon,
   PhotoIcon,
+  TrashIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useLanguage } from "../../context/LanguageContext";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface UploadedBy {
   _id: string;
@@ -19,6 +21,7 @@ interface UploadedBy {
 }
 
 interface StoreDepartment {
+  icon: string;
   _id: string;
   name: { en: string; ar: string };
 }
@@ -68,6 +71,10 @@ const Media = () => {
 
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [mediaToDelete, setMediaToDelete] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
@@ -147,6 +154,33 @@ const Media = () => {
         lang === "ar" ? "حدث خطأ أثناء الحذف" : "Error deleting reply"
       );
     }
+  };
+
+  const handleDeleteMedia = async (mediaId: string) => {
+    if (!token) return;
+
+    setDeleteLoading(true);
+
+    try {
+      const res = await fetch(`https://api.tik-mall.com/media/${mediaId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error("Failed to delete media");
+
+      toast.success(lang === "ar" ? "تم حذف الوسائط" : "Media deleted");
+
+      setMedia((prev) => prev.filter((m) => m._id !== mediaId));
+    } catch {
+      toast.error(
+        lang === "ar" ? "حدث خطأ أثناء الحذف" : "Failed to delete media"
+      );
+    }
+
+    setDeleteLoading(false);
+    setDeleteModalOpen(false);
+    setMediaToDelete(null);
   };
 
   const fetchMedia = async () => {
@@ -329,12 +363,21 @@ const Media = () => {
             {/* Header */}
             <div className="flex items-center gap-2 px-3 py-2">
               <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold">
-                {item.uploadedBy?.name?.charAt(0)}
+                {item.storeDepartment?.icon && (
+                  <img
+                    src={item.storeDepartment.icon}
+                    alt="department icon"
+                    className="w-6 h-6 object-cover rounded"
+                  />
+                )}
               </div>
 
               <div className="flex-1">
                 <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
                   {item.uploadedBy?.name}
+                </p>
+                <p className="font-semibold text-[#3ab4ff] dark:text-[#66d2ff] text-sm">
+                  {item.uploadedBy?.storeName}
                 </p>
 
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -382,8 +425,18 @@ const Media = () => {
                   onClick={() => openCommentPopup(item._id, item.description)}
                   className="flex items-center gap-1 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-2 py-1 rounded w-full justify-center text-xs transition"
                 >
-                  <ChatBubbleOvalLeftIcon className="w-4 h-4" />
+                  <ChatBubbleOvalLeftIcon className="w-5 h-5" />
                   {lang === "ar" ? "التعليقات" : "Comments"}
+                </button>
+                <button
+                  onClick={() => {
+                    setMediaToDelete(item._id);
+                    setDeleteModalOpen(true);
+                  }}
+                  className="flex items-center gap-1 text-red-600 hover:bg-red-100 px-2 py-1 rounded w-full justify-center text-xs transition"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                  {lang === "ar" ? "حذف" : "Delete"}
                 </button>
               </div>
             </div>
@@ -517,6 +570,64 @@ const Media = () => {
           </div>
         </div>
       )}
+
+      {/* Delete Modal */}
+      <AnimatePresence>
+        {deleteModalOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          >
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg dark:bg-gray-900">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                {lang === "ar" ? "تأكيد الحذف" : "Confirm Delete"}
+              </h3>
+
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                {lang === "ar"
+                  ? "هل أنت متأكد من حذف هذه الوسائط نهائيًا؟"
+                  : "Are you sure you want to delete this media permanently?"}
+              </p>
+
+              <div className="mt-5 flex justify-end gap-3">
+                {/* Cancel */}
+                <button
+                  onClick={() => {
+                    setDeleteModalOpen(false);
+                    setMediaToDelete(null);
+                  }}
+                  className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  {lang === "ar" ? "إلغاء" : "Cancel"}
+                </button>
+
+                {/* Confirm Delete */}
+                <button
+                  onClick={() =>
+                    mediaToDelete && handleDeleteMedia(mediaToDelete)
+                  }
+                  disabled={deleteLoading}
+                  className={`rounded-md px-4 py-2 text-sm text-white ${
+                    deleteLoading
+                      ? "bg-red-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700"
+                  }`}
+                >
+                  {deleteLoading
+                    ? lang === "ar"
+                      ? "جاري الحذف..."
+                      : "Deleting..."
+                    : lang === "ar"
+                    ? "حذف"
+                    : "Delete"}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
