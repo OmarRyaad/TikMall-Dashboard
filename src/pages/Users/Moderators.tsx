@@ -94,6 +94,9 @@ const Moderators = () => {
   const [moderatorToDelete, setModeratorToDelete] = useState<Moderator | null>(
     null
   );
+  const [formErrors, setFormErrors] = useState<
+    Partial<Record<keyof Moderator, string>>
+  >({});
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
@@ -182,18 +185,35 @@ const Moderators = () => {
   };
 
   const handleSave = async () => {
-    if (
-      !formData.name ||
-      !formData.phone ||
-      (!isEditMode && !formData.password)
-    ) {
-      toast.error(
+    // Reset previous errors
+    setFormErrors({});
+
+    // Frontend validation
+    const errors: Partial<Record<keyof Moderator, string>> = {};
+    if (!formData.name || formData.name.length < 3) {
+      errors.name =
         lang === "ar"
-          ? "يرجى ملء جميع الحقول المطلوبة"
-          : "Please fill all required fields"
-      );
-      return;
+          ? "الاسم يجب أن يكون 3 أحرف على الأقل"
+          : "Name must be at least 3 characters";
     }
+    if (!formData.phone || !/^\+?\d{12,13}$/.test(formData.phone)) {
+      errors.phone =
+        lang === "ar"
+          ? "رقم الهاتف يجب أن يكون 12 أو 13 رقمًا ويمكن أن يبدأ بـ '+'"
+          : "Phone number must be 12 or 13 digits, may start with '+'";
+    }
+    if (!isEditMode && (!formData.password || formData.password.length < 6)) {
+      errors.password =
+        lang === "ar"
+          ? "كلمة المرور يجب أن تكون 6 أحرف على الأقل"
+          : "Password must be at least 6 characters";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return; // Stop submission
+    }
+
     try {
       setLoading(true);
       const payload = {
@@ -227,11 +247,23 @@ const Moderators = () => {
       });
 
       const result = await res.json();
-      if (!res.ok)
-        throw new Error(
-          (result as { message?: string }).message || "Operation failed"
-        );
 
+      // Handle backend validation errors
+      if (result.error) {
+        const backendErrors: Partial<Record<keyof Moderator, string>> = {};
+        if (Array.isArray(result.error)) {
+          result.error.forEach((err: string) => {
+            if (err.toLowerCase().includes("name")) backendErrors.name = err;
+            if (err.toLowerCase().includes("phone")) backendErrors.phone = err;
+            if (err.toLowerCase().includes("password"))
+              backendErrors.password = err;
+          });
+        }
+        setFormErrors(backendErrors);
+        return; // Stop submission
+      }
+
+      // Success
       toast.success(
         isEditMode
           ? lang === "ar"
@@ -539,6 +571,12 @@ const Moderators = () => {
                     onChange={handleChange}
                     className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
                   />
+                  {formErrors.name && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.name}
+                    </p>
+                  )}
+
                   <input
                     type="text"
                     name="phone"
@@ -551,15 +589,28 @@ const Moderators = () => {
                     onChange={handleChange}
                     className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
                   />
+                  {formErrors.phone && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.phone}
+                    </p>
+                  )}
+
                   {!isEditMode && (
-                    <input
-                      type="password"
-                      name="password"
-                      placeholder={lang === "ar" ? "كلمة المرور" : "Password"}
-                      value={formData.password || ""}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
-                    />
+                    <>
+                      <input
+                        type="password"
+                        name="password"
+                        placeholder={lang === "ar" ? "كلمة المرور" : "Password"}
+                        value={formData.password || ""}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
+                      />
+                      {formErrors.password && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {formErrors.password}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
 

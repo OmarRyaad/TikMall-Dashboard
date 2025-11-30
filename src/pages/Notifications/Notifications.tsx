@@ -108,7 +108,7 @@ const Notifications = () => {
       return;
     }
     fetchSelectedUsers(role, search);
-  }, [search, token, originalUsers, role]);
+  }, [search, role, token]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
