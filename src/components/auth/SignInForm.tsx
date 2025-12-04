@@ -67,10 +67,12 @@ export default function SignInForm() {
     setLoading(true);
 
     try {
+      const formattedPhone = phone.startsWith("+") ? phone : `+${phone}`;
+
       const res = await fetch(`${BASE_API_URL}/auth/login/admin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, password }),
+        body: JSON.stringify({ phone: formattedPhone, password }),
       });
 
       const data = await res.json();
