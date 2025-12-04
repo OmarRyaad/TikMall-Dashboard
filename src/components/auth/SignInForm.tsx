@@ -38,8 +38,8 @@ export default function SignInForm() {
       if (!phoneRegex.test(phone.trim())) {
         errors.phone =
           lang === "ar"
-            ? "رقم الجوال يجب أن يكون 12 أو 13 رقمًا، قد يبدأ بـ '+' ويحتوي على أرقام فقط"
-            : "Phone number must be 12 or 13 digits long, may start with '+' and contain only numbers";
+            ? "رقم الجوال يجب أن يكون 12 أو 13 رقمًا"
+            : "Phone number must be 12 or 13 digits";
       }
     }
 

@@ -23,6 +23,7 @@
     "@heroicons/react": "^2.2.0",
     "@react-jvectormap/core": "^1.0.4",
     "@react-jvectormap/world": "^1.1.2",
+    "@zegocloud/zego-uikit-prebuilt": "^2.17.1",
     "antd": "^6.0.0",
     "apexcharts": "^4.1.0",
     "autoprefixer": "^10.4.21",

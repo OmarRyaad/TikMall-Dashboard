@@ -199,8 +199,8 @@ const Moderators = () => {
     if (!formData.phone || !/^\+?\d{12,13}$/.test(formData.phone)) {
       errors.phone =
         lang === "ar"
-          ? "رقم الهاتف يجب أن يكون 12 أو 13 رقمًا ويمكن أن يبدأ بـ '+'"
-          : "Phone number must be 12 or 13 digits, may start with '+'";
+          ? "رقم الهاتف يجب أن يكون 12 أو 13 رقمًا"
+          : "Phone number must be 12 or 13 digits";
     }
     if (!isEditMode && (!formData.password || formData.password.length < 6)) {
       errors.password =
@@ -428,7 +428,7 @@ const Moderators = () => {
                           isRTL ? "text-right" : "text-left"
                         }`}
                       >
-                        {mod.phone}
+                        {mod.phone?.replace(/^\+/, "")}
                       </td>
                       <td
                         className={`px-4 md:px-6 py-3 text-sm dark:text-gray-300 ${
