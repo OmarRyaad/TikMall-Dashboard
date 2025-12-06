@@ -18,17 +18,20 @@ import {
 } from "@heroicons/react/24/outline";
 import { HorizontaLDots } from "../icons";
 import { useLanguage } from "../context/LanguageContext";
+import { usePermissions } from "../context/PermissionsContext";
 
 type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
+  permissionKey?: string;
   subItems?: {
     name: string;
     path: string;
     pro?: boolean;
     new?: boolean;
     icon?: React.ReactNode;
+    permissionKey?: string;
   }[];
 };
 
@@ -37,6 +40,13 @@ const AppSidebar: React.FC = () => {
   const [announces, setAnnounces] = useState<{ [key: string]: boolean }>({});
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+
+  const permissions = usePermissions();
+
+  const hasPermission = (key?: string) => {
+    if (!key) return true;
+    return permissions[key] === true;
+  };
 
   useEffect(() => {
     const fetchAnnounces = () => {
@@ -94,59 +104,75 @@ const AppSidebar: React.FC = () => {
       name: t.statistics,
       icon: <ChartBarIcon className="w-6 h-6" />,
       path: "/",
+      permissionKey: "manageStatistics",
     },
     {
       name: t.users,
       icon: <UserIcon className="w-6 h-6" />,
       path: "/users",
+      permissionKey: "manageAdmins",
       subItems: [
         {
           name: t.moderators,
           path: "/users/moderators",
           icon: <UserGroupIcon className="w-5 h-5" />,
+          permissionKey: "manageAdmins",
         },
         {
           name: t.storeOwners,
           path: "/users/store-owners",
           icon: <BuildingStorefrontIcon className="w-5 h-5" />,
+          permissionKey: "manageStoreOwners",
         },
         {
           name: t.customers,
           path: "/users/customers",
           icon: <UserIcon className="w-5 h-5" />,
+          permissionKey: "manageCustomers",
         },
       ],
     },
-    { name: t.media, icon: <PhotoIcon className="w-6 h-6" />, path: "/media" },
+    {
+      name: t.media,
+      icon: <PhotoIcon className="w-6 h-6" />,
+      path: "/media",
+      permissionKey: "manageMediaAndStreams",
+    },
     {
       name: t.liveBroadcasts,
       icon: <VideoCameraIcon className="w-6 h-6" />,
       path: "/live-broad-casts",
+      permissionKey: "manageMediaAndStreams",
     },
     {
       name: t.sections,
       icon: <Squares2X2Icon className="w-6 h-6" />,
       path: "/sections",
+      permissionKey: "manageDepartmentsAndFaqs",
     },
     {
       name: t.askedQuestions,
       icon: <QuestionMarkCircleIcon className="w-6 h-6" />,
       path: "/asked-questions",
+      permissionKey: "manageDepartmentsAndFaqs",
     },
     {
       name: t.policyAndPrivacy,
       icon: <ShieldCheckIcon className="w-6 h-6" />,
       path: "/policy-and-Privacy",
+      permissionKey: "manageDepartmentsAndFaqs",
     },
     {
       name: t.complaints,
       icon: <ExclamationCircleIcon className="w-6 h-6" />,
       path: "/complaints",
+      permissionKey: "manageComplaints",
     },
     {
       name: t.notifications,
       icon: <BellIcon className="w-6 h-6" />,
       path: "/notifications",
+      permissionKey: "manageSendNotifications",
     },
   ];
 
@@ -207,33 +233,99 @@ const AppSidebar: React.FC = () => {
 
   const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
     <ul className="flex flex-col gap-4">
-      {items.map((nav, index) => (
-        <li key={nav.name}>
-          {nav.subItems ? (
-            <button
-              onClick={() => handleSubmenuToggle(index, menuType)}
-              className={`menu-item group ${
-                openSubmenu?.type === menuType && openSubmenu?.index === index
-                  ? "menu-item-active"
-                  : "menu-item-inactive"
-              } cursor-pointer ${
-                !isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "lg:justify-start"
-              }`}
-            >
-              <span
-                className={`menu-item-icon-size ${
+      {items
+        .filter((nav) => hasPermission(nav.permissionKey))
+        .map((nav, index) => (
+          <li key={nav.name}>
+            {nav.subItems ? (
+              <button
+                onClick={() => handleSubmenuToggle(index, menuType)}
+                className={`menu-item group ${
                   openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? "menu-item-icon-active"
-                    : "menu-item-icon-inactive"
+                    ? "menu-item-active"
+                    : "menu-item-inactive"
+                } cursor-pointer ${
+                  !isExpanded && !isHovered
+                    ? "lg:justify-center"
+                    : "lg:justify-start"
                 }`}
               >
-                {nav.icon}
-              </span>
-              {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="relative">
-                  {nav.name}
+                <span
+                  className={`menu-item-icon-size ${
+                    openSubmenu?.type === menuType &&
+                    openSubmenu?.index === index
+                      ? "menu-item-icon-active"
+                      : "menu-item-icon-inactive"
+                  }`}
+                >
+                  {nav.icon}
+                </span>
+                {(isExpanded || isHovered || isMobileOpen) && (
+                  <span className="relative">
+                    {nav.name}
+                    {(() => {
+                      const cleanPath = nav.path?.replace("/", "") || "";
+
+                      // map nav.path to API announce key
+                      const pathToFlagKey: { [key: string]: string } = {
+                        complaints: "complaints",
+                        media: "media",
+                        "live-broad-casts": "streams",
+                      };
+
+                      const flagKey = pathToFlagKey[cleanPath];
+
+                      return (
+                        flagKey &&
+                        announces[flagKey] && (
+                          <span
+                            className={`absolute top-0.3 h-2 w-2 rounded-full bg-orange-400 ${
+                              document.documentElement.dir === "rtl"
+                                ? "left-2"
+                                : "right-2"
+                            }`}
+                          >
+                            <span className="absolute inline-flex w-full h-full rounded-full bg-orange-400 opacity-75 animate-ping"></span>
+                          </span>
+                        )
+                      );
+                    })()}
+                  </span>
+                )}
+                {(isExpanded || isHovered || isMobileOpen) && (
+                  <ChevronDownIcon
+                    className={`ml-auto w-5 h-5 transition-transform duration-200 ${
+                      openSubmenu?.type === menuType &&
+                      openSubmenu?.index === index
+                        ? "rotate-180 text-brand-500"
+                        : ""
+                    }`}
+                  />
+                )}
+              </button>
+            ) : (
+              nav.path && (
+                <Link
+                  to={nav.path!}
+                  onClick={() => handleAnnounceSeen(nav.path)}
+                  className={`menu-item group ${
+                    isActive(nav.path)
+                      ? "menu-item-active"
+                      : "menu-item-inactive"
+                  }`}
+                >
+                  <span
+                    className={`menu-item-icon-size ${
+                      isActive(nav.path)
+                        ? "menu-item-icon-active"
+                        : "menu-item-icon-inactive"
+                    }`}
+                  >
+                    {nav.icon}
+                  </span>
+                  {(isExpanded || isHovered || isMobileOpen) && (
+                    <span className="menu-item-text">{nav.name}</span>
+                  )}
                   {(() => {
                     const cleanPath = nav.path?.replace("/", "") || "";
 
@@ -249,132 +341,86 @@ const AppSidebar: React.FC = () => {
                     return (
                       flagKey &&
                       announces[flagKey] && (
-                        <span className="absolute right-2 top-0.3 h-2 w-2 rounded-full bg-orange-400">
+                        <span
+                          className={`absolute top-0.3 h-2 w-2 rounded-full bg-orange-400 ${
+                            document.documentElement.dir === "rtl"
+                              ? "left-2"
+                              : "right-2"
+                          }`}
+                        >
                           <span className="absolute inline-flex w-full h-full rounded-full bg-orange-400 opacity-75 animate-ping"></span>
                         </span>
                       )
                     );
                   })()}
-                </span>
-              )}
-              {(isExpanded || isHovered || isMobileOpen) && (
-                <ChevronDownIcon
-                  className={`ml-auto w-5 h-5 transition-transform duration-200 ${
+                </Link>
+              )
+            )}
+            {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
+              <div
+                ref={(el) => {
+                  subMenuRefs.current[`${menuType}-${index}`] = el;
+                }}
+                className="overflow-hidden transition-all duration-300"
+                style={{
+                  height:
                     openSubmenu?.type === menuType &&
                     openSubmenu?.index === index
-                      ? "rotate-180 text-brand-500"
-                      : ""
-                  }`}
-                />
-              )}
-            </button>
-          ) : (
-            nav.path && (
-              <Link
-                to={nav.path!}
-                onClick={() => handleAnnounceSeen(nav.path)}
-                className={`menu-item group ${
-                  isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
-                }`}
+                      ? `${subMenuHeight[`${menuType}-${index}`]}px`
+                      : "0px",
+                }}
               >
-                <span
-                  className={`menu-item-icon-size ${
-                    isActive(nav.path)
-                      ? "menu-item-icon-active"
-                      : "menu-item-icon-inactive"
-                  }`}
-                >
-                  {nav.icon}
-                </span>
-                {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className="menu-item-text">{nav.name}</span>
-                )}
-                {(() => {
-                  const cleanPath = nav.path?.replace("/", "") || "";
-
-                  // map nav.path to API announce key
-                  const pathToFlagKey: { [key: string]: string } = {
-                    complaints: "complaints",
-                    media: "media",
-                    "live-broad-casts": "streams",
-                  };
-
-                  const flagKey = pathToFlagKey[cleanPath];
-
-                  return (
-                    flagKey &&
-                    announces[flagKey] && (
-                      <span className="absolute right-2 top-0.3 h-2 w-2 rounded-full bg-orange-400">
-                        <span className="absolute inline-flex w-full h-full rounded-full bg-orange-400 opacity-75 animate-ping"></span>
-                      </span>
-                    )
-                  );
-                })()}
-              </Link>
-            )
-          )}
-          {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
-            <div
-              ref={(el) => {
-                subMenuRefs.current[`${menuType}-${index}`] = el;
-              }}
-              className="overflow-hidden transition-all duration-300"
-              style={{
-                height:
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? `${subMenuHeight[`${menuType}-${index}`]}px`
-                    : "0px",
-              }}
-            >
-              <ul className="mt-2 space-y-1 ml-9">
-                {nav.subItems.map((subItem) => (
-                  <li key={subItem.name}>
-                    <Link
-                      to={subItem.path}
-                      className={`menu-dropdown-item ${
-                        isActive(subItem.path)
-                          ? "menu-dropdown-item-active"
-                          : "menu-dropdown-item-inactive"
-                      } flex items-center gap-2`}
-                    >
-                      {subItem.icon && (
-                        <span className="w-5 h-5 flex-shrink-0">
-                          {subItem.icon}
-                        </span>
-                      )}
-                      <span>{subItem.name}</span>
-                      <span className="flex items-center gap-1 ml-auto">
-                        {subItem.new && (
-                          <span
-                            className={`ml-auto ${
-                              isActive(subItem.path)
-                                ? "menu-dropdown-badge-active"
-                                : "menu-dropdown-badge-inactive"
-                            } menu-dropdown-badge`}
-                          >
-                            new
+                <ul className="mt-2 space-y-1 ml-9">
+                  {nav.subItems
+                    ?.filter((sub) => hasPermission(sub.permissionKey))
+                    .map((subItem) => (
+                      <li key={subItem.name}>
+                        <Link
+                          to={subItem.path}
+                          className={`menu-dropdown-item ${
+                            isActive(subItem.path)
+                              ? "menu-dropdown-item-active"
+                              : "menu-dropdown-item-inactive"
+                          } flex items-center gap-2`}
+                        >
+                          {subItem.icon && (
+                            <span className="w-5 h-5 flex-shrink-0">
+                              {subItem.icon}
+                            </span>
+                          )}
+                          <span>{subItem.name}</span>
+                          <span className="flex items-center gap-1 ml-auto">
+                            {subItem.new && (
+                              <span
+                                className={`ml-auto ${
+                                  isActive(subItem.path)
+                                    ? "menu-dropdown-badge-active"
+                                    : "menu-dropdown-badge-inactive"
+                                } menu-dropdown-badge`}
+                              >
+                                new
+                              </span>
+                            )}
+                            {subItem.pro && (
+                              <span
+                                className={`ml-auto ${
+                                  isActive(subItem.path)
+                                    ? "menu-dropdown-badge-active"
+                                    : "menu-dropdown-badge-inactive"
+                                } menu-dropdown-badge`}
+                              >
+                                pro
+                              </span>
+                            )}
                           </span>
-                        )}
-                        {subItem.pro && (
-                          <span
-                            className={`ml-auto ${
-                              isActive(subItem.path)
-                                ? "menu-dropdown-badge-active"
-                                : "menu-dropdown-badge-inactive"
-                            } menu-dropdown-badge`}
-                          >
-                            pro
-                          </span>
-                        )}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </li>
-      ))}
+                        </Link>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+          </li>
+        ))}
     </ul>
   );
 

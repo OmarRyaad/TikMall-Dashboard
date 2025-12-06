@@ -11,7 +11,10 @@ import { useLanguage } from "../../context/LanguageContext";
 
 interface Policy {
   _id: string;
-  name: string;
+  name: {
+    en: string;
+    ar: string;
+  };
   policy: {
     en: string;
     ar: string;
@@ -27,7 +30,13 @@ const PolicyEdit = () => {
   const policyName = params.get("name");
 
   const [policy, setPolicy] = useState<Policy | null>(null);
-  const [formData, setFormData] = useState({ name: "", en: "", ar: "" });
+  const [formData, setFormData] = useState({
+    nameEn: "",
+    nameAr: "",
+    en: "",
+    ar: "",
+  });
+
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [viewLang, setViewLang] = useState<"en" | "ar">(
@@ -57,7 +66,8 @@ const PolicyEdit = () => {
       } else {
         setPolicy(data);
         setFormData({
-          name: data.name ?? "",
+          nameEn: data.name.en ?? "",
+          nameAr: data.name.ar ?? "",
           en: data.policy.en ?? "",
           ar: data.policy.ar ?? "",
         });
@@ -76,7 +86,7 @@ const PolicyEdit = () => {
 
   // Save / update policy
   const handleSubmit = async () => {
-    if (!formData.name.trim()) {
+    if (!formData.nameEn.trim() && !formData.nameAr.trim()) {
       toast.error(
         lang === "ar"
           ? "يرجى كتابة اسم السياسة"
@@ -97,7 +107,10 @@ const PolicyEdit = () => {
     setSaveLoading(true);
 
     const body = {
-      policyName: formData.name.trim(),
+      policyName: {
+        en: formData.nameEn.trim(),
+        ar: formData.nameAr.trim(),
+      },
       policyData: {
         en: formData.en || "<p></p>",
         ar: formData.ar || "<p></p>",
@@ -107,7 +120,7 @@ const PolicyEdit = () => {
     try {
       const res = await fetch(
         `https://api.tik-mall.com/admin/api/policy/${encodeURIComponent(
-          policy.name
+          viewLang === "ar" ? policy.name.ar : policy.name.en
         )}`,
         {
           method: "PATCH",
@@ -219,7 +232,7 @@ const PolicyEdit = () => {
 
       {/* Policy Title */}
       <h1 className="text-3xl md:text-4xl font-bold text-blue-600 text-center">
-        {policy.name}
+        {viewLang === "ar" ? policy.name.ar : policy.name.en}
       </h1>
 
       {/* Language Toggle */}

@@ -7,7 +7,10 @@ import { useLanguage } from "../../context/LanguageContext";
 
 interface Policy {
   _id: string;
-  name: string;
+  name: {
+    en: string;
+    ar: string;
+  };
   policy: {
     en: string;
     ar: string;
@@ -124,7 +127,7 @@ const PolicyView = () => {
         <div className="space-y-6">
           {/* Policy Title */}
           <h1 className="text-3xl md:text-4xl font-bold text-blue-600 text-center">
-            {policy.name}
+            {viewLang === "ar" ? policy.name.ar : policy.name.en}
           </h1>
 
           {/* Language Toggle */}

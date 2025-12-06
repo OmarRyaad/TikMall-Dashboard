@@ -15,7 +15,10 @@ import { useLanguage } from "../../context/LanguageContext";
 
 interface Policy {
   _id: string;
-  name: string;
+  name: {
+    en: string;
+    ar: string;
+  };
   policy: {
     en: string;
     ar: string;
@@ -221,7 +224,7 @@ const PolicyAndPrivacy = () => {
               <div className="flex items-start gap-3">
                 <DocumentTextIcon className="w-7 h-7 text-purple-600" />
                 <h2 className="text-base font-semibold text-gray-900 dark:text-white line-clamp-2 leading-tight">
-                  {p.name}
+                  {lang === "ar" ? p.name.ar : p.name.en}
                 </h2>
               </div>
 
@@ -236,7 +239,9 @@ const PolicyAndPrivacy = () => {
               {/* Actions */}
               <div className="mt-5 flex justify-between items-center">
                 <button
-                  onClick={() => openViewPage(p.name)}
+                  onClick={() =>
+                    openViewPage(lang === "ar" ? p.name.ar : p.name.en)
+                  }
                   className="px-4 py-4 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   {lang === "ar" ? "عرض" : "View"}
@@ -246,7 +251,7 @@ const PolicyAndPrivacy = () => {
                   onClick={() =>
                     navigate(
                       `/policy-and-Privacy/edit?name=${encodeURIComponent(
-                        p.name
+                        lang === "ar" ? p.name.ar : p.name.en
                       )}`
                     )
                   }

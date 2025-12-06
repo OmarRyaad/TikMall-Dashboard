@@ -12,8 +12,11 @@ import {
   LockClosedIcon,
   UserGroupIcon,
   ArrowPathIcon,
+  EyeIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useLanguage } from "../../context/LanguageContext";
+import { EyeCloseIcon } from "../../icons";
 
 interface Permissions {
   manageAdmins?: boolean;
@@ -83,6 +86,7 @@ const Moderators = () => {
   const [formData, setFormData] = useState<Partial<Moderator>>({
     active: true,
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   // PAGINATION
   const [page, setPage] = useState(1);
@@ -549,9 +553,17 @@ const Moderators = () => {
               exit={{ scale: 0.9, opacity: 0 }}
             >
               <div
-                className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg md:max-w-1xl p-6 md:p-7
-                max-h-[72vh] overflow-y-auto"
+                className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl 
+    w-full max-w-lg md:max-w-1xl p-6 md:p-7 max-h-[72vh] overflow-y-auto"
               >
+                <button
+                  onClick={handleCancel}
+                  className={`absolute top-4 ${isRTL ? "left-4" : "right-4"} 
+          p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition`}
+                >
+                  <XMarkIcon className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                </button>
+
                 <h3 className="text-2xl font-bold mb-6">
                   {isEditMode
                     ? lang === "ar"
@@ -597,19 +609,35 @@ const Moderators = () => {
 
                   {!isEditMode && (
                     <>
-                      <input
-                        type="password"
-                        name="password"
-                        placeholder={lang === "ar" ? "كلمة المرور" : "Password"}
-                        value={formData.password || ""}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
-                      />
-                      {formErrors.password && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {formErrors.password}
-                        </p>
-                      )}
+                      <div className="relative">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          name="password"
+                          placeholder={
+                            lang === "ar" ? "كلمة المرور" : "Password"
+                          }
+                          value={formData.password || ""}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
+                        />
+                        {formErrors.password && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {formErrors.password}
+                          </p>
+                        )}
+                        <span
+                          onClick={() => setShowPassword(!showPassword)}
+                          className={`absolute z-30 -translate-y-1/2 cursor-pointer top-1/2 ${
+                            isRTL ? "left-4" : "right-4"
+                          }`}
+                        >
+                          {showPassword ? (
+                            <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                          ) : (
+                            <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                          )}
+                        </span>
+                      </div>
                     </>
                   )}
                 </div>

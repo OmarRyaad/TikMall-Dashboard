@@ -86,6 +86,13 @@ export default function SignInForm() {
         localStorage.setItem("accessToken", data.accessToken);
         localStorage.setItem("refreshToken", data.refreshToken);
         localStorage.setItem("user", JSON.stringify(data.user));
+
+        localStorage.setItem("permissions", JSON.stringify(data.permissions));
+
+        localStorage.setItem(
+          "user",
+          JSON.stringify({ ...data.user, permissions: data.permissions })
+        );
         navigate("/");
       } else {
         setError(

@@ -4,6 +4,7 @@ import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
 import { LanguageProvider, useLanguage } from "../context/LanguageContext";
+import { PermissionsProvider } from "../context/PermissionsContext";
 
 const LayoutContent: React.FC = () => {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
@@ -17,15 +18,15 @@ const LayoutContent: React.FC = () => {
       className={`min-h-screen xl:flex ${isRTL ? "rtl" : "ltr"}`}
     >
       <div>
-        <AppSidebar />
-        <Backdrop />
+        <PermissionsProvider>
+          <AppSidebar />
+          <Backdrop />
+        </PermissionsProvider>
       </div>
 
       <div
         className={`flex-1 transition-all duration-300 ease-in-out ${
-          isExpanded || isHovered
-            ? "lg:ms-[290px]" // ms = margin-inline-start (logical)
-            : "lg:ms-[90px]"
+          isExpanded || isHovered ? "lg:ms-[290px]" : "lg:ms-[90px]"
         } ${isMobileOpen ? "ms-0" : ""}`}
       >
         <AppHeader />
@@ -40,9 +41,11 @@ const LayoutContent: React.FC = () => {
 const AppLayout: React.FC = () => {
   return (
     <LanguageProvider>
-      <SidebarProvider>
-        <LayoutContent />
-      </SidebarProvider>
+      <PermissionsProvider>
+        <SidebarProvider>
+          <LayoutContent />
+        </SidebarProvider>
+      </PermissionsProvider>
     </LanguageProvider>
   );
 };
