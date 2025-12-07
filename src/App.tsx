@@ -14,9 +14,6 @@ import FormElements from "./pages/Forms/FormElements";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
-import Moderators from "./pages/Users/Moderators";
-import StoreOwners from "./pages/Users/StoreOwners";
-import Customers from "./pages/Users/Customers";
 import Media from "./pages/Media/Media";
 import Sections from "./pages/Sections/Sections";
 import AskedQuestions from "./pages/AskedQuestions/AskedQuestions";
@@ -27,6 +24,10 @@ import LiveBroadcasts from "./pages/LiveBroadCasts/LiveBroadasts";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PolicyView from "./pages/PolicyAndPrivacy/PolicyView";
 import PolicyEdit from "./pages/PolicyAndPrivacy/PolicyEdit";
+import Moderators from "./pages/Users/Moderators/Moderators";
+import StoreOwners from "./pages/Users/StoreOwners/StoreOwners";
+import Customers from "./pages/Users/Customers/Customers";
+import StoreOwnersProfile from "./pages/Users/StoreOwners/StoreOwnersProfile";
 
 export default function App() {
   return (
@@ -46,6 +47,11 @@ export default function App() {
             <Route index path="/" element={<Home />} />
             <Route index path="/users/moderators" element={<Moderators />} />
             <Route index path="/users/store-owners" element={<StoreOwners />} />
+            <Route
+              index
+              path="/users/store-owners/store-owners-profile/:ownerId"
+              element={<StoreOwnersProfile />}
+            />
             <Route index path="/users/customers" element={<Customers />} />
             <Route index path="/media" element={<Media />} />
             <Route

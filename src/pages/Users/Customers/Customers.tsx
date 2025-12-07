@@ -10,7 +10,7 @@ import {
   UserIcon,
 } from "@heroicons/react/24/outline";
 import { FcGoogle } from "react-icons/fc";
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "../../../context/LanguageContext";
 
 interface Customer {
   _id: string;

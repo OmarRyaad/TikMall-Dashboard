@@ -15,8 +15,8 @@ import {
   EyeIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useLanguage } from "../../context/LanguageContext";
-import { EyeCloseIcon } from "../../icons";
+import { useLanguage } from "../../../context/LanguageContext";
+import { EyeCloseIcon } from "../../../icons";
 
 interface Permissions {
   manageAdmins?: boolean;
