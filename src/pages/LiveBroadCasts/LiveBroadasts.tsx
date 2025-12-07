@@ -7,10 +7,11 @@ import {
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
 import { useEffect, useState, useRef } from "react";
-import { ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify"; // Added toast import
 import { EyeIcon, UserCircleIcon } from "../../icons";
 import { useLanguage } from "../../context/LanguageContext";
 import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
+import CryptoJS from "crypto-js";
 
 interface Broadcast {
   _id: string;
@@ -56,6 +57,79 @@ const LiveBroadcasts = () => {
 
   const totalActive = broadcasts.length;
 
+  // ==== ZEGOCLOUD Credentials ====
+  const ZEGO_APP_ID = 1065201027;
+  const ZEGO_SERVER_SECRET =
+    "bfe3a5e0c3cfd5258e5a2368ef225386c15e433c345ab25c2f994d71bcafcc4f"; // WARNING: Client-side exposure is insecure!
+
+  // Fixed Zego Token Generation (Token04 format)
+  async function generateZegoToken(
+    appId: number,
+    userId: string,
+    roomId: string,
+    effectiveTimeInSeconds: number = 7200
+  ): Promise<string> {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const expireTime = timestamp + effectiveTimeInSeconds;
+    const nonce = Math.floor(Math.random() * 0x7fffffff); // 32-bit signed int
+
+    // Privilege payload for audience: disable publish (1=0), enable login (2=1)
+    const privilegePayload = JSON.stringify({
+      room_id: roomId,
+      privilege: { 1: 0, 2: 1 },
+      stream_id_list: null,
+    });
+
+    // Binary buffer for signing (little-endian)
+    const bufferSize = 28 + privilegePayload.length; // 4(appId) + 8(ctime) + 4(nonce) + 8(expire) + 4(len) + payload
+    const buffer = new ArrayBuffer(bufferSize);
+    const dataView = new DataView(buffer);
+
+    // Pack fields
+    dataView.setUint32(0, appId, true); // appId uint32 LE
+    dataView.setBigInt64(4, BigInt(timestamp), true); // ctime int64 LE
+    dataView.setInt32(12, nonce, true); // nonce int32 LE
+    dataView.setBigInt64(16, BigInt(expireTime), true); // expire int64 LE
+    dataView.setUint32(24, privilegePayload.length, true); // payload len uint32 LE
+    // Copy payload string as UTF-8 bytes
+    for (let i = 0; i < privilegePayload.length; i++) {
+      dataView.setUint8(28 + i, privilegePayload.charCodeAt(i));
+    }
+
+    // Sign with HMAC-SHA256 (secret as hex bytes)
+    const secretBytes = CryptoJS.enc.Hex.parse(ZEGO_SERVER_SECRET);
+    const bufferHex = CryptoJS.lib.WordArray.create(new Uint8Array(buffer));
+    const hash = CryptoJS.HmacSHA256(bufferHex, secretBytes);
+    const signatureHex = hash.toString(CryptoJS.enc.Hex);
+
+    // Token struct
+    const tokenPayload = {
+      app_id: appId,
+      user_id: userId,
+      nonce,
+      ctime: timestamp,
+      expire: expireTime,
+      signature: signatureHex,
+      payload: privilegePayload, // Include privileges here
+    };
+
+    // Base64 URL-safe
+    const jsonStr = JSON.stringify(tokenPayload);
+    const base64 = btoa(jsonStr)
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    const rawToken = `04${base64}`;
+    console.log(
+      "Generated Zego Token:",
+      rawToken.substring(0, 50) + "... (length:",
+      rawToken.length,
+      ")"
+    ); // Debug: Validate length
+    return rawToken;
+  }
+
   const fetchBroadcasts = async () => {
     setLoading(true);
     setError("");
@@ -91,87 +165,113 @@ const LiveBroadcasts = () => {
 
   // ZEGOCLOUD Integration
   useEffect(() => {
-    if (!selectedBroadcast?.uid) {
-      console.warn("No UID available for ZEGOCLOUD");
-      return;
-    }
+    if (!selectedBroadcast?.uid) return;
+    const roomID = selectedBroadcast.uid;
 
     const container = document.getElementById("zego-container");
-    if (!container) return;
+    if (!container) {
+      console.warn("Zego container not found");
+      return;
+    }
 
     const userID = `admin_viewer_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
-    const userName = lang === "ar" ? "مشاهد إداري" : "Admin Viewer";
+    const userName = userID;
 
-    // Generate test token (replace with server-generated in production)
-    const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-      1065201027,
-      "bfe3a5e0c3cfd5258e5a2368ef225386c15e433c345ab25c2f994d71bcafcc4f",
-      selectedBroadcast.uid,
-      userID,
-      userName
-    );
+    let renewalTimer: NodeJS.Timeout | null = null;
+    let currentZegoInstance: ReturnType<
+      typeof ZegoUIKitPrebuilt.create
+    > | null = null;
 
-    const config: Parameters<typeof ZegoUIKitPrebuilt.prototype.joinRoom>[0] = {
-      container,
-      scenario: {
-        mode: ZegoUIKitPrebuilt.LiveStreaming,
-        config: {
-          role: ZegoUIKitPrebuilt.Audience,
-        },
-      },
-      showMyCameraToggleButton: false,
-      showMyMicrophoneToggleButton: false,
-      showAudioVideoSettingsButton: false,
-      showScreenSharingButton: false,
-      showTextChat: true,
-      showUserList: false,
-      showLeaveRoomConfirmDialog: false,
-      showRoomTimer: true,
-      lowerLeftNotification: {
-        showUserJoinAndLeave: false,
-        showTextChat: false,
-      },
-      branding: {
-        logoURL: "",
-      },
-      onLeaveRoom: () => setSelectedBroadcast(null),
-      onJoinRoom: () =>
-        console.log("Joined ZEGO live stream:", selectedBroadcast?.uid),
-      ...(isRTL && {
-        layout: "Sidebar",
-        turnOnCameraWhenJoining: false,
-        showMyCameraToggleButton: false,
-        showMyMicrophoneToggleButton: false,
-        style: {
-          container: { direction: "rtl" },
-        },
-      }),
+    const createAndJoinWithToken = async () => {
+      try {
+        const rawToken = await generateZegoToken(
+          ZEGO_APP_ID,
+          userID,
+          roomID,
+          7200
+        );
+        console.log(
+          "Raw Zego Token generated:",
+          rawToken.substring(0, 60) + "..."
+        );
+
+        const kitToken = ZegoUIKitPrebuilt.generateKitTokenForProduction(
+          ZEGO_APP_ID,
+          rawToken,
+          roomID,
+          userID,
+          userName
+        );
+        console.log("Kit Token generated (length:", kitToken.length, ")");
+
+        currentZegoInstance?.destroy();
+        currentZegoInstance = ZegoUIKitPrebuilt.create(kitToken);
+        zegoInstanceRef.current = currentZegoInstance;
+
+        if (renewalTimer) clearTimeout(renewalTimer);
+        const bufferTime = 30 * 60 * 1000; // 30 minutes buffer
+        renewalTimer = setTimeout(() => {
+          console.log("Proactive token renewal: Recreating instance");
+          createAndJoinWithToken();
+        }, 7200 * 1000 - bufferTime); // Renew after ~1.5 hours
+
+        currentZegoInstance.joinRoom({
+          container,
+          scenario: {
+            mode: ZegoUIKitPrebuilt.LiveStreaming,
+            config: { role: ZegoUIKitPrebuilt.Audience },
+          },
+          showMyCameraToggleButton: false,
+          showMyMicrophoneToggleButton: false,
+          showAudioVideoSettingsButton: false,
+          showScreenSharingButton: false,
+          showTextChat: true,
+          showUserList: false,
+          showRoomTimer: true,
+          showLeaveRoomConfirmDialog: false,
+          lowerLeftNotification: {
+            showUserJoinAndLeave: false,
+            showTextChat: false,
+          },
+          onLeaveRoom: () => {
+            // ← FIXED: No parameters!
+            console.log("Left room - possible token expiry or user action");
+            setSelectedBroadcast(null);
+            toast.warn(
+              lang === "ar"
+                ? "تم مغادرة البث، يتم استخدام النسخة الاحتياطية"
+                : "Left the stream, using fallback"
+            );
+            if (selectedBroadcast?.streamUrl) {
+              setIframeUrl(selectedBroadcast.streamUrl);
+            }
+          },
+          onJoinRoom: () => console.log("Joined room:", roomID),
+          ...(isRTL && {
+            layout: "Sidebar",
+            style: { container: { direction: "rtl" } },
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to create/join with token:", err);
+        toast.error(
+          lang === "ar"
+            ? "فشل تحميل البث، يتم استخدام النسخة الاحتياطية"
+            : "Failed to load stream, using fallback"
+        );
+        setIframeUrl(selectedBroadcast.streamUrl ?? "");
+        setSelectedBroadcast(null);
+      }
     };
 
-    try {
-      const zp = ZegoUIKitPrebuilt.create(kitToken);
-      zegoInstanceRef.current = zp;
-      zp.joinRoom(config);
-
-      console.log("ZEGOCLOUD initialized for liveID:", selectedBroadcast.uid);
-    } catch (err) {
-      console.error("ZEGO init failed:", err);
-      setIframeUrl(selectedBroadcast.streamUrl ?? "");
-      setSelectedBroadcast(null);
-    }
+    createAndJoinWithToken();
 
     return () => {
-      if (zegoInstanceRef.current) {
-        try {
-          zegoInstanceRef.current.destroy();
-          zegoInstanceRef.current = null;
-        } catch (e) {
-          console.warn("ZEGO cleanup error:", e);
-        }
-      }
-      setSelectedBroadcast(null);
+      if (renewalTimer) clearTimeout(renewalTimer);
+      currentZegoInstance?.destroy();
+      zegoInstanceRef.current = null;
     };
   }, [selectedBroadcast, isRTL, lang]);
 
@@ -187,7 +287,7 @@ const LiveBroadcasts = () => {
       setIframeUrl(broadcast.streamUrl);
       setSelectedBroadcast(null);
     } else {
-      alert(
+      toast.error(
         lang === "ar"
           ? "لا يمكن تشغيل هذا البث: لا توجد بيانات التشغيل"
           : "Cannot play this broadcast: No stream data available"
@@ -204,32 +304,35 @@ const LiveBroadcasts = () => {
               broadcast.title || "Untitled"
             }"?`
       )
-    ) {
+    )
       return;
-    }
 
     try {
       const token = localStorage.getItem("accessToken");
+      // TODO: Replace with your API endpoint (e.g., https://api.tik-mall.com/admin/api/live-streams/${broadcast._id}/end)
+      // Zego rooms auto-expire if empty; no direct "terminate" API from client.
       const res = await fetch(
         `https://api.tik-mall.com/admin/api/live-streams/${broadcast._id}/end`,
         {
+          // Example URL
           method: "PATCH",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({ status: "ended" }), // Example payload
         }
       );
 
       if (!res.ok) throw new Error(`Failed: ${res.status}`);
 
-      alert(
+      toast.success(
         lang === "ar" ? "تم إنهاء البث بنجاح" : "Broadcast ended successfully"
       );
       fetchBroadcasts();
     } catch (error) {
       console.error("Error ending broadcast:", error);
-      alert(
+      toast.error(
         lang === "ar"
           ? "فشل في إنهاء البث. حاول مرة أخرى."
           : "Failed to end broadcast. Please try again."
