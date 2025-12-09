@@ -8,7 +8,7 @@ import Flatpickr from "react-flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import { useLanguage } from "../../context/LanguageContext";
 
-type Role = "customer" | "store_owner";
+type Role = "all" | "customer" | "store_owner" | "Send_By_PhoneNumber";
 
 interface User {
   id: string;
@@ -62,7 +62,7 @@ const Notifications = () => {
     try {
       const url =
         query === "all"
-          ? `https://api.tik-mall.com/admin/api/users/${role}/all?page=1&limit=100`
+          ? `https://api.tik-mall.com/admin/api/users/${role}/all?page=1&limit=1000`
           : `https://api.tik-mall.com/admin/api/users/${role}/${query}`;
 
       const res = await fetch(url, {
@@ -122,13 +122,13 @@ const Notifications = () => {
     );
   };
 
-  const toggleSelectAll = () => {
-    if (checkedUsers.length === selectedUsers.length) {
-      setCheckedUsers([]);
-    } else {
-      setCheckedUsers(selectedUsers.map((u) => u.id));
-    }
-  };
+  // const toggleSelectAll = () => {
+  //   if (checkedUsers.length === selectedUsers.length) {
+  //     setCheckedUsers([]);
+  //   } else {
+  //     setCheckedUsers(selectedUsers.map((u) => u.id));
+  //   }
+  // };
 
   const handleSave = async (data: typeof formData) => {
     if (loadingSend) return;
@@ -156,7 +156,7 @@ const Notifications = () => {
       userIds: checkedUsers,
       title: data.NotificationTitle,
       body: data.NotificationMessage,
-      type: "general",
+      type: "info",
       data: {},
       delay:
         data.schedule === "future"
@@ -355,7 +355,19 @@ const Notifications = () => {
                     className="w-4 h-4 text-blue-600"
                   />
                   <span className="text-sm">
-                    {lang === "ar" ? "أصحاب المتاجر" : "Store Owners"}
+                    {lang === "ar" ? "أصحاب المتاجر" : "All Store Owners"}
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="all"
+                    checked={role === "all"}
+                    onChange={() => setRole("all")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-sm">
+                    {lang === "ar" ? "all_accounts" : "All Accounts"}
                   </span>
                 </label>
 
@@ -368,34 +380,25 @@ const Notifications = () => {
                     className="w-4 h-4 text-blue-600"
                   />
                   <span className="text-sm">
-                    {lang === "ar" ? "العملاء" : "Customers"}
+                    {lang === "ar" ? "العملاء" : "All Customers"}
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="Send_By_PhoneNumber"
+                    checked={role === "Send_By_PhoneNumber"}
+                    onChange={() => setRole("Send_By_PhoneNumber")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-sm">
+                    {lang === "ar" ? "العملاء" : "Send_By_PhoneNumber"}
                   </span>
                 </label>
               </div>
             </div>
 
             {/* Recipients Header */}
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                {lang === "ar" ? "المستلمون" : "Recipients"}
-                <span className="text-sm font-normal text-gray-500 dark:text-gray-400 mr-2">
-                  ({checkedUsers.length}/{selectedUsers.length})
-                </span>
-              </h3>
-
-              <button
-                onClick={toggleSelectAll}
-                className="px-4 py-1.5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
-              >
-                {checkedUsers.length === selectedUsers.length
-                  ? lang === "ar"
-                    ? "إلغاء الكل"
-                    : "Unselect All"
-                  : lang === "ar"
-                  ? "تحديد الكل"
-                  : "Select All"}
-              </button>
-            </div>
 
             <input
               type="text"

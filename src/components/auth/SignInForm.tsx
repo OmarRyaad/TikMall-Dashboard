@@ -93,6 +93,8 @@ export default function SignInForm() {
           "user",
           JSON.stringify({ ...data.user, permissions: data.permissions })
         );
+        localStorage.setItem("loginTime", Date.now().toString());
+
         navigate("/");
       } else {
         setError(

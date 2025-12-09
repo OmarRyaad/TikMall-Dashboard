@@ -2,16 +2,14 @@
 import {
   ArrowPathIcon,
   BuildingStorefrontIcon,
-  CalendarDaysIcon,
   HashtagIcon,
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useState, useRef } from "react";
-import { ToastContainer, toast } from "react-toastify"; // Added toast import
+import { useEffect, useRef, useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
 import { EyeIcon, UserCircleIcon } from "../../icons";
 import { useLanguage } from "../../context/LanguageContext";
-import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
-import CryptoJS from "crypto-js";
+import { ZegoExpressEngine } from "zego-express-engine-webrtc"; // or your SDK import
 
 interface Broadcast {
   _id: string;
@@ -37,7 +35,7 @@ interface Broadcast {
     };
     icon: string;
   };
-  streamUrl?: string; // Fallback iframe URL
+  streamUrl?: string;
 }
 
 const LiveBroadcasts = () => {
@@ -51,84 +49,9 @@ const LiveBroadcasts = () => {
   const [selectedBroadcast, setSelectedBroadcast] = useState<Broadcast | null>(
     null
   );
-  const zegoInstanceRef = useRef<ReturnType<
-    typeof ZegoUIKitPrebuilt.create
-  > | null>(null);
-
+  const zgRef = useRef<ZegoExpressEngine | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const totalActive = broadcasts.length;
-
-  // ==== ZEGOCLOUD Credentials ====
-  const ZEGO_APP_ID = 1065201027;
-  const ZEGO_SERVER_SECRET =
-    "bfe3a5e0c3cfd5258e5a2368ef225386c15e433c345ab25c2f994d71bcafcc4f"; // WARNING: Client-side exposure is insecure!
-
-  // Fixed Zego Token Generation (Token04 format)
-  async function generateZegoToken(
-    appId: number,
-    userId: string,
-    roomId: string,
-    effectiveTimeInSeconds: number = 7200
-  ): Promise<string> {
-    const timestamp = Math.floor(Date.now() / 1000);
-    const expireTime = timestamp + effectiveTimeInSeconds;
-    const nonce = Math.floor(Math.random() * 0x7fffffff); // 32-bit signed int
-
-    // Privilege payload for audience: disable publish (1=0), enable login (2=1)
-    const privilegePayload = JSON.stringify({
-      room_id: roomId,
-      privilege: { 1: 0, 2: 1 },
-      stream_id_list: null,
-    });
-
-    // Binary buffer for signing (little-endian)
-    const bufferSize = 28 + privilegePayload.length; // 4(appId) + 8(ctime) + 4(nonce) + 8(expire) + 4(len) + payload
-    const buffer = new ArrayBuffer(bufferSize);
-    const dataView = new DataView(buffer);
-
-    // Pack fields
-    dataView.setUint32(0, appId, true); // appId uint32 LE
-    dataView.setBigInt64(4, BigInt(timestamp), true); // ctime int64 LE
-    dataView.setInt32(12, nonce, true); // nonce int32 LE
-    dataView.setBigInt64(16, BigInt(expireTime), true); // expire int64 LE
-    dataView.setUint32(24, privilegePayload.length, true); // payload len uint32 LE
-    // Copy payload string as UTF-8 bytes
-    for (let i = 0; i < privilegePayload.length; i++) {
-      dataView.setUint8(28 + i, privilegePayload.charCodeAt(i));
-    }
-
-    // Sign with HMAC-SHA256 (secret as hex bytes)
-    const secretBytes = CryptoJS.enc.Hex.parse(ZEGO_SERVER_SECRET);
-    const bufferHex = CryptoJS.lib.WordArray.create(new Uint8Array(buffer));
-    const hash = CryptoJS.HmacSHA256(bufferHex, secretBytes);
-    const signatureHex = hash.toString(CryptoJS.enc.Hex);
-
-    // Token struct
-    const tokenPayload = {
-      app_id: appId,
-      user_id: userId,
-      nonce,
-      ctime: timestamp,
-      expire: expireTime,
-      signature: signatureHex,
-      payload: privilegePayload, // Include privileges here
-    };
-
-    // Base64 URL-safe
-    const jsonStr = JSON.stringify(tokenPayload);
-    const base64 = btoa(jsonStr)
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-
-    const rawToken = `04${base64}`;
-    console.log(
-      "Generated Zego Token:",
-      rawToken.substring(0, 50) + "... (length:",
-      rawToken.length,
-      ")"
-    ); // Debug: Validate length
-    return rawToken;
-  }
 
   const fetchBroadcasts = async () => {
     setLoading(true);
@@ -163,183 +86,97 @@ const LiveBroadcasts = () => {
     }
   };
 
-  // ZEGOCLOUD Integration
-  useEffect(() => {
-    if (!selectedBroadcast?.uid) return;
-    const roomID = selectedBroadcast.uid;
-
-    const container = document.getElementById("zego-container");
-    if (!container) {
-      console.warn("Zego container not found");
-      return;
-    }
-
-    const userID = `admin_viewer_${Date.now()}_${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
-    const userName = userID;
-
-    let renewalTimer: NodeJS.Timeout | null = null;
-    let currentZegoInstance: ReturnType<
-      typeof ZegoUIKitPrebuilt.create
-    > | null = null;
-
-    const createAndJoinWithToken = async () => {
-      try {
-        const rawToken = await generateZegoToken(
-          ZEGO_APP_ID,
-          userID,
-          roomID,
-          7200
-        );
-        console.log(
-          "Raw Zego Token generated:",
-          rawToken.substring(0, 60) + "..."
-        );
-
-        const kitToken = ZegoUIKitPrebuilt.generateKitTokenForProduction(
-          ZEGO_APP_ID,
-          rawToken,
-          roomID,
-          userID,
-          userName
-        );
-        console.log("Kit Token generated (length:", kitToken.length, ")");
-
-        currentZegoInstance?.destroy();
-        currentZegoInstance = ZegoUIKitPrebuilt.create(kitToken);
-        zegoInstanceRef.current = currentZegoInstance;
-
-        if (renewalTimer) clearTimeout(renewalTimer);
-        const bufferTime = 30 * 60 * 1000; // 30 minutes buffer
-        renewalTimer = setTimeout(() => {
-          console.log("Proactive token renewal: Recreating instance");
-          createAndJoinWithToken();
-        }, 7200 * 1000 - bufferTime); // Renew after ~1.5 hours
-
-        currentZegoInstance.joinRoom({
-          container,
-          scenario: {
-            mode: ZegoUIKitPrebuilt.LiveStreaming,
-            config: { role: ZegoUIKitPrebuilt.Audience },
-          },
-          showMyCameraToggleButton: false,
-          showMyMicrophoneToggleButton: false,
-          showAudioVideoSettingsButton: false,
-          showScreenSharingButton: false,
-          showTextChat: true,
-          showUserList: false,
-          showRoomTimer: true,
-          showLeaveRoomConfirmDialog: false,
-          lowerLeftNotification: {
-            showUserJoinAndLeave: false,
-            showTextChat: false,
-          },
-          onLeaveRoom: () => {
-            // ← FIXED: No parameters!
-            console.log("Left room - possible token expiry or user action");
-            setSelectedBroadcast(null);
-            toast.warn(
-              lang === "ar"
-                ? "تم مغادرة البث، يتم استخدام النسخة الاحتياطية"
-                : "Left the stream, using fallback"
-            );
-            if (selectedBroadcast?.streamUrl) {
-              setIframeUrl(selectedBroadcast.streamUrl);
-            }
-          },
-          onJoinRoom: () => console.log("Joined room:", roomID),
-          ...(isRTL && {
-            layout: "Sidebar",
-            style: { container: { direction: "rtl" } },
-          }),
-        });
-      } catch (err) {
-        console.error("Failed to create/join with token:", err);
-        toast.error(
-          lang === "ar"
-            ? "فشل تحميل البث، يتم استخدام النسخة الاحتياطية"
-            : "Failed to load stream, using fallback"
-        );
-        setIframeUrl(selectedBroadcast.streamUrl ?? "");
-        setSelectedBroadcast(null);
-      }
-    };
-
-    createAndJoinWithToken();
-
-    return () => {
-      if (renewalTimer) clearTimeout(renewalTimer);
-      currentZegoInstance?.destroy();
-      zegoInstanceRef.current = null;
-    };
-  }, [selectedBroadcast, isRTL, lang]);
-
   useEffect(() => {
     fetchBroadcasts();
   }, []);
 
-  const handleWatchBroadcast = (broadcast: Broadcast) => {
-    if (broadcast.uid) {
-      setSelectedBroadcast(broadcast);
-      setIframeUrl(null);
-    } else if (broadcast.streamUrl) {
-      setIframeUrl(broadcast.streamUrl);
-      setSelectedBroadcast(null);
-    } else {
-      toast.error(
-        lang === "ar"
-          ? "لا يمكن تشغيل هذا البث: لا توجد بيانات التشغيل"
-          : "Cannot play this broadcast: No stream data available"
-      );
-    }
-  };
-
-  const handleEndBroadcast = async (broadcast: Broadcast) => {
-    if (
-      !window.confirm(
-        lang === "ar"
-          ? `هل أنت متأكد من إنهاء البث "${broadcast.title || "Untitled"}"؟`
-          : `Are you sure you want to end the broadcast "${
-              broadcast.title || "Untitled"
-            }"?`
-      )
-    )
-      return;
-
+  const fetchZegoSignature = async (uid: string) => {
     try {
       const token = localStorage.getItem("accessToken");
-      // TODO: Replace with your API endpoint (e.g., https://api.tik-mall.com/admin/api/live-streams/${broadcast._id}/end)
-      // Zego rooms auto-expire if empty; no direct "terminate" API from client.
+
       const res = await fetch(
-        `https://api.tik-mall.com/admin/api/live-streams/${broadcast._id}/end`,
+        `https://api.tik-mall.com/admin/api/live-streams/${uid}/zego-signature`,
         {
-          // Example URL
-          method: "PATCH",
+          method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ status: "ended" }), // Example payload
         }
       );
 
-      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+      if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
 
-      toast.success(
-        lang === "ar" ? "تم إنهاء البث بنجاح" : "Broadcast ended successfully"
-      );
-      fetchBroadcasts();
-    } catch (error) {
-      console.error("Error ending broadcast:", error);
+      const data = await res.json();
+      if (!data.success) throw new Error("Failed to get Zego signature");
+
+      return data.data;
+    } catch (err) {
+      console.error("Error fetching Zego signature:", err);
       toast.error(
-        lang === "ar"
-          ? "فشل في إنهاء البث. حاول مرة أخرى."
-          : "Failed to end broadcast. Please try again."
+        lang === "ar" ? "فشل تحميل البث المباشر" : "Failed to load live stream"
       );
+      return null;
     }
   };
 
+  const handleWatchBroadcast = async (broadcast: Broadcast) => {
+    if (!broadcast.uid || !zgRef.current) return;
+
+    setSelectedBroadcast(broadcast);
+
+    const zegoData = await fetchZegoSignature(broadcast.uid);
+    if (!zegoData?.signature) {
+      toast.error("Invalid Zego signature");
+      return;
+    }
+
+    try {
+      // loginRoom with token + user object (2‑arg or 3‑arg depending on version)
+      await zgRef.current.loginRoom(broadcast.uid, zegoData.signature, {
+        userID: `viewer_${Date.now()}`,
+        userName: "Viewer",
+      });
+
+      // startPlayingStream — get remote MediaStream
+      const remoteStream = await zgRef.current.startPlayingStream(
+        broadcast.uid
+      );
+
+      // then assign to a video element you control:
+      const videoEl = document.createElement("video");
+      videoEl.autoplay = true;
+      videoEl.controls = true;
+      videoEl.srcObject = remoteStream;
+      videoEl.style.width = "100%";
+      videoEl.style.height = "100%";
+
+      // attach videoEl to your container
+      containerRef.current?.appendChild(videoEl);
+    } catch (err) {
+      console.error("Zego login/play error:", err);
+      toast.error("Failed to open live stream");
+    }
+  };
+
+  useEffect(() => {
+    // Initialize ZegoExpressEngine only once
+    const appID = 1065201027;
+    const server = "wss://webliveroom1234567890-api.zegocloud.com/ws";
+
+    const zg = new ZegoExpressEngine(appID, server);
+    zgRef.current = zg;
+
+    // Optional: Set log level
+    zg.setLogConfig({ logLevel: "info" });
+
+    // Cleanup on unmount
+    return () => {
+      if (zgRef.current) {
+        zgRef.current = null;
+      }
+    };
+  }, []);
   if (loading)
     return (
       <div className="flex items-center justify-center h-[80vh] bg-transparent">
@@ -498,21 +335,6 @@ const LiveBroadcasts = () => {
             </div>
 
             <div className="mt-4 flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                <CalendarDaysIcon className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                <p className="text-xs">
-                  {new Date(broadcast.createdAt).toLocaleString(
-                    lang === "ar" ? "ar-EG" : "en-US",
-                    {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }
-                  )}
-                </p>
-              </div>
               <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
                 <EyeIcon className="w-5 h-5" />
                 <span className="text-sm font-medium">
@@ -527,12 +349,6 @@ const LiveBroadcasts = () => {
                 className="flex-1 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm font-semibold"
               >
                 {lang === "ar" ? "مشاهدة" : "Watch"}
-              </button>
-              <button
-                onClick={() => handleEndBroadcast(broadcast)}
-                className="flex-1 px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition text-sm font-semibold"
-              >
-                {lang === "ar" ? "إنهاء" : "End"}
               </button>
             </div>
           </div>
@@ -601,6 +417,7 @@ const LiveBroadcasts = () => {
             </div>
 
             <div
+              ref={containerRef}
               id="zego-container"
               className="w-full h-[calc(100%-80px)]"
               style={{ direction: isRTL ? "rtl" : "ltr" }}

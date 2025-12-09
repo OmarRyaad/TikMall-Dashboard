@@ -15,10 +15,21 @@ export default function ProtectedRoute({
   const permissions = usePermissions();
   const lang = localStorage.getItem("lang") || "en";
 
-  // If user NOT logged in → redirect
+  const loginTime = localStorage.getItem("loginTime");
+
+  if (loginTime) {
+    const now = Date.now();
+    const diff = now - Number(loginTime);
+    const HOURS_24 = 24 * 60 * 60 * 1000;
+
+    if (diff > HOURS_24) {
+      localStorage.clear();
+      return <Navigate to="/signin" replace />;
+    }
+  }
+
   if (!token) return <Navigate to="/signin" replace />;
 
-  // If page requires a permission → check it
   if (permissionKey && !permissions[permissionKey]) {
     return (
       <div className="p-10 text-red-500 font-semibold text-lg text-center">
@@ -29,6 +40,5 @@ export default function ProtectedRoute({
     );
   }
 
-  // User logged in + permission OK → allow access
   return children;
 }
