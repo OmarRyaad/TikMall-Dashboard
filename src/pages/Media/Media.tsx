@@ -27,6 +27,7 @@ interface StoreDepartment {
 }
 
 interface MediaItem {
+  url: string;
   _id: string;
   title: string;
   description: string;
@@ -219,7 +220,7 @@ const Media = () => {
       setLoading(false);
     }
   };
-  // Call fetchMedia on mount or when filters change
+
   useEffect(() => {
     fetchMedia();
   }, [filterType, filterDepartment, token, lang]);
@@ -354,7 +355,7 @@ const Media = () => {
 
       {/* Media Grid */}
       {/* Facebook Style Feed - Compact Admin View */}
-      <div className="max-w-2xl mx-auto space-y-4">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
         {media.map((item) => (
           <div
             key={item._id}
@@ -394,16 +395,59 @@ const Media = () => {
             )}
 
             {/* Media */}
-            <div className="w-full max-h-[280px] overflow-hidden">
-              {item.thumbnailUrl.includes("mp4") ? (
-                <video controls className="w-full rounded-none">
-                  <source src={item.thumbnailUrl} />
+            <div className="relative w-full h-[500px] dark:bg-gray-800 overflow-hidden rounded-lg">
+              <div
+                className="absolute inset-0 z-10 flex items-center justify-center bg-gray-200/80 dark:bg-gray-900/80 backdrop-blur-sm transition-opacity duration-500 pointer-events-none"
+                data-loading={
+                  filterType === "video" ? item.url?.[0] : item.thumbnailUrl
+                }
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    {lang === "ar" ? "جاري التحميل..." : "Loading..."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Actual Media */}
+              {filterType === "video" && item.url?.length ? (
+                <video
+                  controls
+                  poster={item.thumbnailUrl}
+                  className="w-full h-full object-cover"
+                  onCanPlayThrough={(e) => {
+                    e.currentTarget.parentElement
+                      ?.querySelector("[data-loading]")
+                      ?.classList.add("opacity-0");
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.parentElement
+                      ?.querySelector("[data-loading]")
+                      ?.classList.add("opacity-0");
+                  }}
+                >
+                  <source src={item.url[0]} type="video/mp4" />
+                  {lang === "ar"
+                    ? "المتصفح لا يدعم الفيديو"
+                    : "Your browser does not support the video tag."}
                 </video>
               ) : (
                 <img
                   src={item.thumbnailUrl}
                   alt={item.title}
-                  className="w-full object-cover"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  onLoad={(e) => {
+                    e.currentTarget.parentElement
+                      ?.querySelector("[data-loading]")
+                      ?.classList.add("opacity-0");
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.parentElement
+                      ?.querySelector("[data-loading]")
+                      ?.classList.add("opacity-0");
+                  }}
                 />
               )}
             </div>

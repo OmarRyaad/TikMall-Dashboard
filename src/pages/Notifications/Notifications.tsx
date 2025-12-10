@@ -8,8 +8,7 @@ import Flatpickr from "react-flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import { useLanguage } from "../../context/LanguageContext";
 
-type Role = "all" | "customer" | "store_owner" | "Send_By_PhoneNumber";
-
+type SelectMode = "all" | "customer" | "store_owner" | "phone";
 interface User {
   id: string;
   name: string;
@@ -26,7 +25,7 @@ const Notifications = () => {
   const { lang } = useLanguage();
   const isRTL = lang === "ar";
 
-  const [role, setRole] = useState<Role>("store_owner");
+  const [mode, setMode] = useState<SelectMode>("store_owner");
 
   const [formData, setFormData] = useState({
     NotificationTitle: "",
@@ -36,8 +35,8 @@ const Notifications = () => {
   });
 
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
-  const [originalUsers, setOriginalUsers] = useState<User[]>([]);
   const [checkedUsers, setCheckedUsers] = useState<string[]>([]);
+
   const [search, setSearch] = useState("");
   const [loadingSend, setLoadingSend] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -53,62 +52,90 @@ const Notifications = () => {
     return phone.number || "";
   };
 
-  // Fetch Users
-  const fetchSelectedUsers = async (role: Role, query: string) => {
+  const fetchSelectedUsers = async (mode: SelectMode, query: string) => {
     if (!token) return;
-
     setLoadingUsers(true);
 
     try {
       const url =
-        query === "all"
-          ? `https://api.tik-mall.com/admin/api/users/${role}/all?page=1&limit=1000`
-          : `https://api.tik-mall.com/admin/api/users/${role}/${query}`;
+        mode === "phone" && query.trim()
+          ? `https://api.tik-mall.com/admin/api/users/all/${query}`
+          : `https://api.tik-mall.com/admin/api/users/${mode}/${query}`;
 
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!res.ok) throw new Error("Fetch failed");
-
       const data = await res.json();
 
-      let users: User[] = [];
-      if (data?.user) users = [data.user];
-      else if (data?.users) users = data.users;
+      if (mode === "phone") {
+        let users: User[] = [];
 
-      const normalized = users.map((u: APIUser) => ({
-        id: u._id || u.id || "",
-        name: u.name,
-        phone: typeof u.phone === "string" ? u.phone : u.phone?.number || "",
-      }));
+        if (data?.user) users = [data.user];
+        else if (data?.users) users = data.users;
 
-      setSelectedUsers(normalized);
-      setOriginalUsers(normalized);
-    } catch (error) {
-      console.error(error);
-      toast.error(
-        lang === "ar" ? "فشل جلب المستخدمين" : "Failed to fetch users"
-      );
+        const normalized = users.map((u: APIUser) => ({
+          id: u._id || u.id || "",
+          name: u.name,
+          phone: typeof u.phone === "string" ? u.phone : u.phone?.number || "",
+        }));
+
+        setSelectedUsers(normalized);
+        setCheckedUsers([]);
+      }
+    } catch {
       setSelectedUsers([]);
+      setCheckedUsers([]);
     } finally {
       setLoadingUsers(false);
     }
   };
 
-  // Initial fetch and fetch on role change
   useEffect(() => {
-    fetchSelectedUsers(role, "all");
-  }, [token, role]);
+    if (mode === "phone") return;
 
-  // Search handler
+    const fetchUsers = async () => {
+      if (!token) return;
+
+      setLoadingUsers(true);
+      try {
+        const res = await fetch(
+          `https://api.tik-mall.com/admin/api/users/${mode}/all`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const data = await res.json();
+
+        const users: User[] = (data.users || []).map((u: APIUser) => ({
+          id: u._id || u.id || "",
+          name: u.name,
+          phone: typeof u.phone === "string" ? u.phone : u.phone?.number || "",
+        }));
+
+        setSelectedUsers(users);
+        setCheckedUsers(users.map((u) => u.id));
+      } catch {
+        setSelectedUsers([]);
+        setCheckedUsers([]);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, [mode, token]);
+
   useEffect(() => {
+    if (mode !== "phone") return;
+
     if (!search.trim()) {
-      setSelectedUsers(originalUsers);
+      setSelectedUsers([]);
+      setCheckedUsers([]);
       return;
     }
-    fetchSelectedUsers(role, search);
-  }, [search, role, token]);
+
+    fetchSelectedUsers("phone", search);
+  }, [search, mode]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -122,13 +149,15 @@ const Notifications = () => {
     );
   };
 
-  // const toggleSelectAll = () => {
-  //   if (checkedUsers.length === selectedUsers.length) {
-  //     setCheckedUsers([]);
-  //   } else {
-  //     setCheckedUsers(selectedUsers.map((u) => u.id));
-  //   }
-  // };
+  const handleModeChange = (newMode: SelectMode) => {
+    setMode(newMode);
+
+    if (newMode !== "phone") {
+      setSearch("");
+      setSelectedUsers([]);
+      setCheckedUsers([]);
+    }
+  };
 
   const handleSave = async (data: typeof formData) => {
     if (loadingSend) return;
@@ -207,7 +236,7 @@ const Notifications = () => {
   return (
     <div
       dir={isRTL ? "rtl" : "ltr"}
-      className="max-w-6xl mx-auto p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+      className="w-full p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
     >
       <ToastContainer
         position="top-right"
@@ -225,8 +254,7 @@ const Notifications = () => {
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Side - Notification Content & Scheduling */}
+      <div className="grid grid-cols-1 gap-8">
         <div className="lg:col-span-2 space-y-6">
           {/* Notification Content */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
@@ -273,6 +301,189 @@ const Notifications = () => {
               </div>
             </div>
           </div>
+          <div className="px-8 py-3 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700 space-y-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                {lang === "ar" ? "اختر نوع المستخدمين" : "Select User Role"}
+              </h3>
+
+              <div className="flex gap-4 flex-wrap">
+                {/* Radio buttons */}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="userMode"
+                    value="all"
+                    checked={mode === "all"}
+                    onChange={() => handleModeChange("all")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-sm">
+                    {lang === "ar" ? "كل الحسابات" : "All Accounts"}
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="userMode"
+                    value="store_owner"
+                    checked={mode === "store_owner"}
+                    onChange={() => handleModeChange("store_owner")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-sm">
+                    {lang === "ar" ? "أصحاب المتاجر" : "All Store Owners"}
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="userMode"
+                    value="customer"
+                    checked={mode === "customer"}
+                    onChange={() => handleModeChange("customer")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-sm">
+                    {lang === "ar" ? "العملاء" : "All Customers"}
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="userMode"
+                    value="phone"
+                    checked={mode === "phone"}
+                    onChange={() => handleModeChange("phone")}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-sm">
+                    {lang === "ar"
+                      ? "الإرسال برقم الهاتف"
+                      : "Send By Phone Number"}
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {mode === "phone" && checkedUsers.length > 0 && (
+              <div className="mt-4 text-gray-700 dark:text-gray-300 font-medium">
+                {lang === "ar"
+                  ? `عدد الأرقام المحددة: ${checkedUsers.length}`
+                  : `Selected Numbers Count: ${checkedUsers.length}`}
+              </div>
+            )}
+
+            {/* Search input */}
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              disabled={mode !== "phone"}
+              placeholder={
+                mode === "phone"
+                  ? lang === "ar"
+                    ? "ابحث بالهاتف..."
+                    : "Search by phone..."
+                  : lang === "ar"
+                  ? "اختر (الإرسال برقم الهاتف) أولاً"
+                  : "Select (Send By Phone) first"
+              }
+              className={`w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl
+        bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition
+        focus:ring-2 focus:ring-blue-500 focus:border-transparent
+        ${mode !== "phone" ? "opacity-50 cursor-not-allowed" : "opacity-100"}`}
+            />
+          </div>
+
+          {/* Users List */}
+          {mode === "phone" && (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto px-6 py-3">
+              {loadingUsers ? (
+                <div className="flex justify-center items-center py-14">
+                  <div className="flex flex-col items-center gap-3">
+                    <svg
+                      className="animate-spin h-12 w-12 text-blue-600"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
+                      />
+                    </svg>
+                    <span className="text-blue-600 font-medium text-base">
+                      {lang === "ar" ? "جاري التحميل..." : "Loading..."}
+                    </span>
+                  </div>
+                </div>
+              ) : selectedUsers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <svg
+                    className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600 animate-bounce"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 17v-2a4 4 0 014-4h4M5 13l4 4m0 0l4-4m-4 4V3"
+                    />
+                  </svg>
+                  <p className="text-center text-gray-500 dark:text-gray-400 text-lg font-medium">
+                    {lang === "ar" ? "لا يوجد مستخدمون" : "No users found."}
+                  </p>
+                  <p className="text-center text-gray-400 dark:text-gray-500 mt-2 text-sm">
+                    {lang === "ar"
+                      ? "حاول تغيير معايير البحث"
+                      : "Try adjusting your search criteria."}
+                  </p>
+                </div>
+              ) : (
+                <ul className="space-y-2 mt-1">
+                  {selectedUsers.map((u) => (
+                    <li
+                      key={u.id}
+                      onClick={() => toggleUserCheck(u.id)}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checkedUsers.includes(u.id)}
+                        onChange={() => toggleUserCheck(u.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      />
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                          {u.name || (lang === "ar" ? "بدون اسم" : "No Name")}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {normalizePhone(u.phone) ||
+                            (lang === "ar" ? "لا يوجد رقم" : "No phone")}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {/* Scheduling */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
@@ -332,147 +543,6 @@ const Notifications = () => {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Right Side - Users List + Role Selector */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
-          {/* Header */}
-          <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 space-y-4">
-            {/* Role Selector */}
-            <div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                {lang === "ar" ? "اختر نوع المستخدمين" : "Select User Role"}
-              </h3>
-
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    value="store_owner"
-                    checked={role === "store_owner"}
-                    onChange={() => setRole("store_owner")}
-                    className="w-4 h-4 text-blue-600"
-                  />
-                  <span className="text-sm">
-                    {lang === "ar" ? "أصحاب المتاجر" : "All Store Owners"}
-                  </span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    value="all"
-                    checked={role === "all"}
-                    onChange={() => setRole("all")}
-                    className="w-4 h-4 text-blue-600"
-                  />
-                  <span className="text-sm">
-                    {lang === "ar" ? "all_accounts" : "All Accounts"}
-                  </span>
-                </label>
-
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    value="customer"
-                    checked={role === "customer"}
-                    onChange={() => setRole("customer")}
-                    className="w-4 h-4 text-blue-600"
-                  />
-                  <span className="text-sm">
-                    {lang === "ar" ? "العملاء" : "All Customers"}
-                  </span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    value="Send_By_PhoneNumber"
-                    checked={role === "Send_By_PhoneNumber"}
-                    onChange={() => setRole("Send_By_PhoneNumber")}
-                    className="w-4 h-4 text-blue-600"
-                  />
-                  <span className="text-sm">
-                    {lang === "ar" ? "العملاء" : "Send_By_PhoneNumber"}
-                  </span>
-                </label>
-              </div>
-            </div>
-
-            {/* Recipients Header */}
-
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={
-                lang === "ar" ? "ابحث بالهاتف..." : "Search by phone..."
-              }
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            />
-          </div>
-
-          {/* Users List */}
-          <div className="max-h-96 overflow-y-auto px-6 py-3">
-            {loadingUsers ? (
-              <div className="flex justify-center items-center py-14">
-                <div className="flex flex-col items-center gap-3">
-                  <svg
-                    className="animate-spin h-12 w-12 text-blue-600"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
-                    ></path>
-                  </svg>
-                  <span className="text-blue-600 font-medium text-base">
-                    {lang === "ar" ? "جاري التحميل..." : "Loading..."}
-                  </span>
-                </div>
-              </div>
-            ) : selectedUsers.length === 0 ? (
-              <p className="text-center py-10 text-gray-500 dark:text-gray-400">
-                {lang === "ar" ? "لا يوجد مستخدمون" : "No users found."}
-              </p>
-            ) : (
-              <ul className="space-y-2 mt-1">
-                {selectedUsers.map((u) => (
-                  <li
-                    key={u.id}
-                    onClick={() => toggleUserCheck(u.id)}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checkedUsers.includes(u.id)}
-                      onChange={() => toggleUserCheck(u.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                    />
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-900 dark:text-white text-sm">
-                        {u.name || (lang === "ar" ? "بدون اسم" : "No Name")}
-                      </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                        {normalizePhone(u.phone) ||
-                          (lang === "ar" ? "لا يوجد رقم" : "No phone")}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
         </div>
       </div>
