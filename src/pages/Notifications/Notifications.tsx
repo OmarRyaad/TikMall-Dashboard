@@ -318,7 +318,7 @@ const Notifications = () => {
                     onChange={() => handleModeChange("all")}
                     className="w-4 h-4 text-blue-600"
                   />
-                  <span className="text-sm">
+                  <span className="text-sm text-gray-900 dark:text-white">
                     {lang === "ar" ? "كل الحسابات" : "All Accounts"}
                   </span>
                 </label>
@@ -332,7 +332,7 @@ const Notifications = () => {
                     onChange={() => handleModeChange("store_owner")}
                     className="w-4 h-4 text-blue-600"
                   />
-                  <span className="text-sm">
+                  <span className="text-sm text-gray-900 dark:text-white">
                     {lang === "ar" ? "أصحاب المتاجر" : "All Store Owners"}
                   </span>
                 </label>
@@ -346,7 +346,7 @@ const Notifications = () => {
                     onChange={() => handleModeChange("customer")}
                     className="w-4 h-4 text-blue-600"
                   />
-                  <span className="text-sm">
+                  <span className="text-sm text-gray-900 dark:text-white">
                     {lang === "ar" ? "العملاء" : "All Customers"}
                   </span>
                 </label>
@@ -360,7 +360,7 @@ const Notifications = () => {
                     onChange={() => handleModeChange("phone")}
                     className="w-4 h-4 text-blue-600"
                   />
-                  <span className="text-sm">
+                  <span className="text-sm text-gray-900 dark:text-white">
                     {lang === "ar"
                       ? "الإرسال برقم الهاتف"
                       : "Send By Phone Number"}
