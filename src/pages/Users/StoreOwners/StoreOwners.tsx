@@ -484,7 +484,7 @@ const StoreOwners = () => {
                                 ? "جاري التفعيل..."
                                 : "Approving..."
                               : lang === "ar"
-                              ? "تفعيل الحساب"
+                              ? "تفعيل"
                               : "Approve"}
                           </button>
                         )}
