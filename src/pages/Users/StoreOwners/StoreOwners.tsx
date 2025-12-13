@@ -6,7 +6,9 @@ import "react-toastify/dist/ReactToastify.css";
 import {
   ArrowPathIcon,
   BuildingStorefrontIcon,
+  CheckCircleIcon,
   MagnifyingGlassIcon,
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
 import { useLanguage } from "../../../context/LanguageContext";
 import { useNavigate } from "react-router-dom";
@@ -35,11 +37,16 @@ const StoreOwners = () => {
 
   const [storeOwners, setStoreOwners] = useState<StoreOwner[]>([]);
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
   const [searchValue, setSearchValue] = useState("");
 
   // Track current filter
+  const [allStoreTypes, setAllStoreTypes] = useState<string[]>([]);
+
+  const [statusFilter, setStatusFilter] = useState<string>("all"); // 'all' | 'active' | 'inactive'
+
   const [currentFilter, setCurrentFilter] = useState<string>("all");
-  const [storeTypes, setStoreTypes] = useState<string[]>([]);
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
@@ -72,6 +79,12 @@ const StoreOwners = () => {
             (t) => t[lang === "ar" ? "ar" : "en"] === currentFilter
           )
         );
+      }
+
+      if (statusFilter === "active") {
+        owners = owners.filter((owner: StoreOwner) => owner.isActive);
+      } else if (statusFilter === "inactive") {
+        owners = owners.filter((owner: StoreOwner) => !owner.isActive);
       }
 
       setStoreOwners(owners);
@@ -116,16 +129,57 @@ const StoreOwners = () => {
     }
   };
 
+  const toggleActivation = async (id: string, current: boolean) => {
+    try {
+      setActionLoading(true);
+
+      const endpoint = current
+        ? `https://api.tik-mall.com/admin/api/suspend/${id}` // Suspend if active
+        : `https://api.tik-mall.com/admin/api/reactivate/${id}`; // Reactivate if inactive
+
+      const res = await fetch(endpoint, {
+        method: "PATCH",
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            }
+          : { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) throw new Error("Failed");
+
+      toast.success(
+        current
+          ? lang === "ar"
+            ? "تم إلغاء التفعيل"
+            : "Deactivated"
+          : lang === "ar"
+          ? "تم التفعيل"
+          : "Activated"
+      );
+
+      fetchStoreOwners();
+    } catch (err) {
+      console.log(err);
+      toast.error(
+        lang === "ar" ? "خطأ أثناء تغيير الحالة" : "Error updating status"
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Populate store types after fetching owners
   useEffect(() => {
-    if (storeOwners.length) {
+    if (storeOwners.length && allStoreTypes.length === 0) {
       const typesSet = new Set<string>();
       storeOwners.forEach((owner) => {
         owner.typeOfStore?.forEach((t) =>
           typesSet.add(t[lang === "ar" ? "ar" : "en"])
         );
       });
-      setStoreTypes(Array.from(typesSet));
+      setAllStoreTypes(Array.from(typesSet));
     }
   }, [storeOwners, lang]);
 
@@ -135,9 +189,17 @@ const StoreOwners = () => {
     setPage(1);
   };
 
+  const resetFilters = () => {
+    setSearchValue("");
+    setCurrentFilter("all");
+    setStatusFilter("all");
+    setPage(1);
+    fetchStoreOwners(1);
+  };
+
   useEffect(() => {
     fetchStoreOwners(page);
-  }, [page, currentFilter]);
+  }, [page, currentFilter, statusFilter]);
 
   if (loading)
     return (
@@ -225,12 +287,47 @@ const StoreOwners = () => {
             >
               <option value="all">{lang === "ar" ? "الكل" : "All"}</option>
 
-              {storeTypes.map((type) => (
+              {allStoreTypes.map((type) => (
                 <option key={type} value={type}>
                   {type}
                 </option>
               ))}
             </select>
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <label className="font-medium text-gray-700 dark:text-gray-300">
+              {lang === "ar" ? "حالة الحساب:" : "Account Status:"}
+            </label>
+
+            <select
+              className="px-3 py-2 border rounded-lg dark:bg-gray-800 dark:text-gray-300"
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="all">{lang === "ar" ? "الكل" : "All"}</option>
+              <option value="active">
+                {lang === "ar" ? "مفعل" : "Active"}
+              </option>
+              <option value="inactive">
+                {lang === "ar" ? "غير مفعل" : "Inactive"}
+              </option>
+            </select>
+            {(searchValue ||
+              currentFilter !== "all" ||
+              statusFilter !== "all") && (
+              <div className="flex gap-2">
+                <button
+                  onClick={resetFilters}
+                  className="flex items-center gap-1 px-3 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+                >
+                  <XCircleIcon className="w-5 h-5" />
+                  {lang === "ar" ? "إعادة تعيين الفلاتر" : "Reset Filters"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -352,16 +449,48 @@ const StoreOwners = () => {
                             : "Inactive"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-8 text-center flex justify-center gap-1">
                         <button
                           onClick={() =>
                             navigate(
                               `/users/store-owners/store-owners-profile/${owner._id}`
                             )
                           }
-                          className="px-3 py-1.5 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                          className="px-4 py-2 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                         >
                           {lang === "ar" ? "عرض" : "View"}
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            owner && toggleActivation(owner._id, owner.isActive)
+                          }
+                          disabled={actionLoading}
+                          className={`flex items-center justify-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                            actionLoading
+                              ? "bg-yellow-300 cursor-not-allowed text-white"
+                              : owner.isActive
+                              ? "bg-yellow-500 hover:bg-yellow-600 text-white"
+                              : "bg-green-500 hover:bg-green-600 text-white"
+                          }`}
+                        >
+                          {actionLoading ? null : owner.isActive ? (
+                            <XCircleIcon className="w-3 h-3" />
+                          ) : (
+                            <CheckCircleIcon className="w-3 h-3" />
+                          )}
+
+                          {actionLoading
+                            ? lang === "ar"
+                              ? "جاري التغيير..."
+                              : "Processing..."
+                            : lang === "ar"
+                            ? owner.isActive
+                              ? "إيقاف"
+                              : "تفعيل"
+                            : owner.isActive
+                            ? "Deactivate"
+                            : "Activate"}
                         </button>
                       </td>
                     </tr>
@@ -371,7 +500,7 @@ const StoreOwners = () => {
             </div>
 
             {/* PAGINATION */}
-            {totalPages && (
+            {totalPages && currentFilter === "all" && (
               <div className="pb-2 flex gap-2 justify-center">
                 {Array.from({ length: totalPages }, (_, i) => (
                   <button
@@ -390,8 +519,33 @@ const StoreOwners = () => {
             )}
           </>
         ) : (
-          <div className="text-center py-20 text-gray-500 dark:text-gray-400">
-            {lang === "ar" ? "لا يوجد أصحاب متاجر" : "No store owners found."}
+          <div className="flex flex-col items-center justify-center py-20 col-span-full">
+            <div className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-16 h-16"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+                />
+              </svg>
+            </div>
+
+            <p className="text-gray-500 dark:text-gray-400 text-base md:text-lg font-medium">
+              {lang === "ar" ? "لا يوجد أصحاب متاجر" : "No store owners found."}
+            </p>
+
+            <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">
+              {lang === "ar"
+                ? "حاول إضافة أصحاب متاجر جدد"
+                : "Try adding new store owners."}
+            </p>
           </div>
         )}
       </div>

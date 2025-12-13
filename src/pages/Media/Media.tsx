@@ -497,8 +497,33 @@ const Media = () => {
         ))}
 
         {media.length === 0 && (
-          <div className="text-center text-gray-500 dark:text-gray-400 text-sm py-6">
-            {lang === "ar" ? "لا توجد وسائط" : "No media found."}
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-16 h-16"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 3v18h18V3H3zm4 4h10v10H7V7z"
+                />
+              </svg>
+            </div>
+
+            <p className="text-gray-500 dark:text-gray-400 text-base md:text-lg font-medium">
+              {lang === "ar" ? "لا توجد وسائط" : "No media found."}
+            </p>
+
+            <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">
+              {lang === "ar"
+                ? "حاول رفع وسائط جديدة"
+                : "Try uploading new media."}
+            </p>
           </div>
         )}
       </div>

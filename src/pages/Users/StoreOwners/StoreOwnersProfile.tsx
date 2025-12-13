@@ -79,47 +79,6 @@ const StoreOwnersProfile = () => {
     }
   }, [allOwners, ownerId]);
 
-  const toggleActivation = async (id: string, current: boolean) => {
-    try {
-      setActionLoading(true);
-
-      const endpoint = current
-        ? `https://api.tik-mall.com/admin/api/suspend/${id}` // Suspend if active
-        : `https://api.tik-mall.com/admin/api/reactivate/${id}`; // Reactivate if inactive
-
-      const res = await fetch(endpoint, {
-        method: "PATCH",
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            }
-          : { "Content-Type": "application/json" },
-      });
-
-      if (!res.ok) throw new Error("Failed");
-
-      toast.success(
-        current
-          ? lang === "ar"
-            ? "تم إلغاء التفعيل"
-            : "Deactivated"
-          : lang === "ar"
-          ? "تم التفعيل"
-          : "Activated"
-      );
-
-      fetchOwners();
-    } catch (err) {
-      console.log(err);
-      toast.error(
-        lang === "ar" ? "خطأ أثناء تغيير الحالة" : "Error updating status"
-      );
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   const handleApprove = async (id: string) => {
     try {
       setActionLoading(true);
@@ -428,34 +387,6 @@ const StoreOwnersProfile = () => {
                   : "Approve Account"}
               </button>
             )}
-
-            {/* Deactivate / Activate Account */}
-            <button
-              onClick={() =>
-                owner && toggleActivation(owner._id, owner.isActive)
-              }
-              disabled={actionLoading}
-              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold shadow-md transition-all duration-300 transform ${
-                actionLoading
-                  ? "bg-yellow-300 cursor-not-allowed text-white"
-                  : owner.isActive
-                  ? "bg-yellow-500 hover:bg-yellow-600 text-white hover:scale-105"
-                  : "bg-green-500 hover:bg-green-600 text-white hover:scale-105"
-              }`}
-            >
-              <XCircleIcon className="w-5 h-5" />
-              {actionLoading
-                ? lang === "ar"
-                  ? "جاري التغيير..."
-                  : "Processing..."
-                : lang === "ar"
-                ? owner.isActive
-                  ? "إيقاف الحساب"
-                  : "تفعيل الحساب"
-                : owner.isActive
-                ? "Deactivate Account"
-                : "Activate Account"}
-            </button>
 
             {/* Delete Account */}
             <button

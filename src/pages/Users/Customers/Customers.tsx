@@ -443,8 +443,33 @@ const Customers = () => {
             )}
           </>
         ) : (
-          <div className="text-center py-20 text-gray-500 dark:text-gray-400">
-            {lang === "ar" ? "لا يوجد عملاء" : "No customers found."}
+          <div className="flex flex-col items-center justify-center py-20 col-span-full">
+            <div className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-16 h-16"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+                />
+              </svg>
+            </div>
+
+            <p className="text-gray-500 dark:text-gray-400 text-base md:text-lg font-medium">
+              {lang === "ar" ? "لا يوجد عملاء" : "No customers found."}
+            </p>
+
+            <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">
+              {lang === "ar"
+                ? "حاول إضافة عملاء جدد"
+                : "Try adding new store owners."}
+            </p>
           </div>
         )}
       </div>
