@@ -293,19 +293,19 @@ const Media = () => {
       {/* FILTERS */}
       <div className="flex justify-end mb-6">
         <div className="flex items-center gap-4 rounded-xl px-5 py-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 space-y-2 sm:space-y-0">
+          <div className="flex flex-col lg:flex-row gap-4">
             {/* Type Filter */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 w-full sm:w-auto">
-              <div className="flex items-center gap-2 mb-2 sm:mb-0">
-                <PhotoIcon className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  {lang === "ar" ? "الفلتر حسب النوع:" : "Filter by type:"}
-                </span>
-              </div>
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+              <PhotoIcon className="w-5 h-5 text-blue-500" />
+
+              <span className="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                {lang === "ar" ? "الفلتر حسب النوع:" : "Filter by type:"}
+              </span>
+
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="bg-transparent border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
+                className="px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 dark:text-gray-300"
               >
                 <option value="image">{lang === "ar" ? "صور" : "Image"}</option>
                 <option value="video">
@@ -315,19 +315,17 @@ const Media = () => {
             </div>
 
             {/* Department Filter */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 w-full sm:w-auto">
-              <div className="flex items-center gap-2 mb-2 sm:mb-0">
-                <BuildingOffice2Icon className="w-5 h-5 text-purple-500 dark:text-purple-400" />
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  {lang === "ar"
-                    ? "الفلتر حسب القسم:"
-                    : "Filter by department:"}
-                </span>
-              </div>
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+              <BuildingOffice2Icon className="w-5 h-5 text-purple-500" />
+
+              <span className="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                {lang === "ar" ? "الفلتر حسب القسم:" : "Filter by department:"}
+              </span>
+
               <select
                 value={filterDepartment}
                 onChange={(e) => setFilterDepartment(e.target.value)}
-                className="bg-transparent border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
+                className="px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 dark:text-gray-300"
               >
                 <option value="">
                   {lang === "ar" ? "جميع الأقسام" : "All Departments"}
@@ -340,6 +338,7 @@ const Media = () => {
               </select>
             </div>
           </div>
+
           {/* Refresh Button */}
           <div className="flex gap-2">
             <button

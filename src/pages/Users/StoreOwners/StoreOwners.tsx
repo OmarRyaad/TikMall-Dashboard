@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import {
   ArrowPathIcon,
   BuildingStorefrontIcon,
+  CheckBadgeIcon,
   CheckCircleIcon,
   MagnifyingGlassIcon,
   XCircleIcon,
@@ -37,12 +38,16 @@ const StoreOwners = () => {
 
   const [storeOwners, setStoreOwners] = useState<StoreOwner[]>([]);
   const [loading, setLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   const [searchValue, setSearchValue] = useState("");
 
   // Track current filter
-  const [allStoreTypes, setAllStoreTypes] = useState<string[]>([]);
+  const [allStoreTypes, setAllStoreTypes] = useState<
+    { ar: string; en: string }[]
+  >([]);
 
   const [statusFilter, setStatusFilter] = useState<string>("all"); // 'all' | 'active' | 'inactive'
 
@@ -75,9 +80,7 @@ const StoreOwners = () => {
 
       if (currentFilter !== "all" && currentFilter !== "") {
         owners = owners.filter((owner: StoreOwner) =>
-          owner.typeOfStore?.some(
-            (t) => t[lang === "ar" ? "ar" : "en"] === currentFilter
-          )
+          owner.typeOfStore?.some((t) => t.en === currentFilter)
         );
       }
 
@@ -129,59 +132,39 @@ const StoreOwners = () => {
     }
   };
 
-  const toggleActivation = async (id: string, current: boolean) => {
+  const handleApprove = async (id: string) => {
     try {
-      setActionLoading(true);
+      setActionLoading((prev) => ({ ...prev, [id]: true }));
 
-      const endpoint = current
-        ? `https://api.tik-mall.com/admin/api/suspend/${id}` // Suspend if active
-        : `https://api.tik-mall.com/admin/api/reactivate/${id}`; // Reactivate if inactive
+      const res = await fetch(
+        `https://api.tik-mall.com/admin/api/approve/${id}`,
+        {
+          method: "PATCH",
+          headers: token
+            ? {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              }
+            : { "Content-Type": "application/json" },
+        }
+      );
 
-      const res = await fetch(endpoint, {
-        method: "PATCH",
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            }
-          : { "Content-Type": "application/json" },
-      });
-
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) throw new Error("Approval failed");
 
       toast.success(
-        current
-          ? lang === "ar"
-            ? "تم إلغاء التفعيل"
-            : "Deactivated"
-          : lang === "ar"
-          ? "تم التفعيل"
-          : "Activated"
+        lang === "ar" ? "تم الموافقة على المتجر" : "Store approved successfully"
       );
 
       fetchStoreOwners();
     } catch (err) {
       console.log(err);
       toast.error(
-        lang === "ar" ? "خطأ أثناء تغيير الحالة" : "Error updating status"
+        lang === "ar" ? "خطأ أثناء الموافقة" : "Error approving store"
       );
     } finally {
-      setActionLoading(false);
+      setActionLoading((prev) => ({ ...prev, [id]: false }));
     }
   };
-
-  // Populate store types after fetching owners
-  useEffect(() => {
-    if (storeOwners.length && allStoreTypes.length === 0) {
-      const typesSet = new Set<string>();
-      storeOwners.forEach((owner) => {
-        owner.typeOfStore?.forEach((t) =>
-          typesSet.add(t[lang === "ar" ? "ar" : "en"])
-        );
-      });
-      setAllStoreTypes(Array.from(typesSet));
-    }
-  }, [storeOwners, lang]);
 
   // Handle filter change
   const handleFilterChange = (value: string) => {
@@ -197,9 +180,28 @@ const StoreOwners = () => {
     fetchStoreOwners(1);
   };
 
+  // Populate store types after fetching owners
+  useEffect(() => {
+    if (!storeOwners.length) return;
+
+    const map = new Map<string, { ar: string; en: string }>();
+
+    storeOwners.forEach((owner) => {
+      owner.typeOfStore?.forEach((t) => {
+        map.set(t.en, t);
+      });
+    });
+
+    setAllStoreTypes(Array.from(map.values()));
+  }, [storeOwners]);
+
   useEffect(() => {
     fetchStoreOwners(page);
   }, [page, currentFilter, statusFilter]);
+
+  useEffect(() => {
+    setCurrentFilter("all");
+  }, [lang]);
 
   if (loading)
     return (
@@ -235,17 +237,17 @@ const StoreOwners = () => {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8">
         {/* Title */}
-        <h2 className="flex items-center gap-2 text-2xl md:text-3xl font-bold text-[#456FFF]">
+        <h2 className="flex items-center gap-8 text-2xl md:text-3xl font-bold text-[#456FFF]">
           <BuildingStorefrontIcon className="w-8 h-8 text-blue-600" />
           {lang === "ar" ? "أصحاب المتاجر" : "Store Owners"}
         </h2>
 
         {/* Search + Filter */}
-        <div className="flex flex-col gap-3 w-full sm:w-auto">
-          {/* Search */}
-          <div className="flex gap-3 w-full sm:w-auto">
+        <div className="flex flex-col gap-4 w-full">
+          {/* Search + Buttons */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
             <input
-              className="px-4 py-2 border rounded-lg dark:bg-gray-800 w-full sm:w-auto dark:text-gray-300"
+              className="px-4 py-2 border rounded-lg dark:bg-gray-800 flex-1 dark:text-gray-300"
               placeholder={
                 lang === "ar"
                   ? "ابحث عن صاحب متجر..."
@@ -257,77 +259,80 @@ const StoreOwners = () => {
             />
             <button
               onClick={searchStoreOwner}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 w-full sm:w-auto transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
             >
               <MagnifyingGlassIcon className="w-5 h-5" />
               {lang === "ar" ? "بحث" : "Search"}
             </button>
-            {/* Refresh Button */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => fetchStoreOwners()}
-                className="px-5 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 flex items-center gap-2"
-              >
-                <ArrowPathIcon className="w-5 h-5" />
-                {lang === "ar" ? "تحديث" : "Refresh"}
-              </button>
-            </div>
-          </div>
-
-          {/* Filter (under search) */}
-          <div className="flex items-center gap-2 mt-2">
-            <label className="font-medium text-gray-700 dark:text-gray-300">
-              {lang === "ar" ? "تصفية حسب نوع المتجر:" : "Type of store:"}
-            </label>
-
-            <select
-              className="px-3 py-2 border rounded-lg dark:bg-gray-800 dark:text-gray-300"
-              value={currentFilter}
-              onChange={(e) => handleFilterChange(e.target.value)}
+            <button
+              onClick={() => fetchStoreOwners()}
+              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg shadow hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2 transition-colors"
             >
-              <option value="all">{lang === "ar" ? "الكل" : "All"}</option>
-
-              {allStoreTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2 mt-2">
-            <label className="font-medium text-gray-700 dark:text-gray-300">
-              {lang === "ar" ? "حالة الحساب:" : "Account Status:"}
-            </label>
-
-            <select
-              className="px-3 py-2 border rounded-lg dark:bg-gray-800 dark:text-gray-300"
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="all">{lang === "ar" ? "الكل" : "All"}</option>
-              <option value="active">
-                {lang === "ar" ? "مفعل" : "Active"}
-              </option>
-              <option value="inactive">
-                {lang === "ar" ? "غير مفعل" : "Inactive"}
-              </option>
-            </select>
+              <ArrowPathIcon className="w-5 h-5" />
+              {lang === "ar" ? "تحديث" : "Refresh"}
+            </button>
             {(searchValue ||
               currentFilter !== "all" ||
               statusFilter !== "all") && (
-              <div className="flex gap-2">
-                <button
-                  onClick={resetFilters}
-                  className="flex items-center gap-1 px-3 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
-                >
-                  <XCircleIcon className="w-5 h-5" />
-                  {lang === "ar" ? "إعادة تعيين الفلاتر" : "Reset Filters"}
-                </button>
-              </div>
+              <button
+                onClick={resetFilters}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center gap-2 transition-colors"
+              >
+                <XCircleIcon className="w-5 h-5" />
+                {lang === "ar" ? "إعادة تعيين" : "Reset"}
+              </button>
             )}
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Store Type */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+              <BuildingStorefrontIcon className="w-5 h-5 text-blue-500" />
+              <span className="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                {lang === "ar"
+                  ? "تصفية حسب نوع المتجر:"
+                  : "Filter by type of store:"}
+              </span>
+              <select
+                className="px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 dark:text-gray-300"
+                value={currentFilter}
+                onChange={(e) => handleFilterChange(e.target.value)}
+              >
+                <option value="all">{lang === "ar" ? "الكل" : "All"}</option>
+                {allStoreTypes.map((type) => (
+                  <option key={type.en} value={type.en}>
+                    {lang === "ar" ? type.ar : type.en}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Account Status */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+              <CheckBadgeIcon className="w-5 h-5 text-blue-500" />
+              <span className="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                {lang === "ar"
+                  ? "تصفية حسب حالة الحساب:"
+                  : "Filter by account status:"}
+              </span>
+              <select
+                className="px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 dark:text-gray-300"
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="all">{lang === "ar" ? "الكل" : "All"}</option>
+                <option value="active">
+                  {lang === "ar" ? "مفعل" : "Active"}
+                </option>
+                <option value="inactive">
+                  {lang === "ar" ? "غير مفعل" : "Inactive"}
+                </option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -449,49 +454,40 @@ const StoreOwners = () => {
                             : "Inactive"}
                         </span>
                       </td>
-                      <td className="px-4 py-8 text-center flex justify-center gap-1">
+                      <td className="px-4 py-8 text-center flex justify-center gap-2">
+                        {/* View Button */}
                         <button
                           onClick={() =>
                             navigate(
                               `/users/store-owners/store-owners-profile/${owner._id}`
                             )
                           }
-                          className="px-4 py-2 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                          className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                         >
                           {lang === "ar" ? "عرض" : "View"}
                         </button>
 
-                        <button
-                          onClick={() =>
-                            owner && toggleActivation(owner._id, owner.isActive)
-                          }
-                          disabled={actionLoading}
-                          className={`flex items-center justify-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                            actionLoading
-                              ? "bg-yellow-300 cursor-not-allowed text-white"
-                              : owner.isActive
-                              ? "bg-yellow-500 hover:bg-yellow-600 text-white"
-                              : "bg-green-500 hover:bg-green-600 text-white"
-                          }`}
-                        >
-                          {actionLoading ? null : owner.isActive ? (
-                            <XCircleIcon className="w-3 h-3" />
-                          ) : (
-                            <CheckCircleIcon className="w-3 h-3" />
-                          )}
-
-                          {actionLoading
-                            ? lang === "ar"
-                              ? "جاري التغيير..."
-                              : "Processing..."
-                            : lang === "ar"
-                            ? owner.isActive
-                              ? "إيقاف"
-                              : "تفعيل"
-                            : owner.isActive
-                            ? "Deactivate"
-                            : "Activate"}
-                        </button>
+                        {/* Approve / Activate Account */}
+                        {!owner?.isApproved && (
+                          <button
+                            onClick={() => owner && handleApprove(owner._id)}
+                            disabled={actionLoading[owner._id]}
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
+                              actionLoading[owner._id]
+                                ? "bg-blue-300 cursor-not-allowed text-white"
+                                : "bg-blue-600 hover:bg-blue-700 text-white hover:scale-105"
+                            }`}
+                          >
+                            <CheckCircleIcon className="w-4 h-4" />
+                            {actionLoading[owner._id]
+                              ? lang === "ar"
+                                ? "جاري التفعيل..."
+                                : "Approving..."
+                              : lang === "ar"
+                              ? "تفعيل الحساب"
+                              : "Approve"}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
