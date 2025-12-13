@@ -109,7 +109,7 @@ const Moderators = () => {
     try {
       setLoading(true);
       const res = await fetch(
-        `https://api.tik-mall.com/admin/api/users/admin/all?page=${pageNumber}&limit=10`,
+        `https://api.tik-mall.com/admin/api/users/admin/all?page=${pageNumber}&limit=1000`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }

@@ -396,6 +396,15 @@ const Media = () => {
 
             {/* Media */}
             <div className="relative w-full h-[500px] dark:bg-gray-800 overflow-hidden rounded-lg">
+              {filterType === "image" && (
+                <button
+                  onClick={() => window.open(item.thumbnailUrl, "_blank")}
+                  className="absolute top-3 right-3 z-20 bg-black/60 text-white px-3 py-1 rounded-md text-xs hover:bg-black transition"
+                >
+                  {lang === "ar" ? "عرض كامل" : "View Full"}
+                </button>
+              )}
+
               <div
                 className="absolute inset-0 z-10 flex items-center justify-center bg-gray-200/80 dark:bg-gray-900/80 backdrop-blur-sm transition-opacity duration-500 pointer-events-none"
                 data-loading={

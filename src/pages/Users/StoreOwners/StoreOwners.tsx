@@ -52,7 +52,7 @@ const StoreOwners = () => {
         "https://api.tik-mall.com/admin/api/users/store_owner/all";
       const params = new URLSearchParams({
         page: pageNumber.toString(),
-        limit: "10",
+        limit: "1000",
       });
 
       if (currentFilter && currentFilter !== "all") {
@@ -371,7 +371,7 @@ const StoreOwners = () => {
             </div>
 
             {/* PAGINATION */}
-            {totalPages > 1 && (
+            {totalPages && (
               <div className="pb-2 flex gap-2 justify-center">
                 {Array.from({ length: totalPages }, (_, i) => (
                   <button

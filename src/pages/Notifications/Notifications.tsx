@@ -36,6 +36,7 @@ const Notifications = () => {
 
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [checkedUsers, setCheckedUsers] = useState<string[]>([]);
+  const [pageNumber, setPageNumber] = useState(1);
 
   const [search, setSearch] = useState("");
   const [loadingSend, setLoadingSend] = useState(false);
@@ -59,8 +60,8 @@ const Notifications = () => {
     try {
       const url =
         mode === "phone" && query.trim()
-          ? `https://api.tik-mall.com/admin/api/users/all/${query}`
-          : `https://api.tik-mall.com/admin/api/users/${mode}/${query}`;
+          ? `https://api.tik-mall.com/admin/api/users/all/${query}?page=${pageNumber}&limit=1000`
+          : `https://api.tik-mall.com/admin/api/users/${mode}/${query}?page=${pageNumber}&limit=1000`;
 
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -99,7 +100,7 @@ const Notifications = () => {
       setLoadingUsers(true);
       try {
         const res = await fetch(
-          `https://api.tik-mall.com/admin/api/users/${mode}/all`,
+          `https://api.tik-mall.com/admin/api/users/${mode}/all?page=${pageNumber}&limit=1000`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -123,7 +124,7 @@ const Notifications = () => {
     };
 
     fetchUsers();
-  }, [mode, token]);
+  }, [mode, token, pageNumber]);
 
   useEffect(() => {
     if (mode !== "phone") return;
@@ -135,7 +136,7 @@ const Notifications = () => {
     }
 
     fetchSelectedUsers("phone", search);
-  }, [search, mode]);
+  }, [search, mode, pageNumber]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -151,7 +152,7 @@ const Notifications = () => {
 
   const handleModeChange = (newMode: SelectMode) => {
     setMode(newMode);
-
+    setPageNumber(1);
     if (newMode !== "phone") {
       setSearch("");
       setSelectedUsers([]);
