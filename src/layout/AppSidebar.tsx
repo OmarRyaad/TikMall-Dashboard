@@ -173,7 +173,7 @@ const AppSidebar: React.FC = () => {
       name: t.complaints,
       icon: <ExclamationCircleIcon className="w-6 h-6" />,
       path: "/complaints",
-      permissionKey: "manageComplaints",
+      permissionKey: "manageComplains",
     },
     {
       name: t.notifications,

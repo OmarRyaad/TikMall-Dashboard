@@ -475,7 +475,7 @@ const StoreOwners = () => {
                             className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
                               actionLoading[owner._id]
                                 ? "bg-blue-300 cursor-not-allowed text-white"
-                                : "bg-blue-600 hover:bg-blue-700 text-white hover:scale-105"
+                                : "flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 transition"
                             }`}
                           >
                             <CheckCircleIcon className="w-4 h-4" />

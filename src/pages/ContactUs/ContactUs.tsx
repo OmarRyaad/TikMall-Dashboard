@@ -5,7 +5,11 @@ import { toast, ToastContainer } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import "react-toastify/dist/ReactToastify.css";
 import { useLanguage } from "../../context/LanguageContext";
-import { ChatBubbleLeftEllipsisIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowPathIcon,
+  ChatBubbleLeftEllipsisIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
 
 interface User {
   _id: string;
@@ -29,7 +33,9 @@ const ContactUs = () => {
   const isRTL = lang === "ar";
 
   const [complaints, setComplaints] = useState<Complaint[]>([]);
-  const [filter, setFilter] = useState<"all" | "pending" | "resolved">("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+
   const [loadingIds, setLoadingIds] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -128,12 +134,7 @@ const ContactUs = () => {
 
   useEffect(() => {
     fetchComplaints();
-  }, []);
-
-  const filteredComplaints =
-    filter === "all"
-      ? complaints
-      : complaints.filter((c) => c.status === filter);
+  }, [statusFilter, page, token]);
 
   if (loading)
     return (
@@ -151,7 +152,7 @@ const ContactUs = () => {
           <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
             {lang === "ar" ? "جاري التحميل" : "Loading"}{" "}
             <span className="text-blue-500">
-              {lang === "ar" ? "الشكاوي" : "Complaints"}
+              {lang === "ar" ? "رسائل التواصل" : "Communication Messages"}
             </span>
             ...
           </p>
@@ -177,24 +178,50 @@ const ContactUs = () => {
           </h2>
         </div>
 
-        <select
-          value={filter}
-          onChange={(e) =>
-            setFilter(e.target.value as "all" | "pending" | "resolved")
-          }
-          className="border border-gray-300 dark:border-gray-700 px-4 py-2 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-400 dark:bg-gray-800 dark:text-gray-200 transition"
-        >
-          <option value="all">{lang === "ar" ? "الكل" : "All"}</option>
-          <option value="pending">
-            {lang === "ar" ? "قيد الانتظار" : "Pending"}
-          </option>
-          <option value="resolved">
-            {lang === "ar" ? "تمت المراجعة" : "Reviewed"}
-          </option>
-        </select>
+        {/* Status Filter */}
+        <div className="mb-6 flex justify-end items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+            <CheckCircleIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <label className="font-medium text-gray-700 dark:text-gray-300">
+              {lang === "ar" ? "تصفية حسب الحالة:" : "Filter by status:"}
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1);
+              }}
+              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 px-2 py-1 rounded text-gray-900 dark:text-gray-100"
+            >
+              <option value="all">{lang === "ar" ? "الكل" : "All"}</option>
+              <option value="pending">
+                {lang === "ar" ? "معلقة" : "Pending"}
+              </option>
+              <option value="reviewed">
+                {lang === "ar" ? "تمت المراجعة" : "Reviewed"}
+              </option>
+              <option value="resolved">
+                {lang === "ar" ? "تم الحل" : "Resolved"}
+              </option>
+              <option value="rejected">
+                {lang === "ar" ? "مرفوضة" : "Rejected"}
+              </option>
+            </select>
+          </div>
+          {/* Refresh Button */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => fetchComplaints()}
+              className="px-5 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-300 flex items-center gap-2"
+            >
+              <ArrowPathIcon className="w-5 h-5" />
+              {lang === "ar" ? "تحديث" : "Refresh"}
+            </button>
+          </div>
+        </div>
       </div>
       {/* Empty State */}
-      {filteredComplaints.length === 0 ? (
+      {complaints.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 text-center text-gray-500 dark:text-gray-400">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -221,7 +248,7 @@ const ContactUs = () => {
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredComplaints.map((c) => (
+          {complaints.map((c) => (
             <div
               key={c._id}
               className="p-5 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md hover:shadow-xl transition relative bg-white dark:bg-gray-800"

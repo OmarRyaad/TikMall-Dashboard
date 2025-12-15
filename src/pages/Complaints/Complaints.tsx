@@ -123,7 +123,7 @@ const Complaints = () => {
             <span className="w-3 h-3 rounded-full bg-blue-300 animate-bounce [animation-delay:0.3s]" />
           </div>
           <p className="mt-4 text-lg font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-            {lang === "ar" ? "جاري تحميل الشكاوى..." : "Loading"}{" "}
+            {lang === "ar" ? "جاري التحميل" : "Loading"}{" "}
             <span className="text-blue-500">
               {lang === "ar" ? "الشكاوى" : "Complaints"}
             </span>
@@ -153,8 +153,8 @@ const Complaints = () => {
       </h2>
 
       {/* Status Filter */}
-      <div className="mb-6 flex justify-end gap-2">
-        <div className="flex items-center gap-2">
+      <div className="mb-6 flex justify-end items-center gap-2">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
           <CheckCircleIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           <label className="font-medium text-gray-700 dark:text-gray-300">
             {lang === "ar" ? "تصفية حسب الحالة:" : "Filter by status:"}

@@ -174,6 +174,7 @@ const StoreOwnersProfile = () => {
           : "Store owner deleted successfully!"
       );
 
+      navigate("/users/store-owners");
       setDeleteModalOpen(false);
       setOwnerToDelete(null);
       fetchOwners();
