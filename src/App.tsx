@@ -47,6 +47,7 @@ export default function App() {
             <Route index path="/" element={<Home />} />
             <Route index path="/users/moderators" element={<Moderators />} />
             <Route index path="/users/store-owners" element={<StoreOwners />} />
+
             <Route
               index
               path="/users/store-owners/store-owners-profile/:ownerId"

@@ -49,6 +49,8 @@ const LiveBroadcasts = () => {
   const [selectedBroadcast, setSelectedBroadcast] = useState<Broadcast | null>(
     null
   );
+  const [adminId, setAdminId] = useState<string>("");
+  const [adminName, setAdminName] = useState<string>("Admin Viewer"); // Optional: for the userName field
   const zgRef = useRef<ZegoExpressEngine | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const totalActive = broadcasts.length;
@@ -95,7 +97,7 @@ const LiveBroadcasts = () => {
       const token = localStorage.getItem("accessToken");
 
       const res = await fetch(
-        `https://api.tik-mall.com/admin/api/live-streams/${uid}/zego-signature`,
+        `https://api.tik-mall.com/admin/api/live-streams/${uid}/zego-signature/v2`,
         {
           method: "GET",
           headers: {
@@ -108,6 +110,8 @@ const LiveBroadcasts = () => {
       if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
 
       const data = await res.json();
+      if (!data.success || typeof data.data !== "string")
+        throw new Error("Failed to get Zego signature");
       if (!data.success) throw new Error("Failed to get Zego signature");
 
       return data.data;
@@ -120,27 +124,52 @@ const LiveBroadcasts = () => {
     }
   };
 
+  // Add this function inside LiveBroadcasts component
+  const cleanupZegoSession = () => {
+    if (zgRef.current && selectedBroadcast?.uid) {
+      try {
+        // 1. Stop playing the stream if it was started
+        zgRef.current.stopPlayingStream(selectedBroadcast.uid);
+
+        // 2. Log out of the room
+        zgRef.current.logoutRoom(selectedBroadcast.uid);
+
+        // 3. Clear the video element from the container
+        if (containerRef.current) {
+          containerRef.current.innerHTML = "";
+        }
+      } catch (e) {
+        console.warn("Zego cleanup failed:", e);
+      }
+    }
+  };
+
   const handleWatchBroadcast = async (broadcast: Broadcast) => {
     if (!broadcast.uid || !zgRef.current) return;
-
+    if (!adminId) {
+      toast.error("User ID is missing. Cannot start stream.");
+      return;
+    }
+    cleanupZegoSession();
     setSelectedBroadcast(broadcast);
 
-    const zegoData = await fetchZegoSignature(broadcast.uid);
-    if (!zegoData?.signature) {
+    const zegoToken = await fetchZegoSignature(broadcast.uid);
+    if (!zegoToken) {
       toast.error("Invalid Zego signature");
       return;
     }
-
     try {
       // loginRoom with token + user object (2‑arg or 3‑arg depending on version)
-      await zgRef.current.loginRoom(broadcast.uid, zegoData.signature, {
-        userID: `viewer_${Date.now()}`,
-        userName: "Viewer",
+      await zgRef.current.loginRoom(broadcast.uid, zegoToken, {
+        userID: adminId,
+        userName: adminName,
       });
+
+      await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds
 
       // startPlayingStream — get remote MediaStream
       const remoteStream = await zgRef.current.startPlayingStream(
-        broadcast.uid
+        broadcast.uid // The Stream ID
       );
 
       // then assign to a video element you control:
@@ -160,23 +189,52 @@ const LiveBroadcasts = () => {
   };
 
   useEffect(() => {
-    // Initialize ZegoExpressEngine only once
+    // 1. Retrieve the Logged-in User's ID (Admin ID)
+    const storedId = "693d677ae8dc33513b14eaf2"; // <--- CONFIRM this key
+    const storedName = localStorage.getItem("Super Admin") || "Admin Viewer"; // <--- CONFIRM this key
+
+    if (storedId) {
+      setAdminId(storedId);
+      setAdminName(storedName);
+    } else {
+      // Handle case where user ID is missing (e.g., user is not logged in properly)
+      setError(
+        lang === "ar" ? "فشل تحديد هوية المشاهد." : "Failed to identify viewer."
+      );
+    } // 2. Initialize ZegoExpressEngine only once (as before)
+
     const appID = 1065201027;
-    const server = "wss://webliveroom1234567890-api.zegocloud.com/ws";
+    const server = "wss://webliveroom-api.zego.im/ws";
 
     const zg = new ZegoExpressEngine(appID, server);
+    zgRef.current = zg; // Optional: Set log level
     zgRef.current = zg;
 
-    // Optional: Set log level
-    zg.setLogConfig({ logLevel: "info" });
+    zg.on("roomStreamUpdate", (roomID, updateType, streamList) => {
+      if (updateType === "ADD" && selectedBroadcast?.uid === roomID) {
+        console.log("Stream ADDED:", streamList[0].streamID);
+        // If the listener finds the stream, you should now try to play it here.
 
-    // Cleanup on unmount
+        // To prevent potential race conditions, you might need to structure
+        // the playing logic inside a utility function.
+        // For now, let's keep the core logic in handleWatchBroadcast but delay playing.
+      } else if (updateType === "DELETE") {
+        console.log("Stream REMOVED:", streamList[0].streamID);
+      }
+    });
+
+    zg.setLogConfig({ logLevel: "info" }); // Cleanup on unmount
+
     return () => {
       if (zgRef.current) {
+        // Important: Log out of the room when unmounting or closing the modal
+        // Note: You might want to move the logout logic to the modal close handler
+        // For component unmount cleanup:
         zgRef.current = null;
       }
     };
-  }, []);
+  }, [lang, selectedBroadcast]);
+
   if (loading)
     return (
       <div className="flex items-center justify-center h-[80vh] bg-transparent">
@@ -337,9 +395,6 @@ const LiveBroadcasts = () => {
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
                 <EyeIcon className="w-5 h-5" />
-                <span className="text-sm font-medium">
-                  {broadcast.viewersCount ?? 0}
-                </span>
               </div>
             </div>
 
