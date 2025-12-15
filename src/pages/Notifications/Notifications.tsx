@@ -8,7 +8,7 @@ import Flatpickr from "react-flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import { useLanguage } from "../../context/LanguageContext";
 
-type SelectMode = "all" | "customer" | "store_owner" | "phone";
+type SelectMode = "all" | "customer" | "store_owner" | "phone" | null;
 interface User {
   id: string;
   name: string;
@@ -25,7 +25,7 @@ const Notifications = () => {
   const { lang } = useLanguage();
   const isRTL = lang === "ar";
 
-  const [mode, setMode] = useState<SelectMode>("store_owner");
+  const [mode, setMode] = useState<SelectMode>(null);
 
   const [formData, setFormData] = useState({
     NotificationTitle: "",
@@ -92,7 +92,7 @@ const Notifications = () => {
   };
 
   useEffect(() => {
-    if (mode === "phone") return;
+    if (!mode || mode === "phone") return;
 
     const fetchUsers = async () => {
       if (!token) return;
@@ -160,6 +160,21 @@ const Notifications = () => {
     }
   };
 
+  const resetAll = () => {
+    setMode(null);
+    setSelectedUsers([]);
+    setCheckedUsers([]);
+    setSearch("");
+    setPageNumber(1);
+
+    setFormData({
+      NotificationTitle: "",
+      NotificationMessage: "",
+      schedule: "instant",
+      futureDate: new Date(),
+    });
+  };
+
   const handleSave = async (data: typeof formData) => {
     if (loadingSend) return;
 
@@ -188,10 +203,10 @@ const Notifications = () => {
       body: data.NotificationMessage,
       type: "info",
       data: {},
-      delay:
+      sendAt:
         data.schedule === "future"
-          ? Math.floor((data.futureDate.getTime() - Date.now()) / 1000)
-          : 0,
+          ? data.futureDate.toISOString()
+          : new Date().toISOString(),
     };
 
     try {
@@ -215,14 +230,7 @@ const Notifications = () => {
           : "Notification sent successfully!"
       );
 
-      setFormData({
-        NotificationTitle: "",
-        NotificationMessage: "",
-        schedule: "instant",
-        futureDate: new Date(),
-      });
-      setCheckedUsers([]);
-      setSearch("");
+      resetAll();
     } catch {
       toast.error(
         lang === "ar"
