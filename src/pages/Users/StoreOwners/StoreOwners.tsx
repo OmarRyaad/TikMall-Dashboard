@@ -49,7 +49,7 @@ const StoreOwners = () => {
     { ar: string; en: string }[]
   >([]);
 
-  const [statusFilter, setStatusFilter] = useState<string>("all"); // 'all' | 'active' | 'inactive'
+  const [statusFilter, setStatusFilter] = useState<string>("all"); // 'all' | 'approved' | 'not_approved'
 
   const [currentFilter, setCurrentFilter] = useState<string>("all");
 
@@ -60,8 +60,16 @@ const StoreOwners = () => {
     try {
       setLoading(true);
 
-      const baseUrl =
-        "https://api.tik-mall.com/admin/api/users/store_owner/all";
+      let baseUrl = "https://api.tik-mall.com/admin/api/users/store_owner/all";
+
+      if (statusFilter === "approved") {
+        baseUrl =
+          "https://api.tik-mall.com/admin/api/users/store_owner/approved";
+      } else if (statusFilter === "not_approved") {
+        baseUrl =
+          "https://api.tik-mall.com/admin/api/users/store_owner/not_approved";
+      }
+
       const params = new URLSearchParams({
         page: pageNumber.toString(),
         limit: "1000",
@@ -78,16 +86,11 @@ const StoreOwners = () => {
       const data = await res.json();
       let owners = data.users || data.data?.results || [];
 
+      // Filter by store type if needed
       if (currentFilter !== "all" && currentFilter !== "") {
         owners = owners.filter((owner: StoreOwner) =>
           owner.typeOfStore?.some((t) => t.en === currentFilter)
         );
-      }
-
-      if (statusFilter === "active") {
-        owners = owners.filter((owner: StoreOwner) => owner.isActive);
-      } else if (statusFilter === "inactive") {
-        owners = owners.filter((owner: StoreOwner) => !owner.isActive);
       }
 
       setStoreOwners(owners);
@@ -325,11 +328,11 @@ const StoreOwners = () => {
                 }}
               >
                 <option value="all">{lang === "ar" ? "الكل" : "All"}</option>
-                <option value="active">
-                  {lang === "ar" ? "مفعل" : "Active"}
+                <option value="approved">
+                  {lang === "ar" ? "موافق عليه" : "Approved"}
                 </option>
-                <option value="inactive">
-                  {lang === "ar" ? "غير مفعل" : "Inactive"}
+                <option value="not_approved">
+                  {lang === "ar" ? "غير موافق عليه" : "Not Approved"}
                 </option>
               </select>
             </div>
