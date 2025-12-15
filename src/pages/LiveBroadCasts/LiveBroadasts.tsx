@@ -5,7 +5,7 @@ import {
   HashtagIcon,
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import { EyeIcon, UserCircleIcon } from "../../icons";
 import { useLanguage } from "../../context/LanguageContext";
@@ -50,7 +50,7 @@ const LiveBroadcasts = () => {
     null
   );
   const [adminId, setAdminId] = useState<string>("");
-  const [adminName, setAdminName] = useState<string>("Admin Viewer"); // Optional: for the userName field
+  const [adminName, setAdminName] = useState<string>("Admin Viewer");
   const zgRef = useRef<ZegoExpressEngine | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const totalActive = broadcasts.length;
@@ -124,25 +124,36 @@ const LiveBroadcasts = () => {
     }
   };
 
-  // Add this function inside LiveBroadcasts component
-  const cleanupZegoSession = () => {
+  /**
+   * FIX: Wrapped cleanupZegoSession in useCallback to provide a stable function reference.
+   * Dependencies: [selectedBroadcast] ensures the function uses the current stream ID/room ID state.
+   * Dependencies: [zgRef, containerRef] are stable refs, but included for completeness.
+   */
+  const cleanupZegoSession = useCallback(() => {
+    // Check if the Zego object is initialized and if a broadcast is currently selected
     if (zgRef.current && selectedBroadcast?.uid) {
-      try {
-        // 1. Stop playing the stream if it was started
-        zgRef.current.stopPlayingStream(selectedBroadcast.uid);
+      if (zgRef.current && selectedBroadcast?.uid) {
+        try {
+          const streamId = selectedBroadcast.uid;
 
-        // 2. Log out of the room
-        zgRef.current.logoutRoom(selectedBroadcast.uid);
+          // 1. Stop playing stream
+          zgRef.current.stopPlayingStream(streamId);
 
-        // 3. Clear the video element from the container
-        if (containerRef.current) {
-          containerRef.current.innerHTML = "";
+          // 2. Logout room
+          zgRef.current.logoutRoom(streamId);
+
+          // 3. Clear container
+          if (containerRef.current) {
+            containerRef.current.innerHTML = "";
+          }
+
+          console.log(`Zego session cleaned up for room: ${streamId}`);
+        } catch (e) {
+          console.error("Zego cleanup failed:", e);
         }
-      } catch (e) {
-        console.warn("Zego cleanup failed:", e);
       }
     }
-  };
+  }, [selectedBroadcast, zgRef, containerRef]);
 
   const handleWatchBroadcast = async (broadcast: Broadcast) => {
     if (!broadcast.uid || !zgRef.current) return;
@@ -150,7 +161,10 @@ const LiveBroadcasts = () => {
       toast.error("User ID is missing. Cannot start stream.");
       return;
     }
+
+    // Cleanup any previous session first
     cleanupZegoSession();
+    // Set selectedBroadcast to trigger useEffect/listener dependency
     setSelectedBroadcast(broadcast);
 
     const zegoToken = await fetchZegoSignature(broadcast.uid);
@@ -158,78 +172,103 @@ const LiveBroadcasts = () => {
       toast.error("Invalid Zego signature");
       return;
     }
+
+    // Clear the container immediately to show the loading spinner/placeholder
+    if (containerRef.current) {
+      containerRef.current.innerHTML = "";
+    }
+
     try {
-      // loginRoom with token + user object (2‑arg or 3‑arg depending on version)
+      // 1. LOGIN TO ROOM
       await zgRef.current.loginRoom(broadcast.uid, zegoToken, {
         userID: adminId,
         userName: adminName,
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds
-
-      // startPlayingStream — get remote MediaStream
-      const remoteStream = await zgRef.current.startPlayingStream(
-        broadcast.uid // The Stream ID
+      // 2. DO NOT CALL startPlayingStream HERE. Wait for the 'roomStreamUpdate' ADD event.
+      console.log(
+        `Successfully logged into room: ${broadcast.uid}. Waiting for 'roomStreamUpdate' event...`
       );
-
-      // then assign to a video element you control:
-      const videoEl = document.createElement("video");
-      videoEl.autoplay = true;
-      videoEl.controls = true;
-      videoEl.srcObject = remoteStream;
-      videoEl.style.width = "100%";
-      videoEl.style.height = "100%";
-
-      // attach videoEl to your container
-      containerRef.current?.appendChild(videoEl);
     } catch (err) {
-      console.error("Zego login/play error:", err);
-      toast.error("Failed to open live stream");
+      console.error("Zego login error:", err);
+      toast.error("Failed to open live stream (Login Error)");
     }
   };
 
   useEffect(() => {
-    // 1. Retrieve the Logged-in User's ID (Admin ID)
-    const storedId = "693d677ae8dc33513b14eaf2"; // <--- CONFIRM this key
-    const storedName = localStorage.getItem("Super Admin") || "Admin Viewer"; // <--- CONFIRM this key
+    const storedUser = localStorage.getItem("user");
 
-    if (storedId) {
-      setAdminId(storedId);
-      setAdminName(storedName);
+    let adminId: string | null = null;
+    let userName: string = "Admin Viewer";
+
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      adminId = user?.id || null;
+      userName = user?.name || "Admin Viewer";
+    }
+
+    if (adminId) {
+      setAdminId(adminId);
+      setAdminName(userName);
     } else {
-      // Handle case where user ID is missing (e.g., user is not logged in properly)
       setError(
         lang === "ar" ? "فشل تحديد هوية المشاهد." : "Failed to identify viewer."
       );
-    } // 2. Initialize ZegoExpressEngine only once (as before)
+    }
 
+    // 2. Initialize ZegoExpressEngine only once
     const appID = 1065201027;
     const server = "wss://webliveroom-api.zego.im/ws";
 
     const zg = new ZegoExpressEngine(appID, server);
-    zgRef.current = zg; // Optional: Set log level
     zgRef.current = zg;
+    zg.setLogConfig({ logLevel: "info" });
 
-    zg.on("roomStreamUpdate", (roomID, updateType, streamList) => {
+    // 3. CORE FIX: Play stream only when Zego confirms it is ADDED
+    zg.on("roomStreamUpdate", async (roomID, updateType, streamList) => {
       if (updateType === "ADD" && selectedBroadcast?.uid === roomID) {
-        console.log("Stream ADDED:", streamList[0].streamID);
-        // If the listener finds the stream, you should now try to play it here.
+        const streamID = streamList[0]?.streamID;
+        console.log("Stream ADDED event received. StreamID:", streamID);
 
-        // To prevent potential race conditions, you might need to structure
-        // the playing logic inside a utility function.
-        // For now, let's keep the core logic in handleWatchBroadcast but delay playing.
+        if (streamID && streamID === selectedBroadcast.uid) {
+          try {
+            const remoteStream = await zg.startPlayingStream(streamID);
+            console.log("startPlayingStream SUCCESS:", streamID);
+
+            const videoEl = document.createElement("video");
+            videoEl.autoplay = true;
+            videoEl.controls = true;
+            videoEl.srcObject = remoteStream;
+            videoEl.style.width = "100%";
+            videoEl.style.height = "100%";
+
+            if (containerRef.current) {
+              containerRef.current.innerHTML = "";
+              containerRef.current.appendChild(videoEl);
+            }
+          } catch (playErr) {
+            console.error(
+              "Zego playing error in listener (Likely 1004):",
+              playErr
+            );
+            toast.error(
+              "Failed to start stream playback. (Error 1004: Publisher offline)"
+            );
+          }
+        }
       } else if (updateType === "DELETE") {
         console.log("Stream REMOVED:", streamList[0].streamID);
+
+        if (selectedBroadcast?.uid === roomID) {
+          toast.warn(
+            lang === "ar" ? "انتهى البث المباشر." : "Live stream has ended."
+          );
+        }
       }
     });
 
-    zg.setLogConfig({ logLevel: "info" }); // Cleanup on unmount
-
     return () => {
       if (zgRef.current) {
-        // Important: Log out of the room when unmounting or closing the modal
-        // Note: You might want to move the logout logic to the modal close handler
-        // For component unmount cleanup:
         zgRef.current = null;
       }
     };
@@ -428,11 +467,6 @@ const LiveBroadcasts = () => {
                 allowFullScreen
               />
             </div>
-            <div className="p-4 bg-gray-50 dark:bg-gray-900 text-center text-sm text-gray-600">
-              {lang === "ar"
-                ? "بث احتياطي (Fallback Stream)"
-                : "Fallback Stream"}
-            </div>
           </div>
         </div>
       )}
@@ -462,7 +496,10 @@ const LiveBroadcasts = () => {
                   {selectedBroadcast.viewersCount ?? 0}
                 </span>
                 <button
-                  onClick={() => setSelectedBroadcast(null)}
+                  onClick={() => {
+                    cleanupZegoSession(); // Ensure cleanup happens on close
+                    setSelectedBroadcast(null);
+                  }}
                   className="text-white hover:bg-white/20 rounded-full w-10 h-10 flex items-center justify-center transition"
                   title={lang === "ar" ? "إغلاق" : "Close"}
                 >
