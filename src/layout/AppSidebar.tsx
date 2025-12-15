@@ -15,7 +15,6 @@ import {
   ChevronDownIcon,
   UserGroupIcon,
   BuildingStorefrontIcon,
-  ChatBubbleOvalLeftIcon,
 } from "@heroicons/react/24/outline";
 import { HorizontaLDots } from "../icons";
 import { useLanguage } from "../context/LanguageContext";
@@ -163,12 +162,7 @@ const AppSidebar: React.FC = () => {
       path: "/policy-and-Privacy",
       permissionKey: "manageDepartmentsAndFaqs",
     },
-    {
-      name: t.contactUs,
-      icon: <ChatBubbleOvalLeftIcon className="w-6 h-6" />,
-      path: "/contact-us",
-      permissionKey: "",
-    },
+
     {
       name: t.complaints,
       icon: <ExclamationCircleIcon className="w-6 h-6" />,

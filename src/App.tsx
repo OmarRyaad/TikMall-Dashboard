@@ -28,7 +28,6 @@ import Moderators from "./pages/Users/Moderators/Moderators";
 import StoreOwners from "./pages/Users/StoreOwners/StoreOwners";
 import Customers from "./pages/Users/Customers/Customers";
 import StoreOwnersProfile from "./pages/Users/StoreOwners/StoreOwnersProfile";
-import ContactUs from "./pages/ContactUs/ContactUs";
 
 export default function App() {
   return (
@@ -72,8 +71,6 @@ export default function App() {
               element={<PolicyView />}
             />
             <Route path="/policy-and-Privacy/edit" element={<PolicyEdit />} />
-
-            <Route path="/contact-us" element={<ContactUs />} />
 
             <Route index path="/complaints" element={<Complaints />} />
             <Route index path="/notifications" element={<Notifications />} />
