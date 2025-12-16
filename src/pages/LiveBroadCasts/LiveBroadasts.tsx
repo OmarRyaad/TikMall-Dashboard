@@ -5,11 +5,11 @@ import {
   HashtagIcon,
   VideoCameraIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
+import { AnimatePresence, motion } from "framer-motion";
 import { EyeIcon, UserCircleIcon } from "../../icons";
 import { useLanguage } from "../../context/LanguageContext";
-import { ZegoExpressEngine } from "zego-express-engine-webrtc"; // or your SDK import
 
 interface Broadcast {
   _id: string;
@@ -38,6 +38,45 @@ interface Broadcast {
   streamUrl?: string;
 }
 
+// ===== ZEGOCLOUD TYPES =====
+interface ZegoJoinRoomConfig {
+  container: HTMLElement;
+  scenario: {
+    mode: number;
+    config: {
+      role: number;
+      turnOnCameraWhenJoining: boolean;
+      turnOnMicrophoneWhenJoining: boolean;
+    };
+  };
+  showPreJoinView?: boolean;
+  sharedLinks?: Array<{ name: string; url: string }>;
+}
+
+export interface ZegoUIKitPrebuiltType {
+  generateKitTokenForTest: (
+    appID: number,
+    serverSecret: string,
+    roomID: string,
+    userID: string,
+    userName: string
+  ) => string;
+
+  create: (kitToken: string) => {
+    joinRoom: (config: ZegoJoinRoomConfig) => void;
+  };
+
+  LiveStreaming: number;
+  Audience: number;
+  destroy?: () => void;
+}
+
+declare global {
+  interface Window {
+    ZegoUIKitPrebuilt?: ZegoUIKitPrebuiltType;
+  }
+}
+
 const LiveBroadcasts = () => {
   const { lang } = useLanguage();
   const isRTL = lang === "ar";
@@ -49,18 +88,22 @@ const LiveBroadcasts = () => {
   const [selectedBroadcast, setSelectedBroadcast] = useState<Broadcast | null>(
     null
   );
-  const [adminId, setAdminId] = useState<string>("");
-  const [adminName, setAdminName] = useState<string>("Admin Viewer");
-  const zgRef = useRef<ZegoExpressEngine | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const totalActive = broadcasts.length;
+
+  /* DELETE MODAL */
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [broadcastsToDelete, setBroadcastsToDelete] = useState<string | null>(
+    null
+  );
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const token = localStorage.getItem("accessToken");
 
   const fetchBroadcasts = async () => {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("accessToken");
-
       const res = await fetch(
         "https://api.tik-mall.com/admin/api/live-streams/active",
         {
@@ -88,191 +131,125 @@ const LiveBroadcasts = () => {
     }
   };
 
+  const loadZegoScript = () => {
+    return new Promise<void>((resolve, reject) => {
+      if (window.ZegoUIKitPrebuilt) {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src =
+        "https://unpkg.com/@zegocloud/zego-uikit-prebuilt/zego-uikit-prebuilt.js";
+      script.async = true;
+
+      script.onload = () => resolve();
+      script.onerror = () => reject("Failed to load ZEGO SDK");
+
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleWatchBroadcast = async (broadcast: Broadcast) => {
+    if (!broadcast.uid) return;
+
+    setSelectedBroadcast(broadcast);
+
+    try {
+      await loadZegoScript();
+
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+
+      const ZegoUIKitPrebuilt = window.ZegoUIKitPrebuilt;
+      if (!ZegoUIKitPrebuilt || !containerRef.current) {
+        console.error("❌ Zego SDK or container not ready");
+        return;
+      }
+
+      const roomID = broadcast.uid;
+      const userID = String(Math.floor(Math.random() * 100000));
+      const userName = `SilentGuest_${userID}`;
+      const appID = 1065201027;
+
+      const serverSecret = "8f7648c057308ab28dd82c367208b4c5";
+
+      const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+        appID,
+        serverSecret,
+        roomID,
+        userID,
+        userName
+      );
+
+      const zp = ZegoUIKitPrebuilt.create(kitToken);
+
+      zp.joinRoom({
+        container: containerRef.current,
+        scenario: {
+          mode: ZegoUIKitPrebuilt.LiveStreaming,
+          config: {
+            role: ZegoUIKitPrebuilt.Audience,
+            turnOnCameraWhenJoining: false,
+            turnOnMicrophoneWhenJoining: false,
+          },
+        },
+        showPreJoinView: false,
+        sharedLinks: [
+          {
+            name: "Join silently",
+            url:
+              window.location.origin +
+              window.location.pathname +
+              "?roomID=" +
+              roomID,
+          },
+        ],
+      });
+
+      console.log("✅ Joined silently as Audience!");
+    } catch (error) {
+      console.error("❌ Failed to join Zego room:", error);
+    }
+  };
+
+  const handleDeleteBroadcast = async (id: string) => {
+    setDeleteLoading(true);
+
+    try {
+      const res = await fetch(
+        `https://api.tik-mall.com/admin/api/delete/${id}`,
+        {
+          method: "DELETE",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to delete customer");
+
+      toast.success(
+        lang === "ar"
+          ? "تم حذف العميل بنجاح!"
+          : "Customer deleted successfully!"
+      );
+      setDeleteModalOpen(false);
+      setBroadcastsToDelete(null);
+      fetchBroadcasts();
+    } catch {
+      toast.error(
+        lang === "ar" ? "خطأ أثناء حذف العميل" : "Error deleting customer"
+      );
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadZegoScript();
+  }, []);
+
   useEffect(() => {
     fetchBroadcasts();
   }, []);
-
-  const fetchZegoSignature = async (uid: string) => {
-    try {
-      const token = localStorage.getItem("accessToken");
-
-      const res = await fetch(
-        `https://api.tik-mall.com/admin/api/live-streams/${uid}/zego-signature/v2`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
-
-      const data = await res.json();
-      if (!data.success || typeof data.data !== "string")
-        throw new Error("Failed to get Zego signature");
-      if (!data.success) throw new Error("Failed to get Zego signature");
-
-      return data.data;
-    } catch (err) {
-      console.error("Error fetching Zego signature:", err);
-      toast.error(
-        lang === "ar" ? "فشل تحميل البث المباشر" : "Failed to load live stream"
-      );
-      return null;
-    }
-  };
-
-  /**
-   * FIX: Wrapped cleanupZegoSession in useCallback to provide a stable function reference.
-   * Dependencies: [selectedBroadcast] ensures the function uses the current stream ID/room ID state.
-   * Dependencies: [zgRef, containerRef] are stable refs, but included for completeness.
-   */
-  const cleanupZegoSession = useCallback(() => {
-    // Check if the Zego object is initialized and if a broadcast is currently selected
-    if (zgRef.current && selectedBroadcast?.uid) {
-      if (zgRef.current && selectedBroadcast?.uid) {
-        try {
-          const streamId = selectedBroadcast.uid;
-
-          // 1. Stop playing stream
-          zgRef.current.stopPlayingStream(streamId);
-
-          // 2. Logout room
-          zgRef.current.logoutRoom(streamId);
-
-          // 3. Clear container
-          if (containerRef.current) {
-            containerRef.current.innerHTML = "";
-          }
-
-          console.log(`Zego session cleaned up for room: ${streamId}`);
-        } catch (e) {
-          console.error("Zego cleanup failed:", e);
-        }
-      }
-    }
-  }, [selectedBroadcast, zgRef, containerRef]);
-
-  const handleWatchBroadcast = async (broadcast: Broadcast) => {
-    if (!broadcast.uid || !zgRef.current) return;
-    if (!adminId) {
-      toast.error("User ID is missing. Cannot start stream.");
-      return;
-    }
-
-    // Cleanup any previous session first
-    cleanupZegoSession();
-    // Set selectedBroadcast to trigger useEffect/listener dependency
-    setSelectedBroadcast(broadcast);
-
-    const zegoToken = await fetchZegoSignature(broadcast.uid);
-    if (!zegoToken) {
-      toast.error("Invalid Zego signature");
-      return;
-    }
-
-    // Clear the container immediately to show the loading spinner/placeholder
-    if (containerRef.current) {
-      containerRef.current.innerHTML = "";
-    }
-
-    try {
-      // 1. LOGIN TO ROOM
-      await zgRef.current.loginRoom(broadcast.uid, zegoToken, {
-        userID: adminId,
-        userName: adminName,
-      });
-
-      // 2. DO NOT CALL startPlayingStream HERE. Wait for the 'roomStreamUpdate' ADD event.
-      console.log(
-        `Successfully logged into room: ${broadcast.uid}. Waiting for 'roomStreamUpdate' event...`
-      );
-    } catch (err) {
-      console.error("Zego login error:", err);
-      toast.error("Failed to open live stream (Login Error)");
-    }
-  };
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-
-    let adminId: string | null = null;
-    let userName: string = "Admin Viewer";
-
-    if (storedUser) {
-      const user = JSON.parse(storedUser);
-      adminId = user?.id || null;
-      userName = user?.name || "Admin Viewer";
-    }
-
-    if (adminId) {
-      setAdminId(adminId);
-      setAdminName(userName);
-    } else {
-      setError(
-        lang === "ar" ? "فشل تحديد هوية المشاهد." : "Failed to identify viewer."
-      );
-    }
-
-    // 2. Initialize ZegoExpressEngine only once
-    const appID = 1065201027;
-    const server = "wss://webliveroom-api.zego.im/ws";
-
-    const zg = new ZegoExpressEngine(appID, server);
-    zgRef.current = zg;
-    zg.setLogConfig({ logLevel: "info" });
-
-    // 3. CORE FIX: Play stream only when Zego confirms it is ADDED
-    zg.on("roomStreamUpdate", async (roomID, updateType, streamList) => {
-      if (updateType === "ADD" && selectedBroadcast?.uid === roomID) {
-        const streamID = streamList[0]?.streamID;
-        console.log("Stream ADDED event received. StreamID:", streamID);
-
-        if (streamID && streamID === selectedBroadcast.uid) {
-          try {
-            const remoteStream = await zg.startPlayingStream(streamID);
-            console.log("startPlayingStream SUCCESS:", streamID);
-
-            const videoEl = document.createElement("video");
-            videoEl.autoplay = true;
-            videoEl.controls = true;
-            videoEl.srcObject = remoteStream;
-            videoEl.style.width = "100%";
-            videoEl.style.height = "100%";
-
-            if (containerRef.current) {
-              containerRef.current.innerHTML = "";
-              containerRef.current.appendChild(videoEl);
-            }
-          } catch (playErr) {
-            console.error(
-              "Zego playing error in listener (Likely 1004):",
-              playErr
-            );
-            toast.error(
-              "Failed to start stream playback. (Error 1004: Publisher offline)"
-            );
-          }
-        }
-      } else if (updateType === "DELETE") {
-        console.log("Stream REMOVED:", streamList[0].streamID);
-
-        if (selectedBroadcast?.uid === roomID) {
-          toast.warn(
-            lang === "ar" ? "انتهى البث المباشر." : "Live stream has ended."
-          );
-        }
-      }
-    });
-
-    return () => {
-      if (zgRef.current) {
-        zgRef.current = null;
-      }
-    };
-  }, [lang, selectedBroadcast]);
 
   if (loading)
     return (
@@ -431,18 +408,28 @@ const LiveBroadcasts = () => {
               </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300">
                 <EyeIcon className="w-5 h-5" />
               </div>
             </div>
 
-            <div className="mt-4 flex gap-3">
+            <div className="flex gap-3">
               <button
                 onClick={() => handleWatchBroadcast(broadcast)}
                 className="flex-1 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm font-semibold"
               >
                 {lang === "ar" ? "مشاهدة" : "Watch"}
+              </button>
+
+              <button
+                onClick={() => {
+                  setBroadcastsToDelete(broadcast._id);
+                  setDeleteModalOpen(true);
+                }}
+                className="flex-1 px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition text-sm font-semibold"
+              >
+                {lang === "ar" ? "إنهاء" : "Terminate"}
               </button>
             </div>
           </div>
@@ -473,64 +460,86 @@ const LiveBroadcasts = () => {
 
       {/* ZEGOCLOUD Modal */}
       {selectedBroadcast && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[10001] p-4">
-          <div className="relative w-full max-w-6xl h-[85vh] bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-2xl">
-            <div className="relative p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <VideoCameraIcon className="w-6 h-6" />
-                <div>
-                  <h3 className="font-semibold text-lg">
-                    {selectedBroadcast.title ||
-                      (lang === "ar" ? "بث مباشر" : "Live Broadcast")}
-                  </h3>
-                  <p className="text-sm opacity-90">
-                    {lang === "ar"
-                      ? selectedBroadcast.storeDepartment?.name?.ar || "القسم"
-                      : selectedBroadcast.storeDepartment?.name?.en ||
-                        "Department"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-1 bg-white/20 rounded-full text-xs">
-                  {selectedBroadcast.viewersCount ?? 0}
-                </span>
+        <div className="fixed inset-0 z-[10001] bg-black">
+          <button
+            onClick={() => {
+              setSelectedBroadcast(null);
+
+              const ZegoUIKitPrebuilt = window.ZegoUIKitPrebuilt;
+              if (ZegoUIKitPrebuilt?.destroy) {
+                ZegoUIKitPrebuilt.destroy();
+              }
+            }}
+            className="absolute top-4 right-4 z-[10002] bg-black/60 text-white w-10 h-10 rounded-full flex items-center justify-center text-xl hover:bg-black"
+          >
+            ×
+          </button>
+
+          {/* Zego Full UI Container */}
+          <div
+            ref={containerRef}
+            className="w-screen h-screen"
+            style={{ direction: "ltr" }}
+          />
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {deleteModalOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          >
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                {lang === "ar" ? "تأكيد الحذف" : "Confirm Delete"}
+              </h3>
+
+              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                {lang === "ar"
+                  ? "هل أنت متأكد من حذف هذا البث؟ هذا الإجراء لا يمكن التراجع عنه."
+                  : "Are you sure you want to delete this live? This action cannot be undone."}
+              </p>
+
+              <div className="mt-6 flex flex-col sm:flex-row justify-end gap-3">
                 <button
                   onClick={() => {
-                    cleanupZegoSession(); // Ensure cleanup happens on close
-                    setSelectedBroadcast(null);
+                    setDeleteModalOpen(false);
+                    setBroadcastsToDelete(null);
                   }}
-                  className="text-white hover:bg-white/20 rounded-full w-10 h-10 flex items-center justify-center transition"
-                  title={lang === "ar" ? "إغلاق" : "Close"}
+                  className="rounded-md border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
                 >
-                  ×
+                  {lang === "ar" ? "إلغاء" : "Cancel"}
+                </button>
+
+                <button
+                  onClick={() =>
+                    broadcastsToDelete &&
+                    handleDeleteBroadcast(broadcastsToDelete)
+                  }
+                  disabled={deleteLoading}
+                  className={`rounded-md px-5 py-2.5 text-sm font-medium text-white transition-colors ${
+                    deleteLoading
+                      ? "bg-red-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700"
+                  }`}
+                >
+                  {deleteLoading
+                    ? lang === "ar"
+                      ? "جاري الحذف..."
+                      : "Deleting..."
+                    : lang === "ar"
+                    ? "حذف"
+                    : "Delete"}
                 </button>
               </div>
             </div>
-
-            <div
-              ref={containerRef}
-              id="zego-container"
-              className="w-full h-[calc(100%-80px)]"
-              style={{ direction: isRTL ? "rtl" : "ltr" }}
-            >
-              <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-900">
-                <div className="text-center">
-                  <div className="relative w-16 h-16 mx-auto mb-4">
-                    <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-blue-500 animate-spin" />
-                    <VideoCameraIcon className="absolute inset-0 w-8 h-8 m-auto text-blue-500" />
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {lang === "ar"
-                      ? "جاري تحميل البث المباشر..."
-                      : "Loading live stream..."}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
