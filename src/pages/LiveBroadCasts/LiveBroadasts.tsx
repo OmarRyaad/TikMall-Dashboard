@@ -217,9 +217,9 @@ const LiveBroadcasts = () => {
 
     try {
       const res = await fetch(
-        `https://api.tik-mall.com/admin/api/delete/${id}`,
+        `https://api.tik-mall.com/admin/api/live-streams/terminate/${id}`,
         {
-          method: "DELETE",
+          method: "PATCH",
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
       );
