@@ -578,11 +578,12 @@ const Media = () => {
                     <div className="flex items-start justify-between">
                       <div className="flex gap-2">
                         <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold">
-                          {c.user.name.charAt(0)}
+                          {c.user?.name?.charAt(0) ?? "?"}
                         </div>
                         <div>
                           <p className="font-medium text-gray-800 dark:text-gray-100">
-                            {c.user.name}
+                            {c.user?.name ??
+                              (lang === "ar" ? "مستخدم محذوف" : "Deleted User")}
                           </p>
                           <p className="text-gray-700 dark:text-gray-200 text-sm">
                             {c.comment}
