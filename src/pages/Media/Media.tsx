@@ -27,12 +27,13 @@ interface StoreDepartment {
 }
 
 interface MediaItem {
-  url: string;
+  url: string[];
   _id: string;
   title: string;
   description: string;
   thumbnailUrl: string;
   likesCount: number;
+  likes: string[];
   uploadedBy: UploadedBy;
   storeDepartment: StoreDepartment;
 }
@@ -235,10 +236,25 @@ const Media = () => {
           }
         );
         const data = await res.json();
-        const formatted = data.items.map((d: Department) => ({
-          _id: d._id,
-          name: lang === "ar" ? d.name.ar : d.name.en,
-        }));
+        const items = data.items || [];
+        const uniqueDepartmentsMap: Record<string, string> = {};
+        items.forEach((item: MediaItem) => {
+          if (
+            item.storeDepartment?._id &&
+            !uniqueDepartmentsMap[item.storeDepartment._id]
+          ) {
+            uniqueDepartmentsMap[item.storeDepartment._id] =
+              lang === "ar"
+                ? item.storeDepartment.name.ar
+                : item.storeDepartment.name.en;
+          }
+        });
+        const formatted = Object.entries(uniqueDepartmentsMap).map(
+          ([id, name]) => ({
+            _id: id,
+            name,
+          })
+        );
         setDepartments(formatted);
       } catch (err) {
         console.error(err);
@@ -466,7 +482,8 @@ const Media = () => {
               <div className="flex items-center gap-1 mb-2">
                 <HeartIcon className="w-4 h-4 text-red-500" />
                 <span className="text-gray-600 dark:text-gray-300 text-xs">
-                  {item.likesCount} {lang === "ar" ? "إعجاب" : "Likes"}
+                  {item.likesCount ?? item.likes?.length ?? 0}{" "}
+                  {lang === "ar" ? "إعجاب" : "Likes"}
                 </span>
               </div>
 
@@ -515,7 +532,7 @@ const Media = () => {
             </div>
 
             <p className="text-gray-500 dark:text-gray-400 text-base md:text-lg font-medium">
-              {lang === "ar" ? "لا توجد وسائط" : "No media found."}
+              {lang === "ar" ? "!لا توجد وسائط" : "No media found!"}
             </p>
 
             <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">
@@ -542,9 +559,15 @@ const Media = () => {
             </button>
 
             {/* Media Description */}
-            <p className="mb-4 text-gray-700 dark:text-gray-200">
-              {selectedComment.description}
-            </p>
+            {!loadingComments && comments.length === 0 ? (
+              <p className="mb-4 text-gray-500 dark:text-gray-400 text-center py-4 font-medium">
+                {lang === "ar" ? "!لا توجد تعليقات" : "No comments found!"}
+              </p>
+            ) : (
+              <p className="mb-4 text-gray-700 dark:text-gray-200">
+                {selectedComment.description}
+              </p>
+            )}
 
             {/* Comments List */}
             <div className="space-y-3">

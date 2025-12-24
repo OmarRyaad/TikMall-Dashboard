@@ -32,6 +32,7 @@ const Complaints = () => {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const token = localStorage.getItem("accessToken");
 
@@ -57,6 +58,9 @@ const Complaints = () => {
       if (!res.ok) throw new Error("Failed to fetch complaints");
       const data = await res.json();
       setComplaints(data.complaints);
+      // Calculate total pages based on total count and limit (15)
+      const limit = 15;
+      setTotalPages(Math.ceil((data.total || 0) / limit));
     } catch (error) {
       console.error(error);
       setComplaints([]);
@@ -278,9 +282,16 @@ const Complaints = () => {
                     </span>
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                    {c.userId?.name ||
-                      c.userId?.phone?.number ||
-                      (lang === "ar" ? "مجهول" : "Anonymous")}
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {c.userId?.name || (lang === "ar" ? "مجهول" : "Anonymous")}
+                      </span>
+                      {c.userId?.phone?.number && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {c.userId.phone.number}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="py-3 px-4 flex gap-1">
                     <button
@@ -320,6 +331,54 @@ const Complaints = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 pb-2 flex gap-2 justify-center">
+          {(() => {
+            const pages: (number | string)[] = [];
+            const addPage = (p: number | string) => {
+              if (!pages.includes(p)) pages.push(p);
+            };
+            const visible = 2;
+            addPage(1);
+
+            if (page > visible + 2) addPage("dots-start");
+
+            for (
+              let i = Math.max(2, page - visible);
+              i <= Math.min(totalPages - 1, page + visible);
+              i++
+            ) {
+              addPage(i);
+            }
+
+            if (page < totalPages - (visible + 1)) addPage("dots-end");
+
+            addPage(totalPages);
+
+            return pages.map((p, idx) =>
+              typeof p === "string" ? (
+                <span key={idx} className="px-2 text-gray-500 dark:text-gray-300">
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`px-3 py-0.5 rounded min-w-[32px] text-sm font-medium transition-all ${
+                    p === page
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                  }`}
+                >
+                  {p}
+                </button>
+              )
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 };

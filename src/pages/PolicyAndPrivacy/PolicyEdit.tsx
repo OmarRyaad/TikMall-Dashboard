@@ -39,9 +39,6 @@ const PolicyEdit = () => {
 
   const [loading, setLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
-  const [viewLang, setViewLang] = useState<"en" | "ar">(
-    lang === "ar" ? "ar" : "en"
-  );
 
   const token = localStorage.getItem("accessToken");
 
@@ -120,7 +117,7 @@ const PolicyEdit = () => {
     try {
       const res = await fetch(
         `https://api.tik-mall.com/admin/api/policy/${encodeURIComponent(
-          viewLang === "ar" ? policy.name.ar : policy.name.en
+          policyName ?? ""
         )}`,
         {
           method: "PATCH",
@@ -159,10 +156,6 @@ const PolicyEdit = () => {
   useEffect(() => {
     fetchPolicy();
   }, [policyName]);
-
-  useEffect(() => {
-    setViewLang(lang === "ar" ? "ar" : "en");
-  }, [lang]);
 
   if (loading)
     return (
@@ -232,64 +225,68 @@ const PolicyEdit = () => {
 
       {/* Policy Title */}
       <h1 className="text-3xl md:text-4xl font-bold text-blue-600 text-center">
-        {viewLang === "ar" ? policy.name.ar : policy.name.en}
+        {lang === "ar" ? policy.name.ar : policy.name.en}
       </h1>
 
-      {/* Language Toggle */}
-      <div className="flex justify-center gap-3 mb-6">
-        <button
-          onClick={() => setViewLang("en")}
-          className={`px-6 py-2 rounded-lg font-medium transition-all ${
-            viewLang === "en"
-              ? "bg-blue-600 text-white shadow-lg"
-              : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-          }`}
-        >
-          English
-        </button>
-        <button
-          onClick={() => setViewLang("ar")}
-          className={`px-6 py-2 py-2 rounded-lg font-medium transition-all ${
-            viewLang === "ar"
-              ? "bg-blue-600 text-white shadow-lg"
-              : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-          }`}
-        >
-          العربية
-        </button>
-      </div>
-
-      {/* Editor */}
-      <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-lg">
-        <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-            {viewLang === "ar"
-              ? "تحرير المحتوى بالعربية"
-              : "Editing Content in English"}
-          </p>
+      {/* Editors Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Arabic Editor */}
+        <div className="flex flex-col gap-2">
+          <div className="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-t-xl border-b-0">
+            <p className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              تحرير المحتوى بالعربية
+            </p>
+          </div>
+          <div dir="rtl" className="border-2 border-gray-200 dark:border-gray-700 rounded-b-xl overflow-hidden shadow-lg bg-white dark:bg-gray-900">
+            <ReactQuill
+              theme="snow"
+              value={formData.ar}
+              onChange={(value: string) => setFormData({ ...formData, ar: value })}
+              className="h-[500px]"
+              modules={{
+                toolbar: [
+                  [{ header: [1, 2, 3, false] }],
+                  ["bold", "italic", "underline"],
+                  [{ list: "ordered" }, { list: "bullet" }],
+                  [{ align: [] }],
+                  ["link"],
+                  ["clean"],
+                ],
+              }}
+            />
+            <div className="h-12"></div> {/* Spacer for Quill toolbar overlap if any or just padding */}
+          </div>
         </div>
-        <ReactQuill
-          theme="snow"
-          value={viewLang === "en" ? formData.en : formData.ar}
-          onChange={(value: string) =>
-            setFormData(
-              viewLang === "en"
-                ? { ...formData, en: value }
-                : { ...formData, ar: value }
-            )
-          }
-          className="h-96 bg-white dark:bg-gray-900"
-          modules={{
-            toolbar: [
-              [{ header: [1, 2, 3, false] }],
-              ["bold", "italic", "underline"],
-              [{ list: "ordered" }, { list: "bullet" }],
-              [{ align: [] }],
-              ["link"],
-              ["clean"],
-            ],
-          }}
-        />
+
+        {/* English Editor */}
+        <div className="flex flex-col gap-2">
+          <div className="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-t-xl border-b-0">
+            <p className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              Editing Content in English
+            </p>
+          </div>
+          <div dir="ltr" className="border-2 border-gray-200 dark:border-gray-700 rounded-b-xl overflow-hidden shadow-lg bg-white dark:bg-gray-900">
+            <ReactQuill
+              theme="snow"
+              value={formData.en}
+              onChange={(value: string) => setFormData({ ...formData, en: value })}
+              className="h-[500px]"
+              modules={{
+                toolbar: [
+                  [{ header: [1, 2, 3, false] }],
+                  ["bold", "italic", "underline"],
+                  [{ list: "ordered" }, { list: "bullet" }],
+                  [{ align: [] }],
+                  ["link"],
+                  ["clean"],
+                ],
+              }}
+            />
+            <div className="h-12"></div> {/* Spacer for Quill toolbar overlap */}
+          </div>
+        </div>
       </div>
 
       {/* Save Button */}

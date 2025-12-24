@@ -72,7 +72,7 @@ const StoreOwners = () => {
 
       const params = new URLSearchParams({
         page: pageNumber.toString(),
-        limit: "1000",
+        limit: "10",
       });
 
       if (currentFilter && currentFilter !== "all") {
@@ -499,21 +499,41 @@ const StoreOwners = () => {
             </div>
 
             {/* PAGINATION */}
-            {totalPages && currentFilter === "all" && (
-              <div className="pb-2 flex gap-2 justify-center">
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <button
-                    key={i + 1}
-                    onClick={() => setPage(i + 1)}
-                    className={`px-3 py-0.5 rounded min-w-[32px] text-sm font-medium transition-all ${
-                      page === i + 1
-                        ? "bg-blue-600 text-white shadow-md"
-                        : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
+            {totalPages > 1 && (
+              <div className="pb-4 pt-2 flex gap-2 justify-center items-center">
+                {Array.from({ length: totalPages }, (_, i) => {
+                  const pageNum = i + 1;
+                  // Show first, last, current, and adjacent pages
+                  if (
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    Math.abs(pageNum - page) <= 1
+                  ) {
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={`px-3 py-1.5 rounded min-w-[32px] text-sm font-medium transition-all ${
+                          page === pageNum
+                            ? "bg-blue-600 text-white shadow-md"
+                            : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  } else if (pageNum === page - 2 || pageNum === page + 2) {
+                    return (
+                      <span
+                        key={pageNum}
+                        className="px-2 text-gray-500 dark:text-gray-400"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+                  return null;
+                })}
               </div>
             )}
           </>

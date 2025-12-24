@@ -174,7 +174,7 @@ const Sections = () => {
         return;
       }
 
-      setDepartments((prev) => prev.filter((d) => d._id !== deleteId));
+      setDepartments((prev) => prev.filter((d) => d?._id !== deleteId));
       setDeleteModalOpen(false);
       setDeleteId(null);
       toast.success(
@@ -297,9 +297,9 @@ const Sections = () => {
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
-              name: { en: formData.nameEn, ar: formData.nameAr },
-              description: { en: formData.descEn, ar: formData.descAr },
-              icons: formData.icons,
+              name: { en: formData?.nameEn, ar: formData?.nameAr },
+              description: { en: formData?.descEn, ar: formData?.descAr },
+              icons: formData?.icons,
             }),
           }
         );
@@ -315,7 +315,7 @@ const Sections = () => {
           return;
         }
         setDepartments((prev) =>
-          prev.map((d) => (d._id === formData.id ? updated.department : d))
+          prev.map((d) => (d?._id === formData.id ? updated?.department : d))
         );
         toast.success(
           lang === "ar"
@@ -389,8 +389,8 @@ const Sections = () => {
       return;
     }
 
-    const oldIndex = departments.findIndex((d) => d._id === active.id);
-    const newIndex = departments.findIndex((d) => d._id === over.id);
+    const oldIndex = departments.findIndex((d) => d?._id === active.id);
+    const newIndex = departments.findIndex((d) => d?._id === over.id);
 
     const newOrder = arrayMove(departments, oldIndex, newIndex);
     setDepartments(newOrder);
@@ -442,7 +442,7 @@ const Sections = () => {
       transform,
       transition,
       isDragging,
-    } = useSortable({ id: dept._id });
+    } = useSortable({ id: dept?._id });
 
     const style = {
       transform: CSS.Transform.toString(transform),
@@ -471,8 +471,8 @@ const Sections = () => {
         </td>
         <td className="py-3 px-4">
           <img
-            src={dept.icon || "/placeholder.jpg"}
-            alt={dept.name.en}
+            src={dept?.icon || "/placeholder.jpg"}
+            alt={dept?.name?.en}
             className="h-12 w-12 rounded-md object-cover"
           />
         </td>
@@ -481,14 +481,14 @@ const Sections = () => {
             isRTL ? "text-right" : "text-left"
           }`}
         >
-          {lang === "ar" ? dept.name.ar : dept.name.en}
+          {lang === "ar" ? dept?.name?.ar : dept?.name?.en}
         </td>
         <td
           className={`py-3 px-4 text-sm text-gray-600 dark:text-gray-300 ${
             isRTL ? "text-right" : "text-left"
           }`}
         >
-          {lang === "ar" ? dept.description.ar : dept.description.en}
+          {lang === "ar" ? dept?.description?.ar : dept?.description?.en}
         </td>
         <td className="py-3 px-4 flex gap-2">
           <button
@@ -498,7 +498,7 @@ const Sections = () => {
             {lang === "ar" ? "تعديل" : "Edit"}
           </button>
           <button
-            onClick={() => handleDeleteClick(dept._id)}
+            onClick={() => handleDeleteClick(dept?._id)}
             className="px-3 py-1.5 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
           >
             {lang === "ar" ? "حذف" : "Delete"}
@@ -545,7 +545,7 @@ const Sections = () => {
     );
 
   const activeDept = activeDragId
-    ? departments.find((d) => d._id === activeDragId)
+    ? departments.find((d) => d?._id === activeDragId)
     : null;
 
   return (
@@ -633,13 +633,13 @@ const Sections = () => {
               </thead>
 
               <SortableContext
-                items={departments.map((d) => d._id)}
+                items={departments.map((d) => d?._id)}
                 strategy={verticalListSortingStrategy}
               >
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {departments.length > 0 ? (
                     departments.map((dept, idx) => (
-                      <SortableRow key={dept._id} dept={dept} index={idx} />
+                      <SortableRow key={idx} dept={dept} index={idx} />
                     ))
                   ) : (
                     <tr>
@@ -659,7 +659,7 @@ const Sections = () => {
 
             <DragOverlay>
               {activeDept ? (
-                <table className="w-full">
+                <table key={activeDept._id} className="w-full">
                   <tbody>
                     <tr className="bg-white dark:bg-gray-900 shadow-2xl border-2 border-blue-500 rounded-lg">
                       <td className="py-3 px-4">
@@ -667,7 +667,7 @@ const Sections = () => {
                       </td>
                       <td className="py-3 px-4">
                         <img
-                          src={activeDept.icon || "/placeholder.jpg"}
+                          src={activeDept?.icon || "/placeholder.jpg"}
                           alt=""
                           className="h-12 w-12 rounded-md object-cover"
                         />
@@ -678,8 +678,8 @@ const Sections = () => {
                         }`}
                       >
                         {lang === "ar"
-                          ? activeDept.name.ar
-                          : activeDept.name.en}
+                          ? activeDept?.name?.ar
+                          : activeDept?.name?.en}
                       </td>
                       <td
                         className={`py-3 px-4 text-sm text-gray-600 ${
@@ -687,8 +687,8 @@ const Sections = () => {
                         }`}
                       >
                         {lang === "ar"
-                          ? activeDept.description.ar
-                          : activeDept.description.en}
+                          ? activeDept?.description?.ar
+                          : activeDept?.description?.en}
                       </td>
                       <td className="py-3 px-4"></td>
                     </tr>
@@ -861,9 +861,9 @@ const Sections = () => {
                             {icon.loading && (
                               <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                             )}
-                            {!icon.loading && icon.url && (
+                            {!icon?.loading && icon?.url && (
                               <img
-                                src={icon.url}
+                                src={icon?.url}
                                 className="absolute inset-0 w-full h-full object-cover"
                                 alt="icon"
                               />
