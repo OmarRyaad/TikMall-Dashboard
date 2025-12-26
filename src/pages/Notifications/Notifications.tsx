@@ -203,10 +203,10 @@ const Notifications = () => {
       body: data.NotificationMessage,
       type: "info",
       data: {},
-      sendAt:
+      delay:
         data.schedule === "future"
-          ? data.futureDate.toISOString()
-          : new Date().toISOString(),
+          ? Math.max(0, data.futureDate.getTime() - Date.now())
+          : 0,
     };
 
     try {

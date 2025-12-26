@@ -38,11 +38,6 @@ interface MediaItem {
   storeDepartment: StoreDepartment;
 }
 
-interface Department {
-  _id: string;
-  name: { en: string; ar: string };
-}
-
 interface Comment {
   repliesCount: number;
   _id: string;
