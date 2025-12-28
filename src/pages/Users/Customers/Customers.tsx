@@ -10,6 +10,7 @@ import {
   UserIcon,
 } from "@heroicons/react/24/outline";
 import { FcGoogle } from "react-icons/fc";
+import { FaApple } from "react-icons/fa";
 import { useLanguage } from "../../../context/LanguageContext";
 
 interface Customer {
@@ -274,7 +275,7 @@ const Customers = () => {
                         isRTL ? "text-right" : "text-left"
                       }`}
                     >
-                      Gmail
+                      {lang === "ar" ? "المزود" : "Provider"}
                     </th>
                     <th
                       className={`px-4 md:px-6 py-3 text-xs font-medium text-gray-500 uppercase ${
@@ -326,10 +327,13 @@ const Customers = () => {
                             className="flex items-center gap-1 cursor-pointer"
                             title={cust.email.mail}
                           >
-                            <FcGoogle className={`"w-5 h-5 text-blue-500"`} />
-                            {/* <span className="truncate max-w-[120px]">
-                              {cust.email.mail}
-                            </span> */}
+                            {["icloud.com", "apple.com", "me.com"].some((d) =>
+                              cust.email?.mail.toLowerCase().endsWith(d)
+                            ) ? (
+                              <FaApple className="w-5 h-5 text-gray-800 dark:text-gray-200" />
+                            ) : (
+                              <FcGoogle className="w-5 h-5" />
+                            )}
                           </div>
                         ) : (
                           <div className="text-gray-400">—</div>

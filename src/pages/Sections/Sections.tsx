@@ -323,6 +323,7 @@ const Sections = () => {
             : "Department updated successfully"
         );
         setIsOpen(!keepOpen ? false : true);
+        fetchDepartments();
       } else {
         const res = await fetch(
           "https://api.tik-mall.com/admin/api/create/department",
@@ -369,6 +370,7 @@ const Sections = () => {
         } else {
           setIsOpen(false);
         }
+        fetchDepartments();
       }
     } catch {
       toast.error(lang === "ar" ? "حدث خطأ ما" : "Something went wrong");

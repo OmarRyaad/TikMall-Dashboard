@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowPathIcon,
   BuildingOffice2Icon,
@@ -50,6 +50,7 @@ interface Comment {
 const Media = () => {
   const { lang } = useLanguage();
   const isRTL = lang === "ar";
+  const sliderRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -366,7 +367,7 @@ const Media = () => {
       {/* Media Grid */}
       {/* Facebook Style Feed - Compact Admin View */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
-        {media.map((item) => (
+        {media.map((item, mediaIndex) => (
           <div
             key={item._id}
             className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden"
@@ -406,71 +407,115 @@ const Media = () => {
 
             {/* Media */}
             <div className="relative w-full h-[500px] dark:bg-gray-800 overflow-hidden rounded-lg">
-              {filterType === "image" && (
-                <button
-                  onClick={() => window.open(item.thumbnailUrl, "_blank")}
-                  className="absolute top-3 right-3 z-20 bg-black/60 text-white px-3 py-1 rounded-md text-xs hover:bg-black transition"
-                >
-                  {lang === "ar" ? "عرض كامل" : "View Full"}
-                </button>
-              )}
+            <div
+              ref={(el) => {
+                sliderRefs.current[mediaIndex] = el;
+              }}
+              className="flex w-full h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+            >
 
-              <div
-                className="absolute inset-0 z-10 flex items-center justify-center bg-gray-200/80 dark:bg-gray-900/80 backdrop-blur-sm transition-opacity duration-500 pointer-events-none"
-                data-loading={
-                  filterType === "video" ? item.url?.[0] : item.thumbnailUrl
-                }
-              >
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                    {lang === "ar" ? "جاري التحميل..." : "Loading..."}
-                  </p>
-                </div>
+                {(item.url?.length > 0 ? item.url : [item.thumbnailUrl]).map((mediaUrl, index) => {
+                  const isVideo = filterType === "video";
+                  return (
+                    <div key={index} className="flex-shrink-0 w-full h-full snap-center relative">
+                      <div
+                        className="absolute inset-0 z-10 flex items-center justify-center bg-gray-200/80 dark:bg-gray-900/80 backdrop-blur-sm transition-opacity duration-500 pointer-events-none"
+                        id={`loader-${item._id}-${index}`}
+                      >
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                            {lang === "ar" ? "جاري التحميل..." : "Loading..."}
+                          </p>
+                        </div>
+                      </div>
+
+                      {isVideo ? (
+                        <video
+                          controls
+                          poster={item.thumbnailUrl}
+                          className="w-full h-full object-cover"
+                          onLoadedData={() => {
+                            document.getElementById(`loader-${item._id}-${index}`)?.classList.add("opacity-0");
+                          }}
+                          onError={() => {
+                            document.getElementById(`loader-${item._id}-${index}`)?.classList.add("opacity-0");
+                          }}
+                        >
+                          <source src={mediaUrl} type="video/mp4" />
+                          {lang === "ar"
+                            ? "المتصفح لا يدعم الفيديو"
+                            : "Your browser does not support the video tag."}
+                        </video>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => window.open(mediaUrl || item.thumbnailUrl, "_blank")}
+                            className="absolute top-3 right-3 z-20 bg-black/60 text-white px-3 py-1 rounded-md text-xs hover:bg-black transition"
+                          >
+                            {lang === "ar" ? "عرض كامل" : "View Full"}
+                          </button>
+                          <img
+                            src={mediaUrl || item.thumbnailUrl}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onLoad={() => {
+                              document.getElementById(`loader-${item._id}-${index}`)?.classList.add("opacity-0");
+                            }}
+                            onError={() => {
+                              document.getElementById(`loader-${item._id}-${index}`)?.classList.add("opacity-0");
+                            }}
+                          />
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
-              {/* Actual Media */}
-              {filterType === "video" && item.url?.length ? (
-                <video
-                  controls
-                  poster={item.thumbnailUrl}
-                  className="w-full h-full object-cover"
-                  onCanPlayThrough={(e) => {
-                    e.currentTarget.parentElement
-                      ?.querySelector("[data-loading]")
-                      ?.classList.add("opacity-0");
-                  }}
-                  onError={(e) => {
-                    e.currentTarget.parentElement
-                      ?.querySelector("[data-loading]")
-                      ?.classList.add("opacity-0");
-                  }}
-                >
-                  <source src={item.url[0]} type="video/mp4" />
-                  {lang === "ar"
-                    ? "المتصفح لا يدعم الفيديو"
-                    : "Your browser does not support the video tag."}
-                </video>
-              ) : (
-                <img
-                  src={item.thumbnailUrl}
-                  alt={item.title}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  onLoad={(e) => {
-                    e.currentTarget.parentElement
-                      ?.querySelector("[data-loading]")
-                      ?.classList.add("opacity-0");
-                  }}
-                  onError={(e) => {
-                    e.currentTarget.parentElement
-                      ?.querySelector("[data-loading]")
-                      ?.classList.add("opacity-0");
-                  }}
-                />
+              {/* Navigation Arrows - only when there are multiple items */}
+              {item.url?.length > 1 && (
+                <>
+                  {/* Left Arrow */}
+                  <button
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition backdrop-blur-sm"
+                    onClick={() => {
+                      const slider = sliderRefs.current[mediaIndex];
+                      if (!slider) return;
+
+                      slider.scrollBy({
+                        left: -slider.clientWidth,
+                        behavior: "smooth",
+                      });
+                    }}
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Right Arrow */}
+                  <button
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition backdrop-blur-sm"
+                    onClick={() => {
+                      const slider = sliderRefs.current[mediaIndex];
+                      if (!slider) return;
+
+                      slider.scrollBy({
+                        left: slider.clientWidth,
+                        behavior: "smooth",
+                      });
+                    }}
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </>
               )}
             </div>
-
+            
             {/* Actions */}
             <div className="px-3 py-2">
               {/* Likes Count */}

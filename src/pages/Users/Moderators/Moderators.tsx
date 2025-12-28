@@ -99,7 +99,7 @@ const Moderators = () => {
     null
   );
   const [formErrors, setFormErrors] = useState<
-    Partial<Record<keyof Moderator, string>>
+    Partial<Record<keyof Moderator, string>> & { permissions?: string }
   >({});
 
   const token =
@@ -189,23 +189,27 @@ const Moderators = () => {
   };
 
   const handleSave = async () => {
-    // Reset previous errors
-    setFormErrors({});
+    setFormErrors({} as Partial<Record<keyof Moderator, string>> & { permissions?: string });
 
-    // Frontend validation
-    const errors: Partial<Record<keyof Moderator, string>> = {};
+    const errors: Partial<Record<keyof Moderator, string>> & { permissions?: string } = {};
+
+    // Name validation
     if (!formData.name || formData.name.length < 3) {
       errors.name =
         lang === "ar"
           ? "الاسم يجب أن يكون 3 أحرف على الأقل"
           : "Name must be at least 3 characters";
     }
+
+    // Phone validation
     if (!formData.phone || !/^\+?\d{12,13}$/.test(formData.phone)) {
       errors.phone =
         lang === "ar"
           ? "رقم الهاتف يجب أن يكون 12 أو 13 رقمًا"
           : "Phone number must be 12 or 13 digits";
     }
+
+    // Password validation
     if (!isEditMode && (!formData.password || formData.password.length < 6)) {
       errors.password =
         lang === "ar"
@@ -213,28 +217,45 @@ const Moderators = () => {
           : "Password must be at least 6 characters";
     }
 
+    // Permissions validation
+    const permissionKeys: (keyof Permissions)[] = [
+      "manageAdmins",
+      "manageStoreOwners",
+      "manageMediaAndStreams",
+      "manageDepartmentsAndFaqs",
+      "manageCustomers",
+      "manageComplains",
+      "manageSendNotifications",
+      "manageStatistics",
+    ];
+
+    const hasPermission = permissionKeys.some((key) => !!formData[key as keyof Moderator]);
+
+    if (!hasPermission) {
+      errors.permissions =
+        lang === "ar"
+          ? "يجب اختيار صلاحية واحدة على الأقل"
+          : "At least one permission must be selected";
+    }
+
+    // Stop if any errors
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
-      return; // Stop submission
+      return;
     }
 
     try {
       setLoading(true);
+
       const payload = {
         name: formData.name,
         phone: { number: formData.phone },
         ...(formData.password && { password: formData.password }),
         isActive: formData.active ?? true,
-        permissions: {
-          manageAdmins: !!formData.manageAdmins,
-          manageStoreOwners: !!formData.manageStoreOwners,
-          manageMediaAndStreams: !!formData.manageMediaAndStreams,
-          manageDepartmentsAndFaqs: !!formData.manageDepartmentsAndFaqs,
-          manageCustomers: !!formData.manageCustomers,
-          manageComplains: !!formData.manageComplains,
-          manageSendNotifications: !!formData.manageSendNotifications,
-          manageStatistics: !!formData.manageStatistics,
-        },
+        permissions: permissionKeys.reduce((acc, key) => {
+          acc[key] = !!formData[key as keyof Moderator];
+          return acc;
+        }, {} as Permissions),
       };
 
       const url = isEditMode
@@ -252,22 +273,19 @@ const Moderators = () => {
 
       const result = await res.json();
 
-      // Handle backend validation errors
       if (result.error) {
         const backendErrors: Partial<Record<keyof Moderator, string>> = {};
         if (Array.isArray(result.error)) {
           result.error.forEach((err: string) => {
             if (err.toLowerCase().includes("name")) backendErrors.name = err;
             if (err.toLowerCase().includes("phone")) backendErrors.phone = err;
-            if (err.toLowerCase().includes("password"))
-              backendErrors.password = err;
+            if (err.toLowerCase().includes("password")) backendErrors.password = err;
           });
         }
         setFormErrors(backendErrors);
-        return; // Stop submission
+        return;
       }
 
-      // Success
       toast.success(
         isEditMode
           ? lang === "ar"
@@ -277,6 +295,7 @@ const Moderators = () => {
           ? "تم إنشاء المدير بنجاح!"
           : "Moderator created!"
       );
+
       fetchModerators();
       setIsOpen(false);
     } catch (error) {
@@ -634,35 +653,32 @@ const Moderators = () => {
 
                   {!isEditMode && (
                     <>
-                      <div className="relative">
-                        <input
-                          type={showPassword ? "text" : "password"}
-                          name="password"
-                          placeholder={
-                            lang === "ar" ? "كلمة المرور" : "Password"
-                          }
-                          value={formData.password || ""}
-                          onChange={handleChange}
-                          className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
-                        />
-                        {formErrors.password && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {formErrors.password}
-                          </p>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        placeholder={lang === "ar" ? "كلمة المرور" : "Password"}
+                        value={formData.password || ""}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border rounded-lg dark:bg-gray-800"
+                      />
+                      <span
+                        onClick={() => setShowPassword(!showPassword)}
+                        className={`absolute top-1/2 ${isRTL ? "left-4" : "right-4"} -translate-y-1/2 cursor-pointer z-30`}
+                      >
+                        {showPassword ? (
+                          <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                        ) : (
+                          <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
                         )}
-                        <span
-                          onClick={() => setShowPassword(!showPassword)}
-                          className={`absolute z-30 -translate-y-1/2 cursor-pointer top-1/2 ${
-                            isRTL ? "left-4" : "right-4"
-                          }`}
-                        >
-                          {showPassword ? (
-                            <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
-                          ) : (
-                            <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
-                          )}
-                        </span>
-                      </div>
+                      </span>
+                    </div>
+
+                    {formErrors.password && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {formErrors.password}
+                      </p>
+                    )}
                     </>
                   )}
                 </div>
@@ -748,6 +764,13 @@ const Moderators = () => {
                       </label>
                     ))}
                   </div>
+                  {formErrors.permissions && (
+                    <div className="col-span-full flex justify-center mt-2">
+                      <p className="text-red-500 text-sm text-center">
+                        {formErrors.permissions}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-8 flex flex-col sm:flex-row justify-end gap-4">

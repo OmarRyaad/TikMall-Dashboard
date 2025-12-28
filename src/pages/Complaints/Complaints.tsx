@@ -200,7 +200,7 @@ const Complaints = () => {
 
       {/* Complaints Table */}
       <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700">
-        <table className="min-w-full border-collapse">
+        <table className="bg-white dark:bg-gray-900 min-w-full border-collapse">
           <thead className="bg-gray-50 dark:bg-gray-900/30 border-b border-gray-100 dark:border-gray-800">
             <tr>
               {[
